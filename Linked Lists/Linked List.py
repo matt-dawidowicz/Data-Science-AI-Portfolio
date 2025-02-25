@@ -12,13 +12,15 @@ Unit and integration tests are provided at the end of the module.
 
 from typing import Any, Optional, Iterator, Callable, Iterable
 from functools import reduce as functools_reduce
+from copy import deepcopy
 
 class SinglyLinkedNode:
-    """Node class for a singly-linked list.
+    """
+    Represents a node in a singly linked list.
 
     Attributes:
         data: The data stored in the node.
-        next: A reference to the next node in the list.
+        next: Reference to the next node in the linked list, or None if there is no next node.
     """
 
     def __init__(self, data: Any, next_node: Optional["SinglyLinkedNode"] = None) -> None:
@@ -30,19 +32,20 @@ class SinglyLinkedNode:
 
 
 class DoublyLinkedNode:
-    """Node class for a doubly-linked list.
+    """
+    A class that represents a node in a doubly linked list. Each node contains data, a reference to the previous node, and a reference to the next node.
 
     Attributes:
-        data: The data stored in the node.
-        prev: A reference to the previous node in the list.
-        next: A reference to the next node in the list.
+        data: The value or data stored in the node.
+        prev: A reference to the previous node in the doubly linked list. Defaults to None.
+        next: A reference to the next node in the doubly linked list. Defaults to None.
     """
 
     def __init__(
-        self,
-        data: Any,
-        prev: Optional["DoublyLinkedNode"] = None,
-        next_node: Optional["DoublyLinkedNode"] = None
+            self,
+            data: Any,
+            prev: Optional["DoublyLinkedNode"] = None,
+            next_node: Optional["DoublyLinkedNode"] = None
     ) -> None:
         self.data = data
         self.prev = prev
@@ -53,21 +56,49 @@ class DoublyLinkedNode:
 
 
 class LinkedList:
-    """A versatile linked list supporting both singly and doubly linked lists.
-
-    This class provides methods for appending, prepending, inserting, removing,
-    sorting, merging, rotating, reversing, slicing, mapping, reducing, filtering,
-    duplicate removal, and more. The type of linked list is specified at
-    initialization, allowing the user to choose between 'singly' and 'doubly'.
+    """
+    A class representing a linked list data structure that supports both singly and doubly linked configurations.
 
     Attributes:
-        head: The first node in the linked list.
-        tail: The last node in the linked list.
-        _size: The number of nodes in the list.
-        _list_type: The type of linked list ('singly' or 'doubly').
+        _list_type (str): Defines whether the linked list is "singly" or "doubly".
+        head (Optional[Any]): The first node in the list or None if the list is empty.
+        tail (Optional[Any]): The last node in the list or None if the list is empty.
+        _size (int): The number of elements in the linked list.
+
+    Methods:
+        __init__(list_type: str): Initializes the linked list with the specified type.
+        __len__(): Returns the number of elements in the linked list.
+        __iter__(): Returns an iterator to traverse the elements in the linked list.
+        __repr__(): Provides a string representation of the linked list for debugging.
+        __str__(): Provides a string version of the linked list for visualization.
+        __contains__(data: Any): Checks if a given element exists in the list.
+        __getitem__(index: int | slice): Retrieves an element or slice of elements at a specified index or range.
+        __setitem__(index: int, value: Any): Replaces the value of the element at the specified index.
+        __eq__(other: object): Checks if another linked list is equal to this one based on elements.
+        __reversed__(): Provides reverse iteration over the list for doubly-linked lists.
+        _create_node(data: Any): Creates and returns a new node, either singly or doubly linked.
+        append(data: Any): Adds a new element to the end of the linked list.
+        prepend(data: Any): Adds a new element to the beginning of the linked list.
+        insert(index: int, data: Any): Inserts a new element at the specified index, shifting existing elements.
+        insert_sorted(data: Any, compare: Optional[Callable[[Any, Any], bool]]): Inserts an element in sorted order while maintaining the sort.
+        remove(data: Any): Removes the first occurrence of the specified element from the list.
+        pop(): Removes and returns the last element of the linked list.
+        pop_front(): Removes and returns the first element of the linked list.
+        extend(iterable: Iterable[Any]): Adds all elements from an iterable to the end of the linked list.
+        count(data: Any): Returns the count of occurrences of a specified element in the linked list.
+        remove_duplicates(): Removes duplicate elements from the list while retaining the order of the first occurrence.
     """
 
     def __init__(self, list_type: str = "singly") -> None:
+        """
+        Initializes a linked list with a specified type.
+
+        Args:
+            list_type: The type of the linked list, either 'singly' or 'doubly'. Defaults to 'singly'.
+
+        Raises:
+            ValueError: If the list_type is not 'singly' or 'doubly'.
+        """
         if list_type not in ("singly", "doubly"):
             raise ValueError("list_type must be 'singly' or 'doubly'")
         self._list_type = list_type
@@ -97,6 +128,18 @@ class LinkedList:
         return any(item == data for item in self)
 
     def __getitem__(self, index: int | slice) -> Any:
+        """
+        Retrieves an item or a slice from the list.
+
+        Args:
+            index: An integer or a slice object specifying the position or range of items to retrieve.
+
+        Returns:
+            The data at the specified index or a new list object for the specified slice.
+
+        Raises:
+            IndexError: If the index is out of range for integer-based access.
+        """
         if isinstance(index, slice):
             return self.from_list(list(self)[index], list_type=self._list_type)
         if index < 0:
@@ -185,11 +228,16 @@ class LinkedList:
         self._size += 1
 
     def insert_sorted(self, data: Any, compare: Optional[Callable[[Any, Any], bool]] = None) -> None:
-        """Insert data into the list while maintaining sorted order.
+        """
+        Inserts a new element into the list while maintaining the sorted order. Allows for custom
+        comparison logic via a provided comparator function.
 
         Args:
-            data: The data to insert.
-            compare: Optional comparison function (defaults to < for ascending order).
+            data: The data to be inserted into the list.
+            compare: An optional callable that accepts two arguments and returns True if the first
+                     argument should be ordered before the second. Defaults to ascending order
+                     comparison if not provided.
+
         """
         if compare is None:
             compare = lambda a, b: a < b  # Default to ascending order
@@ -231,6 +279,13 @@ class LinkedList:
         self._size += 1
 
     def remove(self, data: Any) -> bool:
+        """
+        Args:
+            data: The data to be removed from the list.
+
+        Returns:
+            bool: True if the data was found and removed, False otherwise.
+        """
         current = self.head
         previous = None
         while current:
@@ -252,6 +307,15 @@ class LinkedList:
         return False
 
     def pop(self) -> Any:
+        """
+        Removes and returns the last element from the linked list.
+
+        Raises:
+            IndexError: If the linked list is empty.
+
+        Returns:
+            Any: The data from the last element of the linked list.
+        """
         if not self.head:
             raise IndexError("Pop from empty list")
         if self._size == 1:
@@ -273,6 +337,20 @@ class LinkedList:
         return data
 
     def pop_front(self) -> Any:
+        """
+        Removes and returns the first element from the list.
+
+        If the list is empty, raises an IndexError exception. Updates the head of the
+        list to the next node. If the list is doubly linked (indicated by _list_type),
+        the previous reference of the new head is updated to None. Decreases the size
+        of the list by 1. If the size becomes zero, sets the tail to None.
+
+        Returns:
+            Any: The data stored in the previous head node.
+
+        Raises:
+            IndexError: If the list is empty.
+        """
         if not self.head:
             raise IndexError("Pop from empty list")
         data = self.head.data
@@ -285,6 +363,12 @@ class LinkedList:
         return data
 
     def extend(self, iterable: Iterable[Any]) -> None:
+        """
+        Extends the list by appending elements from the provided iterable.
+
+        Args:
+            iterable (Iterable[Any]): An iterable containing elements to be added to the list.
+        """
         for item in iterable:
             self.append(item)
 
@@ -292,7 +376,20 @@ class LinkedList:
         return sum(1 for item in self if item == data)
 
     def remove_duplicates(self) -> None:
-        """Remove duplicate nodes from the list while preserving order."""
+        """
+        Removes duplicate elements from a linked list. The method ensures all duplicate nodes are removed, preserving the
+        uniqueness of the elements in the list. It handles both singly and doubly linked lists appropriately and adjusts the
+        tail and size of the list when necessary.
+
+        Args:
+            None
+
+        Raises:
+            None
+
+        Returns:
+            None
+        """
         seen = set()
         current, previous = self.head, None
 
@@ -310,6 +407,16 @@ class LinkedList:
             current = current.next
 
     def nth_from_end(self, n: int) -> Any:
+        """
+        Args:
+            n: The position from the end of the linked list to retrieve the data from. Must be a positive integer and within the size of the list.
+
+        Raises:
+            IndexError: If n is less than or equal to 0 or greater than the size of the list.
+
+        Returns:
+            The data of the node located at the nth position from the end of the linked list.
+        """
         if n <= 0 or n > self._size:
             raise IndexError("n is out of range")
         lead = self.head
@@ -323,7 +430,18 @@ class LinkedList:
         return follow.data  # type: ignore
 
     def filter(self, predicate: Callable[[Any], bool]) -> "LinkedList":
-        """Return a new linked list containing only the nodes where predicate(data) is True."""
+        """
+        Filters the elements of the linked list based on a given predicate function.
+
+        Args:
+            predicate: A callable that takes an element of the linked list as input
+                       and returns True if the element should be included in the
+                       filtered result, False otherwise.
+
+        Returns:
+            LinkedList: A new linked list containing only the elements that satisfy
+                        the predicate function.
+        """
         filtered = LinkedList(self._list_type)
         for data in self:
             if predicate(data):
@@ -331,38 +449,95 @@ class LinkedList:
         return filtered
 
     def map(self, func: Callable[[Any], Any]) -> "LinkedList":
-        """Return a new linked list with func applied to each node's data."""
+        """
+        Applies the provided function to each element in the LinkedList and returns a new LinkedList containing the results.
+
+        Args:
+            func: A callable function that takes a single argument (an element from the LinkedList) and returns the transformed value.
+
+        Returns:
+            A new LinkedList containing the results of applying the function to each element of the original LinkedList.
+        """
         mapped = LinkedList(self._list_type)
         for data in self:
             mapped.append(func(data))
         return mapped
 
     def reduce(self, func: Callable[[Any, Any], Any], initializer: Optional[Any] = None) -> Any:
+        """
+        Args:
+            func: A callable object representing the reduction function. This function takes two arguments
+                and combines them into a single result.
+            initializer: Optional initial value that is placed at the beginning of the sequence prior
+                to performing the reduction. If not provided, the first element of the sequence
+                is used as the initial value.
+        """
         if initializer is not None:
             return functools_reduce(func, self, initializer)
         return functools_reduce(func, self)
 
     def clear(self) -> None:
+        """
+        Clears all elements from the data structure.
+
+        This method resets the data structure by setting the head and tail
+        references to None and the size count to 0, effectively removing all
+        elements from it.
+        """
         self.head = None
         self.tail = None
         self._size = 0
 
     def to_list(self) -> list:
+        """
+        Converts the object to a list.
+
+        Returns:
+            list: A list containing all elements of the object.
+        """
         return list(iter(self))
 
     @classmethod
     def from_list(cls, lst: list, list_type: str = "singly") -> "LinkedList":
-        """Create a LinkedList from a Python list."""
+        """
+        Converts a given list into a LinkedList instance. The method constructs a new LinkedList of the specified type and appends each element from the input list to the newly created LinkedList.
+
+        Args:
+            lst: The list of elements to be converted into a LinkedList.
+            list_type: The type of LinkedList to create. Defaults to "singly", but can support other configurations as implemented.
+
+        Returns:
+            A new LinkedList instance containing the elements from the input list in the same order.
+        """
         linked_list = cls(list_type)
         for item in lst:
             linked_list.append(item)
         return linked_list
 
     def copy(self) -> "LinkedList":
-        """Return a shallow copy of the linked list."""
+        """
+        Creates a shallow copy of the current LinkedList.
+
+        Returns:
+            LinkedList: A new instance of LinkedList containing the same elements as the original list, maintaining the same order.
+        """
         new_list = LinkedList(self._list_type)
         for item in self:
             new_list.append(item)
+        return new_list
+
+
+
+    def deep_copy(self) -> "LinkedList":
+        """
+        Creates a deep copy of the current LinkedList.
+
+        Returns:
+            LinkedList: A new instance of LinkedList containing deeply copied elements of the original list, maintaining the same order.
+        """
+        new_list = LinkedList(self._list_type)
+        for item in self:
+            new_list.append(deepcopy(item))  # Ensure elements are deeply copied
         return new_list
 
     def _split(self, head: Any) -> tuple[Any, Any]:
@@ -378,10 +553,10 @@ class LinkedList:
         return head, middle
 
     def _merge_sorted(
-        self,
-        left: Any,
-        right: Any,
-        compare: Optional[Callable[[Any, Any], bool]] = None
+            self,
+            left: Any,
+            right: Any,
+            compare: Optional[Callable[[Any, Any], bool]] = None
     ) -> Any:
         if compare is None:
             compare = lambda a, b: a < b
@@ -412,6 +587,7 @@ class LinkedList:
             left = _merge_sort(left)
             right = _merge_sort(right)
             return self._merge_sorted(left, right, compare)
+
         self.head = _merge_sort(self.head)
         current = self.head
         prev = None
@@ -482,7 +658,7 @@ class LinkedList:
                 prev, current = current, current.next
 
     def rotate(self, k: int) -> None:
-        """Rotate the list by k positions.
+        """Rotate the linked list by k positions.
 
         A positive k rotates the list to the right, while a negative k rotates to the left.
 
@@ -490,24 +666,30 @@ class LinkedList:
             k: The number of positions to rotate.
         """
         if self._size == 0 or k % self._size == 0:
-            return
+            return  # No need to rotate if k is 0 or a multiple of size
 
-        k = k % self._size  # Reduce unnecessary rotations
+        k = k % self._size  # Reduce unnecessary full rotations
         if k < 0:
-            k = self._size + k  # Convert negative rotations to equivalent positive ones
+            k = self._size + k  # Convert negative rotations to equivalent positive rotations
 
+        # Find new tail: (size - k - 1)th node
         new_tail = self.head
         for _ in range(self._size - k - 1):
-            new_tail = new_tail.next  # Move to new tail position
+            new_tail = new_tail.next  # Move to new tail
 
-        new_head = new_tail.next
-        new_tail.next = None
-        self.tail.next = self.head  # Connect old tail to old head
-        self.head, self.tail = new_head, new_tail  # Update pointers
+        new_head = new_tail.next  # New head is the next node
+        new_tail.next = None  # Detach new tail
+
+        # Update old tail to point to the old head
+        self.tail.next = self.head
+        if self._list_type == "doubly":
+            self.head.prev = self.tail  # Fix previous pointer
+
+        self.head, self.tail = new_head, new_tail  # Update head and tail
 
         # Fix prev pointers for doubly linked list
         if self._list_type == "doubly":
-            self.head.prev = None
+            self.head.prev = None  # The new head should not have a previous pointer
             current, prev = self.head, None
             while current:
                 current.prev = prev
@@ -559,7 +741,40 @@ class LinkedList:
 
 import unittest
 
+
 class TestLinkedListUnit(unittest.TestCase):
+    """
+    Unit tests for the LinkedList class, including various operations like appending, prepending, inserting, removing, sorting, etc.
+
+    Methods:
+        setUp: Initializes the test environment by creating pre-populated singly and doubly linked lists with values 0 to 4.
+        test_append_and_len: Tests the append operation and checks the length of the list.
+        test_prepend: Tests prepending a value to the list.
+        test_insert: Tests inserting a value at a specific position in the list.
+        test_remove: Tests removing a value from the list.
+        test_pop: Tests removing and returning the last element of the list.
+        test_pop_front: Tests removing and returning the first element of the list.
+        test_getitem_setitem: Tests getting and setting elements using index notation.
+        test_slice: Tests slicing a sublist from the list.
+        test_equality: Tests equality comparison between two linked lists.
+        test_extend: Tests appending multiple elements to the list at once.
+        test_count: Tests counting occurrences of a specific value in the list.
+        test_remove_duplicates: Tests removing duplicate values from the list.
+        test_nth_from_end: Tests retrieving the nth element from the end of the list.
+        test_filter_map_reduce: Tests performing filter, map, and reduce operations on the list.
+        test_insert_sorted: Tests inserting a value into a sorted list while maintaining sort order.
+        test_insert_sorted_empty_list: Tests inserting into an empty list.
+        test_insert_sorted_at_head: Tests inserting a new smallest value, making it the head of the list.
+        test_insert_sorted_at_tail: Tests inserting a new largest value, making it the tail of the list.
+        test_insert_sorted_middle: Tests inserting a value in the middle of a sorted list.
+        test_insert_sorted_duplicate: Tests inserting a duplicate value into a sorted list.
+        test_insert_sorted_all_same_values: Tests inserting into a list where all the elements are the same.
+        test_insert_sorted_large_list: Tests inserting into a large sorted list efficiently.
+        test_reverse_sort: Tests reversing and sorting the list.
+        test_merge: Tests merging two sorted linked lists into one sorted list.
+        test_rotate: Tests rotating the list by a given number of positions.
+    """
+
     def setUp(self) -> None:
         # Create both singly and doubly linked lists pre-populated with 0..4.
         self.singly = LinkedList("singly")
@@ -717,6 +932,23 @@ class TestLinkedListUnit(unittest.TestCase):
 
 
 class TestLinkedListIntegration(unittest.TestCase):
+    """
+    Integration test for the LinkedList class.
+
+    This test validates the integration of various operations performed on a
+    doubly-linked list, ensuring correctness of the final state after a sequence
+    of manipulations.
+
+    Test steps:
+    1. Append a list of values to the linked list.
+    2. Remove duplicate values from the list and verify the result.
+    3. Reverse the list and use its sorted representation to create a new list.
+    4. Insert a new value into the sorted list and verify its structure.
+    5. Merge the sorted list with another linked list containing additional values.
+    6. Rotate the merged list by a specified number of steps.
+    7. Verify that the rotated list contains the correct elements.
+    """
+
     def test_integration(self) -> None:
         # Integration test: perform a series of operations and validate final state.
         ll = LinkedList("doubly")
@@ -744,6 +976,7 @@ class TestLinkedListIntegration(unittest.TestCase):
         sorted_ll.rotate(3)
         # Verify the rotated list has the correct elements.
         self.assertCountEqual(sorted_ll.to_list(), [0, 1, 2, 3, 3, 4, 5, 6])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -15,7 +15,7 @@ from functools import reduce as functools_reduce
 from copy import deepcopy
 
 # Import node classes from nodes.py
-from .nodes import SinglyLinkedNode, DoublyLinkedNode
+from .nodes import SinglyLinkedNode, DoublyLinkedNode, SinglyCircularLinkedNode,DoublyCircularLinkedNode
 
 class LinkedList:
     """
@@ -56,26 +56,42 @@ class LinkedList:
         Initializes a linked list with a specified type.
 
         Args:
-            list_type: The type of the linked list, either 'singly' or 'doubly'. Defaults to 'singly'.
+            list_type: The type of the linked list. Valid options are:
+                       'singly', 'doubly', 'singly-circular', or 'doubly-circular'.
+                       Defaults to 'singly'.
 
         Raises:
-            ValueError: If the list_type is not 'singly' or 'doubly'.
+            ValueError: If the list_type is not one of the allowed options.
         """
-        if list_type not in ("singly", "doubly"):
-            raise ValueError("list_type must be 'singly' or 'doubly'")
+        valid_types = ("singly", "doubly", "singly-circular", "doubly-circular")
+        if list_type not in valid_types:
+            raise ValueError("list_type must be one of 'singly', 'doubly', 'singly-circular', or 'doubly-circular'")
+
         self._list_type = list_type
         self.head: Optional[Any] = None
         self.tail: Optional[Any] = None
         self._size: int = 0
+        # Flag to control whether the list should be maintained as circular.
+        self._is_circular = "circular" in list_type
 
     def __len__(self) -> int:
         return self._size
 
     def __iter__(self) -> Iterator[Any]:
-        current = self.head
-        while current:
+        if self._is_circular:
+            if self.head is None:
+                return
+            current = self.head
             yield current.data
             current = current.next
+            while current != self.head:
+                yield current.data
+                current = current.next
+        else:
+            current = self.head
+            while current:
+                yield current.data
+                current = current.next
 
     def __repr__(self) -> str:
         return (
@@ -131,10 +147,20 @@ class LinkedList:
     def __reversed__(self) -> Iterator[Any]:
         if self._list_type != "doubly":
             raise NotImplementedError("Reverse iteration only supported for doubly-linked lists")
-        current = self.tail
-        while current:
+        if self._is_circular:
+            if self.tail is None:
+                return
+            current = self.tail
             yield current.data
             current = current.prev  # type: ignore
+            while current != self.tail:
+                yield current.data
+                current = current.prev  # type: ignore
+        else:
+            current = self.tail
+            while current:
+                yield current.data
+                current = current.prev  # type: ignore
 
     def _create_node(self, data: Any) -> Any:
         if self._list_type == "singly":
@@ -144,26 +170,46 @@ class LinkedList:
     def append(self, data: Any) -> None:
         new_node = self._create_node(data)
         if not self.head:
+            # Empty list: initialize head and tail.
             self.head = new_node
             self.tail = new_node
+            if self._is_circular:
+                new_node.next = new_node
+                if self._list_type == "doubly":
+                    new_node.prev = new_node
         else:
             assert self.tail is not None
             self.tail.next = new_node
             if self._list_type == "doubly":
                 new_node.prev = self.tail  # type: ignore
             self.tail = new_node
+            if self._is_circular:
+                self.tail.next = self.head
+                if self._list_type == "doubly":
+                    self.head.prev = self.tail  # type: ignore
         self._size += 1
 
     def prepend(self, data: Any) -> None:
         new_node = self._create_node(data)
         if not self.head:
+            # Empty list: initialize head and tail.
             self.head = new_node
             self.tail = new_node
+            if self._is_circular:
+                new_node.next = new_node
+                if self._list_type == "doubly":
+                    new_node.prev = new_node
         else:
             new_node.next = self.head
             if self._list_type == "doubly":
                 self.head.prev = new_node  # type: ignore
             self.head = new_node
+            if self._is_circular:
+                # Update tail's pointer to new head.
+                assert self.tail is not None
+                self.tail.next = self.head
+                if self._list_type == "doubly":
+                    self.head.prev = self.tail  # type: ignore
         self._size += 1
 
     def insert(self, index: int, data: Any) -> None:
@@ -183,10 +229,19 @@ class LinkedList:
             current = current.next  # type: ignore
 
         new_node.next = current.next  # type: ignore
-        if self._list_type == "doubly" and new_node.next is not None:
-            new_node.next.prev = new_node  # type: ignore
+        if self._list_type == "doubly":
             new_node.prev = current  # type: ignore
+            if new_node.next is not None:
+                new_node.next.prev = new_node  # type: ignore
         current.next = new_node  # type: ignore
+
+        # In circular lists, ensure tail.next (and head.prev for doubly lists) remains up to date.
+        if self._is_circular:
+            assert self.tail is not None
+            self.tail.next = self.head
+            if self._list_type == "doubly":
+                self.head.prev = self.tail  # type: ignore
+
         self._size += 1
 
     def insert_sorted(self, data: Any, compare: Optional[Callable[[Any, Any], bool]] = None) -> None:
@@ -342,9 +397,6 @@ class LinkedList:
         Removes duplicate elements from a linked list. The method ensures all duplicate nodes are removed, preserving the
         uniqueness of the elements in the list. It handles both singly and doubly linked lists appropriately and adjusts the
         tail and size of the list when necessary.
-
-        Args:
-            None
 
         Raises:
             None

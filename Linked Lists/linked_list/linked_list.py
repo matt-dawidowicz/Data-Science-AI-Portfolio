@@ -20,35 +20,6 @@ from .nodes import SinglyLinkedNode, DoublyLinkedNode, SinglyCircularLinkedNode,
 class LinkedList:
     """
     A class representing a linked list data structure that supports both singly and doubly linked configurations.
-
-    Attributes:
-        _list_type (str): Defines whether the linked list is "singly" or "doubly".
-        head (Optional[Any]): The first node in the list or None if the list is empty.
-        tail (Optional[Any]): The last node in the list or None if the list is empty.
-        _size (int): The number of elements in the linked list.
-
-    Methods:
-        __init__(list_type: str): Initializes the linked list with the specified type.
-        __len__(): Returns the number of elements in the linked list.
-        __iter__(): Returns an iterator to traverse the elements in the linked list.
-        __repr__(): Provides a string representation of the linked list for debugging.
-        __str__(): Provides a string version of the linked list for visualization.
-        __contains__(data: Any): Checks if a given element exists in the list.
-        __getitem__(index: int | slice): Retrieves an element or slice of elements at a specified index or range.
-        __setitem__(index: int, value: Any): Replaces the value of the element at the specified index.
-        __eq__(other: object): Checks if another linked list is equal to this one based on elements.
-        __reversed__(): Provides reverse iteration over the list for doubly-linked lists.
-        _create_node(data: Any): Creates and returns a new node, either singly or doubly linked.
-        append(data: Any): Adds a new element to the end of the linked list.
-        prepend(data: Any): Adds a new element to the beginning of the linked list.
-        insert(index: int, data: Any): Inserts a new element at the specified index, shifting existing elements.
-        insert_sorted(data: Any, compare: Optional[Callable[[Any, Any], bool]]): Inserts an element in sorted order while maintaining the sort.
-        remove(data: Any): Removes the first occurrence of the specified element from the list.
-        pop(): Removes and returns the last element of the linked list.
-        pop_front(): Removes and returns the first element of the linked list.
-        extend(iterable: Iterable[Any]): Adds all elements from an iterable to the end of the linked list.
-        count(data: Any): Returns the count of occurrences of a specified element in the linked list.
-        remove_duplicates(): Removes duplicate elements from the list while retaining the order of the first occurrence.
     """
 
     def __init__(self, list_type: str = "singly") -> None:

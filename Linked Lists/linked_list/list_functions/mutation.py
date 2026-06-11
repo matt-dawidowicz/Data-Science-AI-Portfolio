@@ -1,9 +1,14 @@
+"""Mutation operations for linked lists."""
 
+from operator import lt
+from typing import Any, Callable, Iterable, Optional
 
-from typing import Any, Optional, Callable, Iterable
 
 class Mutation:
+    """Provide mutating operations for linked lists."""
+
     def append(self, data: Any) -> None:
+        """Append ``data`` to the tail of the list."""
         new_node = self._create_node(data)
         if not self.head:
             self.head = self.tail = new_node
@@ -23,6 +28,7 @@ class Mutation:
         self._size += 1
 
     def prepend(self, data: Any) -> None:
+        """Insert ``data`` at the head of the list."""
         new_node = self._create_node(data)
         if not self.head:
             self.head = self.tail = new_node
@@ -42,6 +48,7 @@ class Mutation:
         self._size += 1
 
     def insert(self, index: int, data: Any) -> None:
+        """Insert ``data`` at ``index``."""
         if index < 0 or index > self._size:
             raise IndexError("Index out of range")
         if index == 0:
@@ -68,6 +75,7 @@ class Mutation:
         self._size += 1
 
     def remove(self, data: Any) -> bool:
+        """Remove the first matching value from the list."""
         current = self.head
         previous = None
         steps = 0
@@ -106,6 +114,7 @@ class Mutation:
         return False
 
     def pop(self) -> Any:
+        """Remove and return the tail value."""
         if not self.head:
             raise IndexError("Pop from empty list")
         if self._size == 1:
@@ -149,6 +158,7 @@ class Mutation:
         return data
 
     def pop_front(self) -> Any:
+        """Remove and return the head value."""
         if not self.head:
             raise IndexError("Pop from empty list")
         old_head = self.head
@@ -171,9 +181,15 @@ class Mutation:
             old_head.prev = None
         self._size -= 1
         return data
-    def insert_sorted(self, data: Any, compare: Optional[Callable[[Any, Any], bool]] = None) -> None:
+
+    def insert_sorted(
+        self,
+        data: Any,
+        compare: Optional[Callable[[Any, Any], bool]] = None,
+    ) -> None:
+        """Insert ``data`` into an already sorted list."""
         if compare is None:
-            compare = lambda a, b: a < b
+            compare = lt
 
         new_node = self._create_node(data)
 
@@ -199,7 +215,11 @@ class Mutation:
             return
 
         current = self.head
-        while current != self.tail and current.next and compare(current.next.data, data):
+        while (
+            current != self.tail
+            and current.next
+            and compare(current.next.data, data)
+        ):
             current = current.next
 
         new_node.next = current.next
@@ -223,18 +243,17 @@ class Mutation:
     def rotate(self, k: int) -> None:
         """Rotate the linked list by k positions.
 
-        A positive k rotates the list to the right, while a negative k rotates to the left.
-        For circular lists, this operation only involves adjusting the head and tail pointers,
-        while for linear lists the links are re-arranged.
+        A positive ``k`` rotates the list to the right, while a negative
+        ``k`` rotates to the left. Circular lists only adjust head and tail
+        pointers; linear lists rearrange links.
         """
         if self._size == 0 or k % self._size == 0:
-            return  # No need to rotate if k is 0 or a multiple of size
+            return
 
-        k = k % self._size  # Normalize k
+        k %= self._size
 
         if self._is_circular:
-            # For circular lists, advance the head and tail pointers.
-            # Rotating right by k positions is equivalent to moving left by (size - k) positions.
+            # Right rotation by k is equivalent to moving left by size - k.
             steps = self._size - k
             for _ in range(steps):
                 assert self.head and self.tail
@@ -290,40 +309,26 @@ class Mutation:
             next_node = current.next
             current.next = prev
             if "doubly" in self._list_type:
-                current.prev = next_node  # Fix backward links for doubly linked list
+                current.prev = next_node
             prev, current = current, next_node
 
         self.head = prev
 
-    def merge(self, other: "LinkedList", compare: Optional[Callable[[Any, Any], bool]] = None) -> None:
-        """
-        Merge another LinkedList into the current LinkedList while preserving the order.
+    def merge(
+        self,
+        other: "LinkedList",
+        compare: Optional[Callable[[Any, Any], bool]] = None,
+    ) -> None:
+        """Merge another sorted list into this one.
 
-        This method combines two LinkedLists of the same type into one, using an optional
-        comparison function to determine the order. If no comparison function is provided,
-        a default less-than (`<`) operation is used. The resulting list will overwrite the
-        current LinkedList, including its head, tail, and size. If either list is empty,
-        the non-empty list will become the result or the list remains unchanged. The method
-        also ensures the previous pointers (`prev`) are correctly updated for doubly linked
-        lists.
-
-        Parameters:
-            other (LinkedList): The LinkedList to merge into the current one. Must be of the
-                same type as the current list.
-            Compare (Callable[[Any, Any], bool] | None): Optional. A function that takes two
-                elements and returns `True` if the first element should precede the second
-                in the merged list. If not provided, the default operation `a < b` is used.
-
-        Raises:
-            TypeError: If the current LinkedList and the `other` LinkedList are not of the
-                same type.
-
+        Both lists must have the same list type. The optional comparison
+        function controls ordering and defaults to less-than comparison.
         """
         if self._list_type != other._list_type:
             raise TypeError("Cannot merge lists of different types")
 
         if compare is None:
-            compare = lambda a, b: a < b
+            compare = lt
 
         if self._is_circular:
             left_values = self.to_list()
@@ -331,7 +336,10 @@ class Mutation:
             merged = []
             left_index = right_index = 0
 
-            while left_index < len(left_values) and right_index < len(right_values):
+            while (
+                left_index < len(left_values)
+                and right_index < len(right_values)
+            ):
                 if compare(left_values[left_index], right_values[right_index]):
                     merged.append(left_values[left_index])
                     left_index += 1
@@ -348,7 +356,9 @@ class Mutation:
             return
 
         if not self.head:
-            self.head, self.tail, self._size = other.head, other.tail, other._size
+            self.head = other.head
+            self.tail = other.tail
+            self._size = other._size
             return
         if not other.head:
             return
@@ -384,41 +394,17 @@ class Mutation:
                 prev, current = current, current.next
 
     def extend(self, iterable: Iterable[Any]) -> None:
-        """
-        Extends the current collection with elements from another iterable.
-
-        This method appends all elements from the given iterable to the current
-        collection. If the provided iterable is the same instance as the
-        current collection, it first converts the iterable into a static list
-        to prevent self-iteration issues during the extension process.
-
-        Args:
-            iterable: An iterable object containing elements to
-                be appended to the current collection.
-        """
-        # Convert self to a static list if the iterable is the same instance to avoid self-iteration issues.
+        """Append all values from ``iterable`` to this list."""
         if iterable is self:
             iterable = list(iterable)
         for item in iterable:
             self.append(item)
 
     def remove_duplicates(self) -> None:
-        """
-        Removes duplicate elements from a doubly linked list while preserving the order of
-        first occurrences. Ensures the linked list structure remains consistent and handles
-        both circular and non-circular linked lists.
-
-        If the linked list is circular, it temporarily breaks the circularity to perform the
-        removal operation and restores the circularity afterward.
-
-        Raises:
-            No exceptions are raised by this method.
-        """
+        """Remove duplicate values while preserving first occurrences."""
         seen = set()
 
-        # If the list is circular, break the circularity temporarily
         if self._is_circular and self.head:
-            # Break the circle by setting tail.next to None
             self.tail.next = None
             if "doubly" in self._list_type:
                 self.head.prev = None

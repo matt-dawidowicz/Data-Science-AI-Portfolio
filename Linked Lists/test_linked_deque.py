@@ -1,10 +1,19 @@
+"""Tests for the linked deque implementation."""
+
 import unittest
 
 from linked_list import LinkedDeque
 
 
 class TestLinkedDeque(unittest.TestCase):
-    def assert_deque_integrity(self, linked_deque: LinkedDeque, expected: list) -> None:
+    """Unit tests for LinkedDeque behavior and internal links."""
+
+    def assert_deque_integrity(
+        self,
+        linked_deque: LinkedDeque,
+        expected: list,
+    ) -> None:
+        """Assert that values and forward/backward links are consistent."""
         self.assertEqual(len(linked_deque), len(expected))
         self.assertEqual(linked_deque.to_list(), expected)
 
@@ -364,7 +373,9 @@ class TestLinkedDeque(unittest.TestCase):
         self.assertIs(linked_deque.to_list()[1], marker)
         self.assert_deque_integrity(linked_deque, [None, marker, "value"])
 
-    def test_repeated_alternating_operations_keep_links_consistent(self) -> None:
+    def test_repeated_alternating_operations_keep_links_consistent(
+        self,
+    ) -> None:
         linked_deque = LinkedDeque()
 
         for value in range(10):
@@ -373,7 +384,10 @@ class TestLinkedDeque(unittest.TestCase):
             else:
                 linked_deque.append_right(value)
 
-        self.assert_deque_integrity(linked_deque, [8, 6, 4, 2, 0, 1, 3, 5, 7, 9])
+        self.assert_deque_integrity(
+            linked_deque,
+            [8, 6, 4, 2, 0, 1, 3, 5, 7, 9],
+        )
 
         for _ in range(3):
             linked_deque.pop_left()

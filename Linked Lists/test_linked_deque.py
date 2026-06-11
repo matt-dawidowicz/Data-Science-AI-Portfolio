@@ -103,11 +103,12 @@ class TestLinkedDeque(unittest.TestCase):
         linked_deque.append(2)
         linked_deque.appendleft(1)
         linked_deque.append(3)
+        linked_deque.extendleft([-1, 0])
 
-        self.assert_deque_integrity(linked_deque, [1, 2, 3])
-        self.assertEqual(linked_deque.popleft(), 1)
+        self.assert_deque_integrity(linked_deque, [0, -1, 1, 2, 3])
+        self.assertEqual(linked_deque.popleft(), 0)
         self.assertEqual(linked_deque.pop(), 3)
-        self.assert_deque_integrity(linked_deque, [2])
+        self.assert_deque_integrity(linked_deque, [-1, 1, 2])
 
     def test_mixed_append_and_pop_operations(self) -> None:
         linked_deque = LinkedDeque()
@@ -180,6 +181,23 @@ class TestLinkedDeque(unittest.TestCase):
         self.assertNotEqual(LinkedDeque([1, 2, 3]), LinkedDeque([1, 3, 2]))
         self.assertNotEqual(LinkedDeque([1, 2, 3]), [1, 2, 3])
 
+    def test_subclass_equality_is_symmetric(self) -> None:
+        class ChildDeque(LinkedDeque):
+            pass
+
+        base = LinkedDeque([1, 2, 3])
+        child = ChildDeque([1, 2, 3])
+
+        self.assertEqual(base, child)
+        self.assertEqual(child, base)
+
+    def test_repr_and_str_handle_self_reference(self) -> None:
+        linked_deque = LinkedDeque()
+        linked_deque.append(linked_deque)
+
+        self.assertEqual(repr(linked_deque), "LinkedDeque([...])")
+        self.assertEqual(str(linked_deque), "...")
+
     def test_copy_independence(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3])
         copy = linked_deque.copy()
@@ -210,6 +228,13 @@ class TestLinkedDeque(unittest.TestCase):
 
         self.assert_deque_integrity(linked_deque, [1, 2, 3, 1, 2, 3])
 
+    def test_extend_with_reversed_self_iterator_is_bounded(self) -> None:
+        linked_deque = LinkedDeque([1, 2, 3])
+
+        linked_deque.extend(reversed(linked_deque))
+
+        self.assert_deque_integrity(linked_deque, [1, 2, 3, 3, 2, 1])
+
     def test_extend_left_prepends_each_item(self) -> None:
         linked_deque = LinkedDeque([4])
 
@@ -230,6 +255,13 @@ class TestLinkedDeque(unittest.TestCase):
         linked_deque.extend_left(reversed(linked_deque))
 
         self.assert_deque_integrity(linked_deque, [1, 2, 3, 1, 2, 3])
+
+    def test_extend_left_with_self_iterator_is_bounded(self) -> None:
+        linked_deque = LinkedDeque([1, 2, 3])
+
+        linked_deque.extend_left(iter(linked_deque))
+
+        self.assert_deque_integrity(linked_deque, [3, 2, 1, 1, 2, 3])
 
     def test_clear_resets_and_detaches_nodes(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3])

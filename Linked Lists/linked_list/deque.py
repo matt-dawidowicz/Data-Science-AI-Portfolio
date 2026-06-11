@@ -40,15 +40,26 @@ class LinkedDeque:
         return any(item == data for item in self)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, LinkedDeque):
             return False
         return self.to_list() == other.to_list()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.to_list()!r})"
+        items = ", ".join(self._repr_item(item) for item in self)
+        return f"{self.__class__.__name__}([{items}])"
 
     def __str__(self) -> str:
-        return " <-> ".join(str(item) for item in self)
+        return " <-> ".join(self._str_item(item) for item in self)
+
+    def _repr_item(self, item: Any) -> str:
+        if item is self:
+            return "..."
+        return repr(item)
+
+    def _str_item(self, item: Any) -> str:
+        if item is self:
+            return "..."
+        return str(item)
 
     @classmethod
     def from_iterable(cls, iterable: Iterable[Any]) -> "LinkedDeque":
@@ -191,5 +202,6 @@ class LinkedDeque:
 
     append = append_right
     appendleft = append_left
+    extendleft = extend_left
     popleft = pop_left
     pop = pop_right

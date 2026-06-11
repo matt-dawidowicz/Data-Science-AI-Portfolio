@@ -198,6 +198,15 @@ class TestLinkedDeque(unittest.TestCase):
         self.assertEqual(repr(linked_deque), "LinkedDeque([...])")
         self.assertEqual(str(linked_deque), "...")
 
+    def test_repr_and_str_handle_mutual_references(self) -> None:
+        first = LinkedDeque()
+        second = LinkedDeque()
+        first.append(second)
+        second.append(first)
+
+        self.assertEqual(repr(first), "LinkedDeque([LinkedDeque([...])])")
+        self.assertEqual(str(first), "...")
+
     def test_copy_independence(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3])
         copy = linked_deque.copy()
@@ -207,12 +216,31 @@ class TestLinkedDeque(unittest.TestCase):
         self.assert_deque_integrity(linked_deque, [1, 2, 3])
         self.assert_deque_integrity(copy, [1, 2, 3, 4])
 
+    def test_from_iterable_and_copy_preserve_subclass_type(self) -> None:
+        class ChildDeque(LinkedDeque):
+            pass
+
+        child = ChildDeque.from_iterable([1, 2])
+        copy = child.copy()
+
+        self.assertIsInstance(child, ChildDeque)
+        self.assertIsInstance(copy, ChildDeque)
+        self.assert_deque_integrity(copy, [1, 2])
+
     def test_extend_appends_to_right(self) -> None:
         linked_deque = LinkedDeque([1])
 
         linked_deque.extend([2, 3, 4])
 
         self.assert_deque_integrity(linked_deque, [1, 2, 3, 4])
+
+    def test_extend_with_empty_iterables_are_noops(self) -> None:
+        linked_deque = LinkedDeque([1, 2, 3])
+
+        linked_deque.extend([])
+        linked_deque.extend_left([])
+
+        self.assert_deque_integrity(linked_deque, [1, 2, 3])
 
     def test_extend_with_self_uses_snapshot(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3])
@@ -276,6 +304,13 @@ class TestLinkedDeque(unittest.TestCase):
         self.assertIsNone(old_tail.next)
         self.assertIsNone(old_tail.prev)
 
+    def test_clear_empty_deque_is_noop(self) -> None:
+        linked_deque = LinkedDeque()
+
+        linked_deque.clear()
+
+        self.assert_deque_integrity(linked_deque, [])
+
     def test_rotate_right(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3, 4])
 
@@ -297,6 +332,18 @@ class TestLinkedDeque(unittest.TestCase):
         self.assert_deque_integrity(linked_deque, [3, 4, 1, 2])
 
         linked_deque.rotate(-6)
+        self.assert_deque_integrity(linked_deque, [1, 2, 3, 4])
+
+    def test_rotate_zero_and_full_step_counts_are_noops(self) -> None:
+        linked_deque = LinkedDeque([1, 2, 3, 4])
+
+        linked_deque.rotate(0)
+        self.assert_deque_integrity(linked_deque, [1, 2, 3, 4])
+
+        linked_deque.rotate(4)
+        self.assert_deque_integrity(linked_deque, [1, 2, 3, 4])
+
+        linked_deque.rotate(-4)
         self.assert_deque_integrity(linked_deque, [1, 2, 3, 4])
 
     def test_rotate_empty_and_singleton_are_noops(self) -> None:

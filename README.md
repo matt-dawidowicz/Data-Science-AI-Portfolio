@@ -34,6 +34,7 @@ Linked Lists/
 - Linked deque backed by a doubly linked list
 - Append, prepend, insert, remove, pop, and pop-front operations
 - Deque operations: `append_left`, `append_right`, `pop_left`, `pop_right`, `peek_left`, `peek_right`, `extend`, `extend_left`, and `rotate`
+- Python-style deque aliases: `append`, `appendleft`, `pop`, `popleft`, and `extendleft`
 - Indexing, slicing, membership checks, equality, and iteration
 - Reverse, rotate, sort, merge, and sorted insertion
 - Functional helpers: `map`, `filter`, and `reduce`

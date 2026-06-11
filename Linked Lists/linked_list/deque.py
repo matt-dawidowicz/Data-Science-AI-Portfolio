@@ -1,6 +1,10 @@
-from typing import Any, Iterable, Iterator, Optional
+from reprlib import recursive_repr
+from typing import Any, Iterable, Iterator, Optional, TypeVar
 
 from .nodes import DoublyLinkedNode
+
+
+TLinkedDeque = TypeVar("TLinkedDeque", bound="LinkedDeque")
 
 
 class LinkedDeque:
@@ -44,10 +48,12 @@ class LinkedDeque:
             return False
         return self.to_list() == other.to_list()
 
+    @recursive_repr()
     def __repr__(self) -> str:
         items = ", ".join(self._repr_item(item) for item in self)
         return f"{self.__class__.__name__}([{items}])"
 
+    @recursive_repr()
     def __str__(self) -> str:
         return " <-> ".join(self._str_item(item) for item in self)
 
@@ -62,13 +68,13 @@ class LinkedDeque:
         return str(item)
 
     @classmethod
-    def from_iterable(cls, iterable: Iterable[Any]) -> "LinkedDeque":
+    def from_iterable(cls: type[TLinkedDeque], iterable: Iterable[Any]) -> TLinkedDeque:
         return cls(iterable)
 
-    def to_list(self) -> list:
+    def to_list(self) -> list[Any]:
         return list(self)
 
-    def copy(self) -> "LinkedDeque":
+    def copy(self: TLinkedDeque) -> TLinkedDeque:
         return self.__class__(self)
 
     def append_left(self, data: Any) -> None:
@@ -100,6 +106,7 @@ class LinkedDeque:
             self.append_right(item)
 
     def extend_left(self, iterable: Iterable[Any]) -> None:
+        """Prepend each item, matching collections.deque.extendleft order."""
         if iterable is self:
             iterable = list(iterable)
         for item in iterable:
@@ -164,6 +171,7 @@ class LinkedDeque:
         self._size = 0
 
     def rotate(self, steps: int = 1) -> None:
+        """Rotate right for positive steps and left for negative steps."""
         if self._size <= 1:
             return
 

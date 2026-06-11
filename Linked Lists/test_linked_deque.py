@@ -203,6 +203,13 @@ class TestLinkedDeque(unittest.TestCase):
 
         self.assert_deque_integrity(linked_deque, [1, 2, 3, 1, 2, 3])
 
+    def test_extend_with_self_iterator_is_bounded(self) -> None:
+        linked_deque = LinkedDeque([1, 2, 3])
+
+        linked_deque.extend(iter(linked_deque))
+
+        self.assert_deque_integrity(linked_deque, [1, 2, 3, 1, 2, 3])
+
     def test_extend_left_prepends_each_item(self) -> None:
         linked_deque = LinkedDeque([4])
 
@@ -216,6 +223,13 @@ class TestLinkedDeque(unittest.TestCase):
         linked_deque.extend_left(linked_deque)
 
         self.assert_deque_integrity(linked_deque, [3, 2, 1, 1, 2, 3])
+
+    def test_extend_left_with_reversed_self_iterator_is_bounded(self) -> None:
+        linked_deque = LinkedDeque([1, 2, 3])
+
+        linked_deque.extend_left(reversed(linked_deque))
+
+        self.assert_deque_integrity(linked_deque, [1, 2, 3, 1, 2, 3])
 
     def test_clear_resets_and_detaches_nodes(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3])

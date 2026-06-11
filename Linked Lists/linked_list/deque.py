@@ -22,15 +22,19 @@ class LinkedDeque:
 
     def __iter__(self) -> Iterator[Any]:
         current = self.head
-        while current is not None:
+        remaining = self._size
+        while current is not None and remaining > 0:
             yield current.data
             current = current.next
+            remaining -= 1
 
     def __reversed__(self) -> Iterator[Any]:
         current = self.tail
-        while current is not None:
+        remaining = self._size
+        while current is not None and remaining > 0:
             yield current.data
             current = current.prev
+            remaining -= 1
 
     def __contains__(self, data: Any) -> bool:
         return any(item == data for item in self)

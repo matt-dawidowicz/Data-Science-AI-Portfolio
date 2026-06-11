@@ -58,12 +58,4 @@ class Access:
     def nth_from_end(self, n: int) -> Any:
         if n <= 0 or n > self._size:
             raise IndexError("n is out of range")
-        lead = self.head
-        follow = self.head
-        for _ in range(n):
-            assert lead is not None
-            lead = lead.next
-        while lead:
-            lead = lead.next
-            follow = follow.next  # type: ignore
-        return follow.data  # type: ignore
+        return self[self._size - n]

@@ -383,6 +383,12 @@ class TestCircularLinkedList(unittest.TestCase):
         if "doubly" in linked_list._list_type:
             self.assertIs(linked_list.head.prev, linked_list.tail)
 
+    def assert_singly_nodes_have_no_prev(self, linked_list: LinkedList) -> None:
+        current = linked_list.head
+        for _ in range(len(linked_list)):
+            self.assertFalse(hasattr(current, "prev"))
+            current = current.next
+
     def test_singly_circular_integrity(self) -> None:
         """
         Tests the integrity of the singly circular linked list by ensuring its
@@ -502,6 +508,71 @@ class TestCircularLinkedList(unittest.TestCase):
         self.assertEqual(self.doubly_circular.to_list(), [1, 2, 3, 4])
         self.assertEqual(self.doubly_circular.head.data, 1)
         self.assert_circular_links(self.doubly_circular)
+
+    def test_circular_nth_from_end_is_bounded(self) -> None:
+        self.assertEqual(self.singly_circular.nth_from_end(1), 4)
+        self.assertEqual(self.singly_circular.nth_from_end(3), 2)
+        self.assertEqual(self.doubly_circular.nth_from_end(1), 4)
+        self.assertEqual(self.doubly_circular.nth_from_end(5), 0)
+
+    def test_circular_insert_sorted_updates_links(self) -> None:
+        singly_sorted = LinkedList("singly_circular")
+        doubly_sorted = LinkedList("doubly_circular")
+        for value in [1, 3, 5]:
+            singly_sorted.append(value)
+            doubly_sorted.append(value)
+
+        for linked_list in (singly_sorted, doubly_sorted):
+            linked_list.insert_sorted(0)
+            linked_list.insert_sorted(4)
+            linked_list.insert_sorted(7)
+            self.assertEqual(linked_list.to_list(), [0, 1, 3, 4, 5, 7])
+            self.assertEqual(linked_list.head.data, 0)
+            self.assertEqual(linked_list.tail.data, 7)
+            self.assert_circular_links(linked_list)
+
+    def test_circular_reverse_preserves_orientation_and_links(self) -> None:
+        self.singly_circular.reverse()
+        self.assertEqual(self.singly_circular.to_list(), [4, 3, 2, 1, 0])
+        self.assertEqual(self.singly_circular.head.data, 4)
+        self.assertEqual(self.singly_circular.tail.data, 0)
+        self.assert_circular_links(self.singly_circular)
+
+        self.doubly_circular.reverse()
+        self.assertEqual(self.doubly_circular.to_list(), [4, 3, 2, 1, 0])
+        self.assertEqual(self.doubly_circular.head.data, 4)
+        self.assertEqual(self.doubly_circular.tail.data, 0)
+        self.assert_circular_links(self.doubly_circular)
+
+    def test_circular_merge_preserves_sorted_order_and_links(self) -> None:
+        for list_type in ("singly_circular", "doubly_circular"):
+            left = LinkedList(list_type)
+            right = LinkedList(list_type)
+            for value in [1, 3, 5]:
+                left.append(value)
+            for value in [2, 4, 6]:
+                right.append(value)
+
+            left.merge(right)
+            self.assertEqual(left.to_list(), [1, 2, 3, 4, 5, 6])
+            self.assertEqual(left.tail.data, 6)
+            self.assert_circular_links(left)
+
+    def test_circular_remove_duplicates_preserves_links(self) -> None:
+        singly = LinkedList("singly_circular")
+        doubly = LinkedList("doubly_circular")
+        for value in [1, 2, 2, 3, 3]:
+            singly.append(value)
+            doubly.append(value)
+
+        singly.remove_duplicates()
+        self.assertEqual(singly.to_list(), [1, 2, 3])
+        self.assert_circular_links(singly)
+        self.assert_singly_nodes_have_no_prev(singly)
+
+        doubly.remove_duplicates()
+        self.assertEqual(doubly.to_list(), [1, 2, 3])
+        self.assert_circular_links(doubly)
 
 
 class TestLinkedListAdditional(unittest.TestCase):

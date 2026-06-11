@@ -179,31 +179,44 @@ class Mutation:
 
         if self.head is None:
             self.head = self.tail = new_node
+            if self._is_circular:
+                new_node.next = new_node
+                if "doubly" in self._list_type:
+                    new_node.prev = new_node
             self._size = 1
             return
 
         if compare(data, self.head.data):
             new_node.next = self.head
-            if self._list_type == "doubly":
+            if "doubly" in self._list_type:
                 self.head.prev = new_node
             self.head = new_node
+            if self._is_circular:
+                self.tail.next = self.head  # type: ignore
+                if "doubly" in self._list_type:
+                    self.head.prev = self.tail  # type: ignore
             self._size += 1
             return
 
         current = self.head
-        while current.next and compare(current.next.data, data):
+        while current != self.tail and current.next and compare(current.next.data, data):
             current = current.next
 
         new_node.next = current.next
-        if self._list_type == "doubly" and new_node.next:
+        if "doubly" in self._list_type and new_node.next:
             new_node.next.prev = new_node
 
         current.next = new_node
-        if self._list_type == "doubly":
+        if "doubly" in self._list_type:
             new_node.prev = current
 
         if current == self.tail:
             self.tail = new_node
+
+        if self._is_circular:
+            self.tail.next = self.head  # type: ignore
+            if "doubly" in self._list_type:
+                self.head.prev = self.tail  # type: ignore
 
         self._size += 1
 
@@ -255,13 +268,28 @@ class Mutation:
 
     def reverse(self) -> None:
         """Reverse the linked list in place."""
+        if self._size <= 1:
+            return
+
+        if self._is_circular:
+            old_head, old_tail = self.head, self.tail
+            prev, current = self.tail, self.head
+            for _ in range(self._size):
+                next_node = current.next  # type: ignore
+                current.next = prev  # type: ignore
+                if "doubly" in self._list_type:
+                    current.prev = next_node  # type: ignore
+                prev, current = current, next_node
+            self.head, self.tail = old_tail, old_head
+            return
+
         prev, current = None, self.head
         self.tail = self.head  # Head will become the new tail
 
         while current:
             next_node = current.next
             current.next = prev
-            if self._list_type == "doubly":
+            if "doubly" in self._list_type:
                 current.prev = next_node  # Fix backward links for doubly linked list
             prev, current = current, next_node
 
@@ -296,6 +324,28 @@ class Mutation:
 
         if compare is None:
             compare = lambda a, b: a < b
+
+        if self._is_circular:
+            left_values = self.to_list()
+            right_values = other.to_list()
+            merged = []
+            left_index = right_index = 0
+
+            while left_index < len(left_values) and right_index < len(right_values):
+                if compare(left_values[left_index], right_values[right_index]):
+                    merged.append(left_values[left_index])
+                    left_index += 1
+                else:
+                    merged.append(right_values[right_index])
+                    right_index += 1
+
+            merged.extend(left_values[left_index:])
+            merged.extend(right_values[right_index:])
+
+            self.clear()
+            for item in merged:
+                self.append(item)
+            return
 
         if not self.head:
             self.head, self.tail, self._size = other.head, other.tail, other._size
@@ -370,6 +420,8 @@ class Mutation:
         if self._is_circular and self.head:
             # Break the circle by setting tail.next to None
             self.tail.next = None
+            if "doubly" in self._list_type:
+                self.head.prev = None
 
         current = self.head
         previous = None
@@ -380,11 +432,11 @@ class Mutation:
                 if previous is None:
                     # Removing duplicate at the head
                     self.head = current.next
-                    if current.next:
+                    if "doubly" in self._list_type and current.next:
                         current.next.prev = None
                 else:
                     previous.next = current.next
-                    if current.next:
+                    if "doubly" in self._list_type and current.next:
                         current.next.prev = previous
                 if current == self.tail:
                     self.tail = previous
@@ -397,5 +449,5 @@ class Mutation:
         # If the list was circular, restore circularity
         if self._is_circular and self.tail:
             self.tail.next = self.head
-            if self.head:
+            if "doubly" in self._list_type and self.head:
                 self.head.prev = self.tail

@@ -70,22 +70,39 @@ class Mutation:
     def remove(self, data: Any) -> bool:
         current = self.head
         previous = None
-        while current:
+        steps = 0
+        while current and steps < self._size:
+            next_node = current.next
             if current.data == data:
-                if previous is None:
-                    self.head = current.next
-                    if self._list_type == "doubly" and self.head:
-                        self.head.prev = None  # type: ignore
+                if self._size == 1:
+                    self.head = self.tail = None
                 else:
-                    previous.next = current.next
-                    if self._list_type == "doubly" and current.next:
-                        current.next.prev = previous  # type: ignore
-                if current == self.tail:
-                    self.tail = previous
+                    if current == self.head:
+                        self.head = next_node
+                    elif previous:
+                        previous.next = next_node
+
+                    if current == self.tail:
+                        self.tail = previous
+
+                    if "doubly" in self._list_type and next_node:
+                        next_node.prev = previous  # type: ignore
+
+                    if self._is_circular and self.head and self.tail:
+                        self.tail.next = self.head  # type: ignore
+                        if "doubly" in self._list_type:
+                            self.head.prev = self.tail  # type: ignore
+                    elif "doubly" in self._list_type and self.head:
+                        self.head.prev = None  # type: ignore
+
+                current.next = None
+                if hasattr(current, "prev"):
+                    current.prev = None
                 self._size -= 1
                 return True
             previous = current
-            current = current.next  # type: ignore
+            current = next_node  # type: ignore
+            steps += 1
         return False
 
     def pop(self) -> Any:
@@ -97,6 +114,28 @@ class Mutation:
             self.tail = None
             self._size = 0
             return data
+        if self._is_circular:
+            old_tail = self.tail
+            assert old_tail is not None
+            data = old_tail.data
+
+            if "doubly" in self._list_type:
+                self.tail = old_tail.prev
+            else:
+                self.tail = self.head
+                for _ in range(self._size - 2):
+                    self.tail = self.tail.next  # type: ignore
+
+            self.tail.next = self.head  # type: ignore
+            if "doubly" in self._list_type:
+                self.head.prev = self.tail  # type: ignore
+
+            old_tail.next = None
+            if hasattr(old_tail, "prev"):
+                old_tail.prev = None
+            self._size -= 1
+            return data
+
         current = self.head
         previous = None
         while current.next:
@@ -112,13 +151,25 @@ class Mutation:
     def pop_front(self) -> Any:
         if not self.head:
             raise IndexError("Pop from empty list")
-        data = self.head.data
-        self.head = self.head.next
-        if self.head and self._list_type == "doubly":
-            self.head.prev = None  # type: ignore
-        self._size -= 1
-        if self._size == 0:
+        old_head = self.head
+        data = old_head.data
+        if self._size == 1:
+            self.head = None
             self.tail = None
+            self._size = 0
+            return data
+
+        self.head = old_head.next
+        if self._is_circular:
+            self.tail.next = self.head  # type: ignore
+            if "doubly" in self._list_type:
+                self.head.prev = self.tail  # type: ignore
+        elif self.head and "doubly" in self._list_type:
+            self.head.prev = None  # type: ignore
+        old_head.next = None
+        if hasattr(old_head, "prev"):
+            old_head.prev = None
+        self._size -= 1
         return data
     def insert_sorted(self, data: Any, compare: Optional[Callable[[Any, Any], bool]] = None) -> None:
         if compare is None:

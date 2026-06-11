@@ -376,6 +376,13 @@ class TestCircularLinkedList(unittest.TestCase):
             self.singly_circular.append(i)
             self.doubly_circular.append(i)
 
+    def assert_circular_links(self, linked_list: LinkedList) -> None:
+        self.assertIsNotNone(linked_list.head)
+        self.assertIsNotNone(linked_list.tail)
+        self.assertIs(linked_list.tail.next, linked_list.head)
+        if "doubly" in linked_list._list_type:
+            self.assertIs(linked_list.head.prev, linked_list.tail)
+
     def test_singly_circular_integrity(self) -> None:
         """
         Tests the integrity of the singly circular linked list by ensuring its
@@ -463,6 +470,38 @@ class TestCircularLinkedList(unittest.TestCase):
         self.doubly_circular.rotate(2)
         rotated = self.doubly_circular.to_list()
         self.assertCountEqual(rotated, expected)
+
+    def test_circular_remove_updates_head_and_tail_links(self) -> None:
+        self.assertTrue(self.singly_circular.remove(0))
+        self.assertEqual(self.singly_circular.to_list(), [1, 2, 3, 4])
+        self.assert_circular_links(self.singly_circular)
+
+        self.assertTrue(self.doubly_circular.remove(4))
+        self.assertEqual(self.doubly_circular.to_list(), [0, 1, 2, 3])
+        self.assertEqual(self.doubly_circular.tail.data, 3)
+        self.assert_circular_links(self.doubly_circular)
+
+    def test_circular_pop_updates_tail_links(self) -> None:
+        self.assertEqual(self.singly_circular.pop(), 4)
+        self.assertEqual(self.singly_circular.to_list(), [0, 1, 2, 3])
+        self.assertEqual(self.singly_circular.tail.data, 3)
+        self.assert_circular_links(self.singly_circular)
+
+        self.assertEqual(self.doubly_circular.pop(), 4)
+        self.assertEqual(self.doubly_circular.to_list(), [0, 1, 2, 3])
+        self.assertEqual(self.doubly_circular.tail.data, 3)
+        self.assert_circular_links(self.doubly_circular)
+
+    def test_circular_pop_front_updates_head_links(self) -> None:
+        self.assertEqual(self.singly_circular.pop_front(), 0)
+        self.assertEqual(self.singly_circular.to_list(), [1, 2, 3, 4])
+        self.assertEqual(self.singly_circular.head.data, 1)
+        self.assert_circular_links(self.singly_circular)
+
+        self.assertEqual(self.doubly_circular.pop_front(), 0)
+        self.assertEqual(self.doubly_circular.to_list(), [1, 2, 3, 4])
+        self.assertEqual(self.doubly_circular.head.data, 1)
+        self.assert_circular_links(self.doubly_circular)
 
 
 class TestLinkedListAdditional(unittest.TestCase):

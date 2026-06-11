@@ -1,4 +1,8 @@
-"""Doubly linked node variants."""
+"""Doubly linked node variants.
+
+Doubly linked nodes store both directions of travel. That extra ``prev`` link
+is what makes reverse iteration and right-end deque operations direct.
+"""
 
 from typing import Any, Optional
 

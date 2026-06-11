@@ -1,4 +1,9 @@
-"""Singly linked node variants."""
+"""Singly linked node variants.
+
+Singly linked nodes can move forward through ``next`` but cannot move backward.
+That is why tail operations on singly linked lists sometimes require traversal
+from the head.
+"""
 
 from typing import Any, Optional
 

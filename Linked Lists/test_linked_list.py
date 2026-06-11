@@ -1,4 +1,8 @@
-"""Tests for linked-list operations and structural invariants."""
+"""Tests for linked-list operations and structural invariants.
+
+The linked-list tests cover normal sequence behavior, circular-list edge cases,
+and the pointer invariants that are easiest to break during mutation.
+"""
 
 import unittest
 
@@ -6,7 +10,12 @@ from linked_list import LinkedList
 
 
 class TestLinkedListUnit(unittest.TestCase):
-    """Unit tests for core linked-list behavior."""
+    """Unit tests for core linked-list behavior.
+
+    These tests focus on the operations a user would expect from the public
+    ``LinkedList`` API: insertion, removal, indexing, sorting, merging, and
+    functional helpers.
+    """
 
     def setUp(self) -> None:
         """Build populated singly and doubly linked lists for each test."""
@@ -160,7 +169,11 @@ class TestLinkedListUnit(unittest.TestCase):
 
 
 class TestLinkedListIntegration(unittest.TestCase):
-    """Integration tests for multiple linked-list operations."""
+    """Integration tests for multiple linked-list operations.
+
+    This test combines operations to make sure the list still behaves correctly
+    after several mutations happen in sequence.
+    """
 
     def test_integration(self) -> None:
         linked_list = LinkedList("doubly")
@@ -193,7 +206,12 @@ class TestLinkedListIntegration(unittest.TestCase):
 
 
 class TestCircularLinkedList(unittest.TestCase):
-    """Unit tests for circular linked-list behavior."""
+    """Unit tests for circular linked-list behavior.
+
+    Circular lists need extra structural checks because traversal does not end
+    at ``None``. These tests verify that head and tail remain connected after
+    mutations.
+    """
 
     def setUp(self) -> None:
         """Build populated singly and doubly circular lists."""
@@ -363,7 +381,12 @@ class TestCircularLinkedList(unittest.TestCase):
 
 
 class TestLinkedListAdditional(unittest.TestCase):
-    """Additional tests for edge cases and utility operations."""
+    """Additional tests for edge cases and utility operations.
+
+    These tests cover defensive behavior such as empty-list errors,
+    out-of-bounds indexing, clear/reset behavior, copy independence, and sort
+    stability.
+    """
 
     def test_empty_list_operations(self) -> None:
         empty = LinkedList("singly")

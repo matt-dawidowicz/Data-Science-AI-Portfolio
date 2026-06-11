@@ -1,14 +1,34 @@
-"""Mutation operations for linked lists."""
+"""Mutation operations for linked lists.
+
+This module contains the methods that change the shape of a linked list. These
+operations are the highest-risk part of the project because each mutation has
+to update the visible data order and the hidden node links at the same time.
+
+The same methods support linear lists, circular lists, singly linked nodes, and
+doubly linked nodes. The conditional logic keeps those variants consistent
+without requiring four separate list classes.
+"""
 
 from operator import lt
 from typing import Any, Callable, Iterable, Optional
 
 
 class Mutation:
-    """Provide mutating operations for linked lists."""
+    """Provide mutating operations for linked lists.
+
+    The mixin assumes that the concrete class provides ``head``, ``tail``,
+    ``_size``, ``_list_type``, ``_is_circular``, and ``_create_node``. Every
+    method in this class is responsible for leaving those values in a valid
+    state before it returns.
+    """
 
     def append(self, data: Any) -> None:
-        """Append ``data`` to the tail of the list."""
+        """Append ``data`` to the tail of the list.
+
+        Appending to an empty list creates the first node, so both ``head`` and
+        ``tail`` must point to it. Appending to a non-empty list connects the
+        current tail to the new node, then moves ``tail`` forward.
+        """
         new_node = self._create_node(data)
         if not self.head:
             self.head = self.tail = new_node
@@ -28,7 +48,11 @@ class Mutation:
         self._size += 1
 
     def prepend(self, data: Any) -> None:
-        """Insert ``data`` at the head of the list."""
+        """Insert ``data`` at the head of the list.
+
+        Prepending mirrors ``append`` at the opposite end. For doubly linked
+        lists, the old head needs a backward link to the new head.
+        """
         new_node = self._create_node(data)
         if not self.head:
             self.head = self.tail = new_node
@@ -48,7 +72,13 @@ class Mutation:
         self._size += 1
 
     def insert(self, index: int, data: Any) -> None:
-        """Insert ``data`` at ``index``."""
+        """Insert ``data`` at ``index``.
+
+        Boundary inserts delegate to ``prepend`` and ``append`` because those
+        methods already know how to update head and tail correctly. Middle
+        inserts locate the node before the target position and splice the new
+        node between two existing nodes.
+        """
         if index < 0 or index > self._size:
             raise IndexError("Index out of range")
         if index == 0:
@@ -75,7 +105,12 @@ class Mutation:
         self._size += 1
 
     def remove(self, data: Any) -> bool:
-        """Remove the first matching value from the list."""
+        """Remove the first matching value from the list.
+
+        The traversal is bounded by ``_size`` so circular lists cannot loop
+        forever. After removal, circular lists reconnect ``tail`` to ``head``,
+        and doubly linked lists repair any affected ``prev`` pointers.
+        """
         current = self.head
         previous = None
         steps = 0
@@ -90,6 +125,8 @@ class Mutation:
                     elif previous:
                         previous.next = next_node
 
+                    # If the removed node was the tail, the previous node
+                    # becomes the new tail.
                     if current == self.tail:
                         self.tail = previous
 
@@ -103,6 +140,7 @@ class Mutation:
                     elif "doubly" in self._list_type and self.head:
                         self.head.prev = None  # type: ignore
 
+                # Detaching the removed node avoids leaving stale links behind.
                 current.next = None
                 if hasattr(current, "prev"):
                     current.prev = None
@@ -114,7 +152,12 @@ class Mutation:
         return False
 
     def pop(self) -> Any:
-        """Remove and return the tail value."""
+        """Remove and return the tail value.
+
+        Singly linked lists have no direct backward link, so popping their tail
+        requires walking to the node before the tail. Doubly linked lists can
+        move directly through ``prev``.
+        """
         if not self.head:
             raise IndexError("Pop from empty list")
         if self._size == 1:
@@ -128,6 +171,8 @@ class Mutation:
             assert old_tail is not None
             data = old_tail.data
 
+            # Doubly circular lists can step backward from the old tail.
+            # Singly circular lists must walk forward to find the new tail.
             if "doubly" in self._list_type:
                 self.tail = old_tail.prev
             else:
@@ -158,7 +203,12 @@ class Mutation:
         return data
 
     def pop_front(self) -> Any:
-        """Remove and return the head value."""
+        """Remove and return the head value.
+
+        Removing the head is simpler than removing the tail because every list
+        type can move from the old head to ``old_head.next``. The extra work is
+        repairing circular links and doubly linked ``prev`` pointers.
+        """
         if not self.head:
             raise IndexError("Pop from empty list")
         old_head = self.head
@@ -187,7 +237,12 @@ class Mutation:
         data: Any,
         compare: Optional[Callable[[Any, Any], bool]] = None,
     ) -> None:
-        """Insert ``data`` into an already sorted list."""
+        """Insert ``data`` into an already sorted list.
+
+        The comparison function answers whether the first value should come
+        before the second. By default, the method uses ``operator.lt``, which
+        is the normal less-than ordering.
+        """
         if compare is None:
             compare = lt
 
@@ -260,7 +315,8 @@ class Mutation:
                 self.head = self.head.next  # type: ignore
                 self.tail = self.tail.next  # type: ignore
         else:
-            # For linear lists, locate the new tail.
+            # Linear rotation breaks one link and reconnects the old tail to
+            # the old head, turning the final segment into the new front.
             new_tail = self.head
             for _ in range(self._size - k - 1):
                 assert new_tail is not None
@@ -286,7 +342,12 @@ class Mutation:
                     prev, current = current, current.next
 
     def reverse(self) -> None:
-        """Reverse the linked list in place."""
+        """Reverse the linked list in place.
+
+        Reversal flips the direction of traversal. Circular lists stay
+        circular by walking exactly ``_size`` nodes and then swapping the old
+        head and tail. Linear lists stop naturally at ``None``.
+        """
         if self._size <= 1:
             return
 
@@ -323,6 +384,8 @@ class Mutation:
 
         Both lists must have the same list type. The optional comparison
         function controls ordering and defaults to less-than comparison.
+        Circular lists are merged by value snapshots so the temporary merge
+        process cannot accidentally chase circular links forever.
         """
         if self._list_type != other._list_type:
             raise TypeError("Cannot merge lists of different types")
@@ -331,6 +394,8 @@ class Mutation:
             compare = lt
 
         if self._is_circular:
+            # Snapshot circular lists into plain Python lists before merging.
+            # This keeps the merge logic simple and bounded.
             left_values = self.to_list()
             right_values = other.to_list()
             merged = []
@@ -386,7 +451,8 @@ class Mutation:
 
         self.head, self.tail, self._size = dummy.next, tail, new_size
 
-        # Fix `prev` pointers for doubly linked lists
+        # The forward links define the merged order first. Afterward, doubly
+        # linked lists need a second pass to make every backward link agree.
         if self._list_type == "doubly":
             current, prev = self.head, None
             while current:
@@ -394,14 +460,23 @@ class Mutation:
                 prev, current = current, current.next
 
     def extend(self, iterable: Iterable[Any]) -> None:
-        """Append all values from ``iterable`` to this list."""
+        """Append all values from ``iterable`` to this list.
+
+        Extending a list with itself needs a snapshot. Otherwise the method
+        would keep appending values while also iterating over those new values.
+        """
         if iterable is self:
             iterable = list(iterable)
         for item in iterable:
             self.append(item)
 
     def remove_duplicates(self) -> None:
-        """Remove duplicate values while preserving first occurrences."""
+        """Remove duplicate values while preserving first occurrences.
+
+        Circular lists are temporarily opened by clearing the tail link. That
+        lets the duplicate-removal loop use a normal ``while current`` pattern,
+        then the circular links are restored at the end.
+        """
         seen = set()
 
         if self._is_circular and self.head:

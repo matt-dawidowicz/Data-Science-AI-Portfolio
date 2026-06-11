@@ -1,4 +1,9 @@
-"""Concrete linked-list type assembled from behavior mixins."""
+"""Concrete linked-list type assembled from behavior mixins.
+
+The project uses composition through mixins to keep each behavior group small:
+access methods live in one file, mutation methods in another, and so on. The
+final ``LinkedList`` type combines those pieces into the class users import.
+"""
 
 from .base import BaseLinkedList
 from .access import Access
@@ -18,6 +23,10 @@ class LinkedList(
     Functional,
     Utility,
 ):
-    """Linked list supporting singly, doubly, and circular variants."""
+    """Linked list supporting singly, doubly, and circular variants.
+
+    The selected ``list_type`` decides which node links exist and which
+    invariants operations must preserve.
+    """
 
     pass

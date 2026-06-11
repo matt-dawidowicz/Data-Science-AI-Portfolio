@@ -1,4 +1,8 @@
-"""Base node shared by linked-list node variants."""
+"""Base node shared by linked-list node variants.
+
+Every concrete node stores data the same way. Link-specific behavior is added
+by mixins and subclasses.
+"""
 
 from typing import Any
 

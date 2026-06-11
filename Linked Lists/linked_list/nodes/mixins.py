@@ -1,4 +1,9 @@
-"""Small node mixins for next, previous, and circular links."""
+"""Small node mixins for next, previous, and circular links.
+
+The mixins keep pointer setup reusable. A singly linked node needs only
+``NextMixin``; a doubly linked node combines ``PrevMixin`` and ``NextMixin``;
+circular nodes add ``CircularMixin`` after their normal links exist.
+"""
 
 from typing import Optional
 
@@ -20,7 +25,11 @@ class PrevMixin:
 
 
 class CircularMixin:
-    """Turn absent node links into self-references."""
+    """Turn absent node links into self-references.
+
+    A single circular node points back to itself, which lets circular-list code
+    treat one-node lists as valid loops.
+    """
 
     def make_circular(self) -> None:
         """Point missing next and previous links back to this node."""

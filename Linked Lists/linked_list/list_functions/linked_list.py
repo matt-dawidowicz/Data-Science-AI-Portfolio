@@ -10,6 +10,8 @@ contents. The real behavior lives in the inherited mixins listed below.
 
 from __future__ import annotations
 
+from typing import Generic, TypeVar
+
 from .access import Access
 from .base import BaseLinkedList
 from .functional import Functional
@@ -17,6 +19,8 @@ from .iteration import Iteration
 from .mutation import Mutation
 from .sort_merge import SortMerge
 from .utility import Utility
+
+T = TypeVar("T")
 
 
 class LinkedList(
@@ -27,6 +31,7 @@ class LinkedList(
     SortMerge,
     Functional,
     Utility,
+    Generic[T],
 ):
     """Linked list supporting singly, doubly, and circular variants.
 

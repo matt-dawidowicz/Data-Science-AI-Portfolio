@@ -15,8 +15,9 @@ from collections import deque
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
+T = TypeVar("T")
 TMultilevelLinkedList = TypeVar(
     "TMultilevelLinkedList",
     bound="MultilevelLinkedList",
@@ -41,7 +42,7 @@ class _MultilevelNode:
         return f"_MultilevelNode({self.data!r})"
 
 
-class MultilevelLinkedList:
+class MultilevelLinkedList(Generic[T]):
     """Linked list where each node may own a nested child chain.
 
     Public iteration is depth-first, so ``len(container)``, indexing, and

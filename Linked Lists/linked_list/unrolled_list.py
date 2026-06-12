@@ -14,8 +14,9 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
+T = TypeVar("T")
 TUnrolledLinkedList = TypeVar(
     "TUnrolledLinkedList",
     bound="UnrolledLinkedList",
@@ -45,7 +46,7 @@ class _UnrolledNode:
         return f"_UnrolledNode({self.values!r})"
 
 
-class UnrolledLinkedList:
+class UnrolledLinkedList(Generic[T]):
     """Sequence backed by linked nodes that each store a value block.
 
     ``node_capacity`` controls how many values each node may hold. Insertions

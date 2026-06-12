@@ -19,14 +19,15 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
 from reprlib import recursive_repr
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
 from .nodes import DoublyLinkedNode
 
+T = TypeVar("T")
 TLinkedDeque = TypeVar("TLinkedDeque", bound="LinkedDeque")
 
 
-class LinkedDeque:
+class LinkedDeque(Generic[T]):
     """A double-ended queue backed by a doubly linked list.
 
     Each node has both ``next`` and ``prev`` links, which lets the deque update

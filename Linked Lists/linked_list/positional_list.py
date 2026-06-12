@@ -15,8 +15,9 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
+T = TypeVar("T")
 TPositionalLinkedList = TypeVar(
     "TPositionalLinkedList",
     bound="PositionalLinkedList",
@@ -46,7 +47,7 @@ class _PositionNode:
         return f"_PositionNode({self.data!r})"
 
 
-class Position:
+class Position(Generic[T]):
     """Stable handle to a node inside a ``PositionalLinkedList``.
 
     Users interact with positions instead of raw nodes. That keeps the node
@@ -94,7 +95,7 @@ class Position:
         return f"Position({self._node.data!r})"
 
 
-class PositionalLinkedList:
+class PositionalLinkedList(Generic[T]):
     """Doubly linked list with validated position objects.
 
     The list stores normal ``head`` and ``tail`` references, but public

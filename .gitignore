@@ -9,6 +9,11 @@ __pycache__/
 coverage.xml
 htmlcov/
 
+# Packaging artifacts
+*.egg-info/
+build/
+dist/
+
 # Type checking and linting caches
 .mypy_cache/
 .pyre/

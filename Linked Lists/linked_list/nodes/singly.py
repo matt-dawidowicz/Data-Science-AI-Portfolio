@@ -1,8 +1,9 @@
 """Singly linked node variants.
 
-Singly linked nodes can move forward through ``next`` but cannot move backward.
-That is why tail operations on singly linked lists sometimes require traversal
-from the head.
+Singly linked nodes can move forward through ``next`` but cannot move
+backward. That one missing pointer is the central tradeoff: each node is
+smaller, but operations such as removing the tail may need to traverse from
+the head to find the previous node.
 """
 
 from __future__ import annotations
@@ -14,14 +15,18 @@ from .mixins import CircularMixin, NextMixin
 
 
 class SinglyLinkedNode(BaseNode, NextMixin):
-    """Node with a payload and a forward link."""
+    """Node with a payload and one forward link."""
 
     def __init__(
         self,
         data: Any,
         next_node: SinglyLinkedNode | None = None,
     ) -> None:
-        """Initialize a singly linked node."""
+        """Initialize a singly linked node.
+
+        The optional ``next_node`` is validated so accidental cross-linking to
+        an unrelated node type is caught early in examples and tests.
+        """
         BaseNode.__init__(self, data)
         NextMixin.__init__(self, next_node)
         if next_node is not None and not isinstance(
@@ -31,7 +36,12 @@ class SinglyLinkedNode(BaseNode, NextMixin):
 
 
 class SinglyCircularLinkedNode(BaseNode, NextMixin, CircularMixin):
-    """Singly linked node whose forward link defaults to itself."""
+    """Singly linked node whose forward link defaults to itself.
+
+    A one-node circular list is already a valid loop: following ``next`` from
+    the node returns to the same node. Larger circular lists later replace the
+    tail's ``next`` link with the current head.
+    """
 
     def __init__(
         self,

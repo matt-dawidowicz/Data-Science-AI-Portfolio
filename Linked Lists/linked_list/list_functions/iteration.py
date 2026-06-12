@@ -1,8 +1,13 @@
 """Iteration helpers for linked-list variants.
 
-Iteration is where circular lists need special attention. Traversal is bounded
-by the size captured when iteration begins, so live appends do not make
-iteration chase newly added nodes forever.
+Iteration is where circular lists need special attention. A normal linear list
+can stop when it reaches ``None``. A circular list never reaches ``None``
+because the tail points back to the head. For that reason, iteration is
+bounded by the size captured when iteration begins.
+
+The same bound also protects live iterators on linear lists. If a caller
+extends a list while iterating over it, the iterator stops after the original
+number of values rather than chasing newly appended nodes forever.
 """
 
 from __future__ import annotations
@@ -12,7 +17,11 @@ from typing import Any
 
 
 class Iteration:
-    """Provide forward and reverse iteration."""
+    """Provide forward and reverse iteration.
+
+    Forward iteration works for every list type. Reverse iteration requires
+    ``prev`` links, so it is available only for doubly linked variants.
+    """
 
     def __iter__(self) -> Iterator[Any]:
         """Yield list values from head to tail.

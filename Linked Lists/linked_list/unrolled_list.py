@@ -3,6 +3,10 @@
 An unrolled linked list stores multiple values inside each linked node. That
 keeps the pointer-based teaching value of linked lists while reducing the
 number of node objects needed for larger sequences.
+
+The structure trades a little in-block list work for fewer pointer hops. A
+middle insertion first finds the block, then inserts inside that small Python
+list. When a block is full, it splits into two linked blocks.
 """
 
 from __future__ import annotations
@@ -21,11 +25,17 @@ _MISSING = object()
 
 
 class _UnrolledNode:
-    """Store a small block of values plus neighboring block links."""
+    """Store a small block of values plus neighboring block links.
+
+    The block values are intentionally stored in a Python list. This makes the
+    unrolled-list idea visible: the chain links blocks, while each block keeps
+    nearby values contiguous.
+    """
 
     __slots__ = ("next", "prev", "values")
 
     def __init__(self, values: Iterable[Any] | None = None) -> None:
+        """Initialize a block node with an optional value snapshot."""
         self.values: list[Any] = list(values) if values is not None else []
         self.next: _UnrolledNode | None = None
         self.prev: _UnrolledNode | None = None
@@ -41,6 +51,9 @@ class UnrolledLinkedList:
     ``node_capacity`` controls how many values each node may hold. Insertions
     split full nodes, and removals merge or borrow from neighbors when useful
     so the structure does not degrade into one tiny node per value.
+
+    ``to_blocks()`` is included mostly for learning and testing. It lets a
+    reader see not only the public sequence but also the current block layout.
     """
 
     def __init__(
@@ -479,7 +492,12 @@ class UnrolledLinkedList:
             next_node.prev = new_node
 
     def _split_node(self, node: _UnrolledNode) -> _UnrolledNode:
-        """Split a full block and return the new right-side block."""
+        """Split a full block and return the new right-side block.
+
+        The left block keeps the first half of the values and the new block
+        receives the second half. Inserting after the split then happens inside
+        whichever block contains the requested offset.
+        """
         midpoint = (len(node.values) + 1) // 2
         right_values = node.values[midpoint:]
         node.values = node.values[:midpoint]
@@ -507,7 +525,12 @@ class UnrolledLinkedList:
         node.values.clear()
 
     def _rebalance_after_remove(self, node: _UnrolledNode) -> None:
-        """Merge or borrow around an underfilled block after deletion."""
+        """Merge or borrow around an underfilled block after deletion.
+
+        Empty blocks are removed immediately. Small non-empty blocks first try
+        to merge with a neighbor. If merging would overfill a block, they try
+        to borrow one value from a fuller neighbor instead.
+        """
         if not node.values:
             self._unlink_node(node)
             return
@@ -542,7 +565,11 @@ class UnrolledLinkedList:
             node.values.insert(0, node.prev.values.pop())
 
     def _locate(self, index: int) -> tuple[_UnrolledNode, int]:
-        """Return the block and in-block offset for ``index``."""
+        """Return the block and in-block offset for ``index``.
+
+        The search starts from the closer end of the block chain. The returned
+        offset is the normal Python-list index inside that block's values.
+        """
         if index < 0:
             index += self._size
         if index < 0 or index >= self._size:

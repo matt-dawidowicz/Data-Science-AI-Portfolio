@@ -8,6 +8,11 @@ The important invariant is that ``head`` always points to the leftmost node,
 ``tail`` always points to the rightmost node, and ``_size`` always matches the
 number of nodes reachable between them. Every mutation below keeps those three
 pieces of state synchronized.
+
+Read the implementation as a study in local pointer repair. A left-side
+operation should only need to touch the old head, the new head, and possibly
+the tail for the empty-list case. A right-side operation is the same idea from
+the opposite end.
 """
 
 from __future__ import annotations
@@ -28,6 +33,10 @@ class LinkedDeque:
     either end without traversing from the opposite side. The public API uses
     explicit left/right method names, then exposes familiar Python-style
     aliases such as ``appendleft`` and ``popleft`` at the bottom of the class.
+
+    Unlike a general linked list, the deque does not promise cheap arbitrary
+    middle operations. Its main lesson is that keeping both end pointers and
+    backward links makes queue and stack operations at either end direct.
     """
 
     def __init__(self, iterable: Iterable[Any] | None = None) -> None:
@@ -452,7 +461,12 @@ class LinkedDeque:
         return current
 
     def _unlink_node(self, node: DoublyLinkedNode) -> Any:
-        """Detach ``node`` from the deque and return its stored value."""
+        """Detach ``node`` from the deque and return its stored value.
+
+        This helper centralizes the delicate part of deletion. Whether the
+        node is the head, tail, middle, or only node, both neighboring links
+        and the container's end pointers are repaired in one place.
+        """
         previous = node.prev
         next_node = node.next
 

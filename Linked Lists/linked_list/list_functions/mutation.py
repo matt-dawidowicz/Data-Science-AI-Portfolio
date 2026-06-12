@@ -7,6 +7,12 @@ to update the visible data order and the hidden node links at the same time.
 The same methods support linear lists, circular lists, singly linked nodes, and
 doubly linked nodes. The conditional logic keeps those variants consistent
 without requiring four separate list classes.
+
+When reading this file, keep three invariants in mind:
+
+- ``head`` is the first visible node, or ``None`` for an empty list.
+- ``tail`` is the last visible node, or ``None`` for an empty list.
+- Circular lists must reconnect ``tail.next`` to ``head`` after changes.
 """
 
 from __future__ import annotations
@@ -26,6 +32,10 @@ class Mutation:
     ``_size``, ``_list_type``, ``_is_circular``, and ``_create_node``. Every
     method in this class is responsible for leaving those values in a valid
     state before it returns.
+
+    The methods favor explicit pointer repair over cleverness. That makes the
+    code easier to audit: after each operation, a reader can check how the
+    affected neighbors, ``head``, ``tail``, and circular links were restored.
     """
 
     def append(self, data: Any) -> None:
@@ -532,6 +542,7 @@ class Mutation:
         seen_unhashable: list[Any] = []
 
         def already_seen(data: Any) -> bool:
+            """Return whether ``data`` has appeared earlier in the list."""
             try:
                 if data in seen_hashable:
                     return True
@@ -540,6 +551,7 @@ class Mutation:
             return any(data == item for item in seen_unhashable)
 
         def remember(data: Any) -> None:
+            """Record ``data`` in the hashable or unhashable tracker."""
             try:
                 seen_hashable.add(data)
             except TypeError:

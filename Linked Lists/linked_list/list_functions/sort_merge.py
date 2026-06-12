@@ -3,6 +3,11 @@
 Merge sort gives linked lists predictable O(n log n) ordering. This module
 sorts a snapshot of node references first, then relinks those existing nodes
 only after every comparison succeeds.
+
+That two-phase approach is an important safety pattern. Comparisons can raise
+``TypeError`` when values are not mutually comparable. By sorting a separate
+node snapshot before touching links, the original list remains unchanged if
+ordering fails.
 """
 
 from __future__ import annotations
@@ -18,6 +23,10 @@ class SortMerge:
     Sorting keeps node identity stable while avoiding partial rewires when a
     comparison raises. Circular and doubly linked invariants are restored in a
     single relinking pass after the sorted node order is known.
+
+    The algorithm sorts node objects, not copied values. That lets external
+    references to nodes remain meaningful after sorting, while still changing
+    the visible order of values.
     """
 
     def _merge_sort_nodes(
@@ -60,7 +69,12 @@ class SortMerge:
         return merged
 
     def _relink_nodes(self, nodes: list[Any]) -> None:
-        """Relink sorted nodes according to the current list variant."""
+        """Relink sorted nodes according to the current list variant.
+
+        This is the point where the sorted snapshot becomes the real list.
+        Linear lists end with ``None``. Circular lists wrap the first and last
+        nodes back to each other. Doubly linked lists also repair ``prev``.
+        """
         if not nodes:
             self.head = self.tail = None
             return

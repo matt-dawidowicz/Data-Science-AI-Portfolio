@@ -1,8 +1,16 @@
 """Base linked-list state and node creation helpers.
 
-The rest of the linked-list mixins depend on this shared state. The selected
-``list_type`` controls which node class is created and which pointer invariants
-each mutation must preserve.
+The ``LinkedList`` class is split across mixins, but all of those mixins share
+the same small set of state:
+
+- ``head`` is the first node a forward traversal should visit.
+- ``tail`` is the last node in the visible order.
+- ``_size`` is the number of stored values.
+- ``_list_type`` names the concrete representation.
+- ``_is_circular`` records whether the tail should link back to the head.
+
+The selected ``list_type`` controls which node class is created and which
+pointer invariants every mutation must preserve.
 """
 
 from __future__ import annotations
@@ -23,10 +31,18 @@ class BaseLinkedList:
     ``head`` and ``tail`` give constant-time access to the ends of the list.
     ``_size`` lets operations validate indexes and bound circular traversal.
     ``_is_circular`` avoids repeating string checks in every traversal method.
+
+    This base class does not implement high-level behavior by itself. It gives
+    the other mixins a consistent foundation to read from and write to.
     """
 
     def __init__(self, list_type: str = "singly") -> None:
-        """Initialize an empty linked list of the requested type."""
+        """Initialize an empty linked list of the requested type.
+
+        ``list_type`` is normalized once here so later methods can compare a
+        predictable internal value. Invalid names fail before any node state is
+        created.
+        """
         valid_types = (
             "singly",
             "doubly",

@@ -24,7 +24,7 @@ class TestSkipList(unittest.TestCase):
         self.assertEqual(skip_list.to_list(), expected)
         self.assertEqual(list(skip_list), expected)
         self.assertEqual(len(skip_list), len(expected))
-        self.assertEqual(expected, sorted(set(expected)))
+        self.assertEqual(expected, self._sorted_unique(expected))
         self.assertLessEqual(skip_list.level, skip_list.max_level)
 
         if not expected:
@@ -86,8 +86,20 @@ class TestSkipList(unittest.TestCase):
             skip_list.first()
         with self.assertRaises(IndexError):
             skip_list.last()
+        with self.assertRaises(IndexError):
+            skip_list.pop_first()
+        with self.assertRaises(IndexError):
+            skip_list.pop_last()
+        with self.assertRaises(TypeError):
+            SkipList(max_level=1.5)  # type: ignore[arg-type]
+        with self.assertRaises(TypeError):
+            SkipList(max_level=True)
         with self.assertRaises(ValueError):
             SkipList(max_level=0)
+        with self.assertRaises(TypeError):
+            SkipList(probability="bad")  # type: ignore[arg-type]
+        with self.assertRaises(TypeError):
+            SkipList(probability=True)
         with self.assertRaises(ValueError):
             SkipList(probability=0)
         with self.assertRaises(ValueError):
@@ -100,6 +112,7 @@ class TestSkipList(unittest.TestCase):
         self.assertEqual(skip_list.first(), 1)
         self.assertEqual(skip_list.last(), 4)
         self.assertTrue(skip_list)
+        self.assertEqual(list(reversed(skip_list)), [4, 3, 2, 1])
 
     def test_add_contains_find_floor_and_ceiling(self) -> None:
         skip_list = SkipList(max_level=8, seed=2)
@@ -108,6 +121,7 @@ class TestSkipList(unittest.TestCase):
         self.assertTrue(skip_list.add(1))
         self.assertTrue(skip_list.add(5))
         self.assertFalse(skip_list.add(3))
+        self.assertEqual(skip_list.update([5, 7]), 1)
 
         self.assertIn(3, skip_list)
         self.assertNotIn(4, skip_list)
@@ -115,15 +129,21 @@ class TestSkipList(unittest.TestCase):
         self.assertIsNone(skip_list.find(4))
         self.assertEqual(skip_list.floor(4), 3)
         self.assertEqual(skip_list.ceiling(4), 5)
+        self.assertEqual(skip_list.floor(3), 3)
+        self.assertEqual(skip_list.ceiling(3), 3)
         self.assertEqual(skip_list.floor(0, "missing"), "missing")
-        self.assertEqual(skip_list.ceiling(6, "missing"), "missing")
-        self.assert_skip_list_integrity(skip_list, [1, 3, 5])
+        self.assertEqual(skip_list.ceiling(8, "missing"), "missing")
+        self.assert_skip_list_integrity(skip_list, [1, 3, 5, 7])
 
     def test_remove_head_middle_tail_and_missing_values(self) -> None:
         skip_list = SkipList([1, 2, 3, 4, 5], max_level=8, seed=3)
+        old_head = skip_list.head
+        old_tail = skip_list.tail
 
         self.assertTrue(skip_list.remove(1))
+        self.assertEqual(old_head.forward, [])
         self.assertTrue(skip_list.remove(5))
+        self.assertEqual(old_tail.forward, [])
         self.assertTrue(skip_list.remove(3))
         self.assertFalse(skip_list.remove(99))
 
@@ -134,6 +154,17 @@ class TestSkipList(unittest.TestCase):
         self.assertTrue(skip_list.discard(2))
         self.assertTrue(skip_list.discard(4))
         self.assertFalse(skip_list.discard(4))
+        self.assert_skip_list_integrity(skip_list, [])
+
+    def test_pop_first_and_pop_last_remove_sorted_edges(self) -> None:
+        skip_list = SkipList([3, 1, 4, 2], max_level=8, seed=4)
+
+        self.assertEqual(skip_list.pop_first(), 1)
+        self.assertEqual(skip_list.pop_last(), 4)
+        self.assert_skip_list_integrity(skip_list, [2, 3])
+
+        self.assertEqual(skip_list.pop_first(), 2)
+        self.assertEqual(skip_list.pop_last(), 3)
         self.assert_skip_list_integrity(skip_list, [])
 
     def test_extend_self_copy_and_clear(self) -> None:
@@ -154,6 +185,34 @@ class TestSkipList(unittest.TestCase):
 
         self.assertEqual(old_first.forward, [])
         self.assert_skip_list_integrity(skip_list, [])
+
+    def test_extend_with_self_iterator_is_bounded(self) -> None:
+        skip_list = SkipList([3, 1, 2], max_level=8, seed=4)
+
+        self.assertEqual(skip_list.extend(iter(skip_list)), 0)
+
+        self.assert_skip_list_integrity(skip_list, [1, 2, 3])
+
+    def test_extend_comparison_error_is_atomic(self) -> None:
+        skip_list = SkipList([1, 2, 3], max_level=8, seed=5)
+
+        with self.assertRaises(TypeError):
+            skip_list.extend([4, "bad"])
+
+        self.assert_skip_list_integrity(skip_list, [1, 2, 3])
+        self.assertNotIn(4, skip_list)
+
+    def test_supports_comparable_unhashable_values(self) -> None:
+        skip_list = SkipList([[2], [1], [2]], max_level=8, seed=5)
+
+        self.assertFalse(skip_list.add([1]))
+        self.assertTrue(skip_list.add([3]))
+
+        self.assertEqual(skip_list.find([2]), [2])
+        self.assertEqual(skip_list.floor([2, 5]), [2])
+        self.assertEqual(skip_list.ceiling([2, 5]), [3])
+        self.assertTrue(skip_list.remove([1]))
+        self.assert_skip_list_integrity(skip_list, [[2], [3]])
 
     def test_from_iterable_preserves_subclass_type(self) -> None:
         class ChildSkipList(SkipList):
@@ -181,6 +240,22 @@ class TestSkipList(unittest.TestCase):
         first_heights = [node.height for node in self._bottom_nodes(first)]
         second_heights = [node.height for node in self._bottom_nodes(second)]
         self.assertEqual(first_heights, second_heights)
+
+    def test_single_level_mode_behaves_like_sorted_linked_set(self) -> None:
+        skip_list = SkipList(
+            [5, 1, 3, 2, 4],
+            max_level=1,
+            probability=0.25,
+            seed=7,
+        )
+
+        self.assertEqual(skip_list.level, 1)
+        self.assertEqual(skip_list.probability, 0.25)
+        self.assertTrue(skip_list.add(0))
+        self.assertTrue(skip_list.remove(3))
+        self.assert_skip_list_integrity(skip_list, [0, 1, 2, 4, 5])
+        for node in self._bottom_nodes(skip_list):
+            self.assertEqual(node.height, 1)
 
     def test_comparison_errors_leave_existing_values_unchanged(self) -> None:
         skip_list = SkipList([1, 2, 3], max_level=8, seed=7)
@@ -257,6 +332,14 @@ class TestSkipList(unittest.TestCase):
             nodes.append(current)
             current = current.forward[0]
         return nodes
+
+    def _sorted_unique(self, values: list) -> list:
+        """Return sorted unique values without requiring hashability."""
+        unique_values: list = []
+        for value in sorted(values):
+            if not unique_values or unique_values[-1] != value:
+                unique_values.append(value)
+        return unique_values
 
 
 if __name__ == "__main__":

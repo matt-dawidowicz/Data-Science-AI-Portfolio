@@ -43,22 +43,29 @@ class SkipList:
         iterable: Iterable[Any] | None = None,
         *,
         max_level: int = 16,
-        probability: float = 0.5,
+        probability: int | float = 0.5,
         seed: int | None = None,
     ) -> None:
         """Initialize an empty skip list and optionally add initial values."""
+        if not isinstance(max_level, int) or isinstance(max_level, bool):
+            raise TypeError("max_level must be an integer")
         if max_level < 1:
             raise ValueError("max_level must be at least 1")
+        if not isinstance(probability, int | float) or isinstance(
+            probability,
+            bool,
+        ):
+            raise TypeError("probability must be a real number")
         if not 0 < probability < 1:
             raise ValueError("probability must be between 0 and 1")
 
-        self._max_level = max_level
-        self._probability = probability
-        self._random = Random(seed)
-        self._head = _SkipListNode(None, max_level)
+        self._max_level: int = max_level
+        self._probability: float = float(probability)
+        self._random: Random = Random(seed)
+        self._head: _SkipListNode = _SkipListNode(None, max_level)
         self._tail: _SkipListNode | None = None
-        self._level = 1
-        self._size = 0
+        self._level: int = 1
+        self._size: int = 0
 
         if iterable is not None:
             self.extend(iterable)
@@ -103,6 +110,10 @@ class SkipList:
             yield current.data
             current = current.forward[0]
 
+    def __reversed__(self) -> Iterator[Any]:
+        """Yield values in descending order."""
+        return reversed(self.to_list())
+
     def __contains__(self, value: Any) -> bool:
         """Return whether ``value`` is present."""
         return self._find_node(value) is not None
@@ -127,7 +138,7 @@ class SkipList:
         iterable: Iterable[Any],
         *,
         max_level: int = 16,
-        probability: float = 0.5,
+        probability: int | float = 0.5,
         seed: int | None = None,
     ) -> TSkipList:
         """Build a skip list from any iterable."""
@@ -192,13 +203,21 @@ class SkipList:
 
     def extend(self, iterable: Iterable[Any]) -> int:
         """Add all values from ``iterable`` and return new insertions."""
+        values = list(self) if iterable is self else list(iterable)
+        if not values:
+            return 0
+
+        self._validate_values(values)
+
         added = 0
-        if iterable is self:
-            iterable = list(iterable)
-        for value in iterable:
+        for value in values:
             if self.add(value):
                 added += 1
         return added
+
+    def update(self, iterable: Iterable[Any]) -> int:
+        """Alias for ``extend`` that mirrors set-style naming."""
+        return self.extend(iterable)
 
     def remove(self, value: Any) -> bool:
         """Remove ``value`` and return whether it was present."""
@@ -222,6 +241,18 @@ class SkipList:
 
         target.forward = []
         return True
+
+    def pop_first(self) -> Any:
+        """Remove and return the smallest value."""
+        value = self.first()
+        self.remove(value)
+        return value
+
+    def pop_last(self) -> Any:
+        """Remove and return the largest value."""
+        value = self.last()
+        self.remove(value)
+        return value
 
     def discard(self, value: Any) -> bool:
         """Alias for ``remove`` that returns whether anything changed."""
@@ -299,6 +330,10 @@ class SkipList:
         ):
             level += 1
         return level
+
+    def _validate_values(self, values: Iterable[Any]) -> None:
+        """Validate that incoming values compare with existing values."""
+        sorted([*self, *values])
 
     @staticmethod
     def _is_before(left: Any, right: Any) -> bool:

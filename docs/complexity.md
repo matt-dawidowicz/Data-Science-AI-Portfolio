@@ -200,6 +200,7 @@ random levels are unlucky.
 | `first()` | O(1) | O(1) | O(1) | Reads the first bottom-level node. |
 | `last()` | O(1) | O(1) | O(1) | Reads the tracked tail node. |
 | Iteration | O(n) | O(n) | O(1) | Walks the fully populated bottom level. |
+| Reverse iteration | O(n) | O(n) | O(n) | Builds a value snapshot, then yields it backward. |
 | `to_list()` | O(n) | O(n) | O(n) | Copies bottom-level values into a list. |
 
 ### SkipList Mutations
@@ -208,8 +209,10 @@ random levels are unlucky.
 | --- | --- | --- | --- | --- |
 | Constructor from iterable | O(m log m) | O(m^2) | O(m) | Adds values one at a time and ignores duplicates. |
 | `add(value)` | O(log n) | O(n) | O(h) | Finds predecessors, then links one new node through its levels. |
-| `extend(iterable)` | O(m log(n + m)) | O(m(n + m)) | O(m) for self-extension | Adds each value and counts new insertions. |
+| `extend(iterable)` / `update(iterable)` | O((n + m) log(n + m)) | O((n + m)^2) | O(n + m) | Validates a sorted snapshot first so comparison errors are atomic. |
 | `remove(value)` / `discard(value)` | O(log n) | O(n) | O(h) | Finds predecessors, then bypasses the target on each level. |
+| `pop_first()` | O(log n) | O(n) | O(h) | Reads the first value, then removes it. |
+| `pop_last()` | O(log n) | O(n) | O(h) | Reads the tracked tail value, then removes it. |
 | `clear()` | O(n) | O(n) | O(1) | Detaches all bottom-level nodes and resets header links. |
 | `copy()` | O(n log n) | O(n^2) | O(n) | Rebuilds through normal insertion. |
 

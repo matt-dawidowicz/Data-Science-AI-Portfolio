@@ -214,6 +214,8 @@ so searches can skip across ranges of nodes instead of walking every value.
 The implementation exposes practical ordered-set operations:
 
 - `add(value)` inserts a comparable value and returns whether it was new.
+- `extend(iterable)` and `update(iterable)` add many values atomically and
+  return the number of new insertions.
 - `remove(value)` and `discard(value)` remove a value and return whether it
   existed.
 - `find(value)` returns the stored matching value or `None`.
@@ -222,6 +224,7 @@ The implementation exposes practical ordered-set operations:
 - `ceiling(value)` returns the smallest stored value greater than or equal to
   the requested value.
 - `first()` and `last()` read the smallest and largest values.
+- `pop_first()` and `pop_last()` remove the smallest and largest values.
 
 The class accepts `max_level`, `probability`, and `seed` parameters. That keeps
 the public container simple while making tests deterministic and making the
@@ -381,16 +384,20 @@ It also supports Python container-style helpers:
 - `len(skip_list)`, `bool(skip_list)`, and `is_empty()` report container
   state.
 - Iteration yields values in ascending order.
+- Reverse iteration yields values in descending order.
 - `value in skip_list` checks membership.
 - `add(value)` inserts a value and returns `True` only when it was not already
   present.
 - `extend(iterable)` adds many values and returns the number of new insertions.
+- `update(iterable)` is an alias for `extend`.
 - `remove(value)` and `discard(value)` remove a value and return whether it
   existed.
 - `find(value)` returns a matching stored value or `None`.
 - `floor(value, default=None)` and `ceiling(value, default=None)` support
   ordered nearest-neighbor lookups.
 - `first()` and `last()` read the smallest and largest values.
+- `pop_first()` and `pop_last()` remove and return the smallest and largest
+  values.
 - `to_list()`, `copy()`, and `clear()` provide conversion and lifecycle
   helpers.
 
@@ -461,10 +468,17 @@ invariants:
 
 - Constructor input is sorted and deduplicated through normal insertion.
 - Duplicate `add` calls return `False` without changing the structure.
+- `extend` validates incoming values before mutation, so comparison errors do
+  not partially add values.
 - Removing the head, middle, tail, missing values, and the final value keeps
   all active levels consistent.
+- `pop_first` and `pop_last` remove sorted edges and raise `IndexError` on an
+  empty skip list.
 - `clear()` detaches old nodes and resets the active level count.
 - `extend(self)` snapshots first so self-extension is bounded.
+- Comparable unhashable values, such as nested lists, are supported because the
+  structure does not rely on hashing.
+- `max_level` and `probability` are validated before any nodes are created.
 - Seeded construction gives deterministic node heights for tests.
 - Invalid tuning parameters fail clearly before any nodes are created.
 - Comparison errors leave existing values unchanged.
@@ -586,7 +600,11 @@ For `SkipList`, the tests cover:
 - Constructor sorting and duplicate removal.
 - Adding, duplicate insertion, membership, `find`, `floor`, and `ceiling`.
 - Removing head, middle, tail, missing values, and all remaining values.
+- Removing sorted edges with `pop_first` and `pop_last`.
 - Self-extension, copying, clearing, and subclass-preserving construction.
+- Atomic extension when an incoming value cannot be compared.
+- Comparable unhashable values.
+- Single-level mode, which behaves like a sorted linked set.
 - Equality and reproducible seeded node heights.
 - Comparison errors that leave the original list unchanged.
 - Randomized add/remove/extend/clear/floor/ceiling behavior against Python

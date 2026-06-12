@@ -36,7 +36,7 @@ class _PositionNode:
 
     def __init__(self, data: Any, owner: PositionalLinkedList) -> None:
         """Initialize a node owned by one positional list."""
-        self.data = data
+        self.data: Any = data
         self.owner: PositionalLinkedList | None = owner
         self.prev: _PositionNode | None = None
         self.next: _PositionNode | None = None
@@ -62,8 +62,8 @@ class Position:
         node: _PositionNode | None,
     ) -> None:
         """Initialize a handle to ``node`` inside ``container``."""
-        self._container = container
-        self._node = node
+        self._container: PositionalLinkedList | None = container
+        self._node: _PositionNode | None = node
 
     @property
     def data(self) -> Any:
@@ -107,7 +107,7 @@ class PositionalLinkedList:
         """Initialize an empty positional list and optional values."""
         self.head: _PositionNode | None = None
         self.tail: _PositionNode | None = None
-        self._size = 0
+        self._size: int = 0
 
         if iterable is not None:
             self.extend(iterable)

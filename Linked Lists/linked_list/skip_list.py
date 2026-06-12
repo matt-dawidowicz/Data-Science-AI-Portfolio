@@ -31,7 +31,7 @@ class _SkipListNode:
 
     def __init__(self, data: Any, height: int) -> None:
         """Initialize a node with ``height`` forward levels."""
-        self.data = data
+        self.data: Any = data
         self.forward: list[_SkipListNode | None] = [None] * height
 
     @property

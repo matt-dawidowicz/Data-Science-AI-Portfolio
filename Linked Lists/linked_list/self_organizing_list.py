@@ -32,8 +32,8 @@ class _SelfOrganizingNode:
 
     def __init__(self, data: Any) -> None:
         """Initialize a node with zero recorded accesses."""
-        self.data = data
-        self.access_count = 0
+        self.data: Any = data
+        self.access_count: int = 0
         self.prev: _SelfOrganizingNode | None = None
         self.next: _SelfOrganizingNode | None = None
 
@@ -68,10 +68,10 @@ class SelfOrganizingLinkedList:
     ) -> None:
         """Initialize an empty self-organizing list."""
         self._validate_strategy(strategy)
-        self.strategy = strategy
+        self.strategy: str = strategy
         self.head: _SelfOrganizingNode | None = None
         self.tail: _SelfOrganizingNode | None = None
-        self._size = 0
+        self._size: int = 0
 
         if iterable is not None:
             self.extend(iterable)

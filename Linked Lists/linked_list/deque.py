@@ -43,7 +43,7 @@ class LinkedDeque:
         """Initialize an empty deque and optionally append initial values."""
         self.head: DoublyLinkedNode | None = None
         self.tail: DoublyLinkedNode | None = None
-        self._size = 0
+        self._size: int = 0
 
         if iterable is not None:
             self.extend(iterable)

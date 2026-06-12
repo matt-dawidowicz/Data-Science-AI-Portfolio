@@ -4,10 +4,10 @@ This guide explains the linked-structure package as if you are reading the
 code for the first time. It focuses on mental models, invariants, and how to
 trace the algorithms by hand.
 
-The package is educational. Python's built-in `list`, `deque`, and scientific
-libraries are usually faster for production workloads. The value here is seeing
-how linked structures work internally and how small pointer mistakes can affect
-the whole container.
+The package is educational. Python's built-in `list`, `collections.deque`, and
+scientific libraries are usually faster for production workloads. The value
+here is seeing how linked structures work internally and how small pointer
+mistakes can affect the whole container.
 
 ## Reading Order
 
@@ -129,6 +129,30 @@ When reading any method that changes a linked list, check these questions:
 The tests use these same ideas. They do not only check final values; they also
 walk internal links after many operations.
 
+## Choosing a Structure
+
+Use this section when you know the problem shape but do not yet know which
+container to inspect.
+
+| Structure | Best educational use case | Main idea |
+| --- | --- | --- |
+| `LinkedList("singly")` | Forward-only traversal and basic pointer repair | Small nodes with only `next` links |
+| `LinkedList("doubly")` | Reverse traversal and local deletion | Extra `prev` links make backward movement possible |
+| `LinkedList("singly_circular")` | Round-robin examples and finite cyclic traversal | `tail.next` returns to `head` |
+| `LinkedList("doubly_circular")` | Two-way cyclic navigation | Both ends wrap around |
+| `LinkedDeque` | Queues, stacks, and double-ended workflows | Direct mutation at both ends |
+| `SortedLinkedList` | Maintaining an ordering invariant | API behavior is constrained by sorted order |
+| `SkipList` | Ordered-set lookup and nearest neighbors | Random shortcut levels speed average searches |
+| `UnrolledLinkedList` | Block splitting and storage tradeoffs | Nodes store small arrays of values |
+| `MultilevelLinkedList` | Outlines, menus, and nested lists | `child` links create hierarchy |
+| `PositionalLinkedList` | Mutating around known locations | Stable `Position` handles identify nodes |
+| `SelfOrganizingLinkedList` | Adaptive search demonstrations | Successful searches change future order |
+| `SparseMatrixLinkedList` | Mostly-zero grids and sparse storage | One cell belongs to row and column chains |
+
+These use cases are intentionally framed around learning and inspection. For
+production code, Python's standard library and scientific ecosystem often
+provide faster and more battle-tested choices.
+
 ## LinkedDeque
 
 `LinkedDeque` is a double-ended queue. It is built from doubly linked nodes and
@@ -151,6 +175,10 @@ End operations are local:
 
 Middle indexing is supported, but it is not the deque's main strength.
 
+Use it when you want to understand how `collections.deque`-style end
+operations can be implemented with a doubly linked chain. For production
+queues, prefer `collections.deque`.
+
 ## SortedLinkedList
 
 `SortedLinkedList` reuses the core linked-list machinery but protects a new
@@ -166,6 +194,10 @@ That promise changes method behavior:
 
 This class is a good example of an invariant shaping an API. The pointers are
 ordinary linked-list pointers, but the container's promise is stricter.
+
+Use it when you want to see how sorted-order rules affect mutation methods.
+For production sorted sequences, prefer `bisect` with a list for simple cases
+or a maintained sorted-collection package for larger workloads.
 
 ## SkipList
 
@@ -194,6 +226,10 @@ The shape is probabilistic. Most nodes are short; a few are tall. With a
 reasonable promotion probability, the average search path is much shorter than
 walking the whole bottom level.
 
+Use it to study ordered sets, `floor`, `ceiling`, and probabilistic balancing.
+For production membership tests, prefer `set` or `dict` when hashing is enough.
+For production ordered indexes, use a maintained sorted or tree-based library.
+
 ## UnrolledLinkedList
 
 `UnrolledLinkedList` stores several values per node:
@@ -212,6 +248,10 @@ Important operations:
 - `_rebalance_after_remove` removes empty blocks, merges small neighbors, or
   borrows one value from a fuller neighbor.
 - `to_blocks()` exposes the block layout for debugging and teaching.
+
+Use it when you want to compare pure linked storage with chunked linked
+storage. For production sequence work, Python's built-in `list` is usually
+faster because it stores values contiguously.
 
 ## MultilevelLinkedList
 
@@ -240,6 +280,10 @@ Some operations preserve hierarchy, such as `copy`, `deep_copy`, `map`, and
 child insertion. Other operations flatten because their natural meaning is
 sequence-wide, such as `sort`, `rotate`, `filter`, and `remove_duplicates`.
 
+Use it to model nested outlines, menus, lightweight trees, and flattening
+algorithms. For production graph or tree processing, use a domain-specific
+library when you need mature traversal algorithms and interoperability.
+
 ## PositionalLinkedList
 
 `PositionalLinkedList` introduces stable `Position` handles.
@@ -266,6 +310,11 @@ The important safety rule is validation. A position is valid only when:
 
 Deleting or clearing invalidates positions so stale handles fail clearly.
 
+Use it when an algorithm already has a location and wants to mutate nearby.
+Examples include teaching editor cursors, playlists, or textbook positional
+list APIs. For production text editing, use specialized buffers or editor data
+structures.
+
 ## SelfOrganizingLinkedList
 
 `SelfOrganizingLinkedList` changes order after successful access. It still has
@@ -285,6 +334,10 @@ Static reads are separate from adaptive reads:
 - `find`, `search`, and `access` increment counts and may move nodes.
 
 That separation makes examples and tests predictable.
+
+Use it when search frequency is uneven and you want to demonstrate adaptive
+heuristics. For production caches, use dedicated cache structures or mappings
+that match the eviction policy you need.
 
 ## SparseMatrixLinkedList
 
@@ -309,6 +362,42 @@ must repair two chains:
 
 Assigning the configured `zero` value removes a cell instead of storing it.
 This is what keeps the matrix sparse after updates and arithmetic.
+
+Use it to teach sparse storage and matrix operations without hiding the row and
+column links. For production numerical work, prefer NumPy arrays or SciPy
+sparse matrices.
+
+## Why This Package Instead of Existing Python Tools
+
+Use this package when you want the implementation to be visible. Existing
+Python tools are excellent, but many of them hide the internals behind highly
+optimized C code or mature library abstractions. That is exactly what you want
+in production, and exactly what you do not want when the goal is to study
+pointer repair.
+
+This package is useful for:
+
+- Learning how linked nodes are connected and disconnected.
+- Teaching why `head`, `tail`, `_size`, and circular links are invariants.
+- Comparing several linked-structure variants in one codebase.
+- Writing portfolio explanations that connect code to data-structure theory.
+- Running tests that inspect internal links after public operations.
+- Experimenting without third-party runtime dependencies.
+
+Use existing packages instead when:
+
+- You need the fastest sequence operations: use built-in `list`.
+- You need production double-ended queues: use `collections.deque`.
+- You need hash lookup: use `dict` or `set`.
+- You need numerical arrays or sparse linear algebra: use NumPy or SciPy.
+- You need production data frames: use pandas.
+- You need graph algorithms: use a graph library built for that domain.
+- You need sorted collections in real applications: use a maintained
+  sorted-collection package or another proven ordered-index structure.
+
+The honest positioning is simple: this project optimizes for clarity,
+coverage, and educational value. Existing libraries usually optimize for speed,
+memory efficiency, and ecosystem support.
 
 ## How To Debug Pointer Bugs
 

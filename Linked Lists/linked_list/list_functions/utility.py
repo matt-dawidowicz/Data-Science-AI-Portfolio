@@ -1,27 +1,68 @@
-from typing import Any, Iterable, Optional
+"""Utility helpers for linked lists.
+
+These helpers convert between linked lists and ordinary Python collections and
+perform cleanup operations that are shared by all list variants.
+"""
+
 from copy import deepcopy
+from typing import Any
+
 
 class Utility:
-    def to_list(self) -> list:
+    """Provide conversion, copying, counting, and clearing helpers."""
+
+    def to_list(self) -> list[Any]:
+        """Return the linked-list values as a Python list.
+
+        This is useful for tests, debugging, and algorithms that are easier to
+        express with a finite Python sequence.
+        """
         return list(iter(self))
 
     @classmethod
-    def from_list(cls, lst: list, list_type: str = "singly") -> "LinkedList":
+    def from_list(
+        cls,
+        lst: list[Any],
+        list_type: str = "singly",
+    ) -> "LinkedList":
+        """Build a linked list from a Python list.
+
+        The new list is built through ``append`` so all normal link invariants
+        are maintained for the requested list type.
+        """
         new_list = cls(list_type)
         for item in lst:
             new_list.append(item)
         return new_list
 
     def copy(self) -> "LinkedList":
+        """Return a shallow copy with the same list type.
+
+        The node structure is new, but the stored values are the same objects.
+        """
         return self.from_list(self.to_list(), self._list_type)
 
     def deep_copy(self) -> "LinkedList":
-        return self.from_list([deepcopy(item) for item in self.to_list()], self._list_type)
+        """Return a deep copy with the same list type.
+
+        Both the node structure and the stored values are copied.
+        """
+        return self.from_list(
+            [deepcopy(item) for item in self.to_list()],
+            self._list_type,
+        )
 
     def count(self, data: Any) -> int:
+        """Return the number of values equal to ``data``."""
         return sum(1 for item in self if item == data)
 
     def clear(self) -> None:
+        """Remove every node and reset the list to an empty state.
+
+        Circular lists are opened before traversal so the cleanup loop can stop
+        naturally. The ``visited`` set is an extra guard against unexpected
+        cycles if a list is already corrupted.
+        """
         current = self.head
         if self._is_circular and self.tail:
             self.tail.next = None

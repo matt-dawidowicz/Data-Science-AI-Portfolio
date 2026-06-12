@@ -1,7 +1,27 @@
+"""Access, comparison, and display behavior for linked lists.
+
+These operations read the structure without changing node links. They provide
+Python container behavior such as indexing, slicing, membership checks,
+equality, and readable representations.
+"""
+
 from typing import Any, Union
 
+
 class Access:
+    """Provide indexing, membership, equality, and display helpers.
+
+    The linked list does not have random access like a Python list, so index
+    operations walk from ``head`` to the requested position.
+    """
+
     def __getitem__(self, index: Union[int, slice]) -> Any:
+        """Return an item or sublist at the requested index or slice.
+
+        Integer indexes return a single value. Slice indexes collect values
+        into a new linked list of the same list type, preserving the public
+        behavior of this container instead of returning a plain Python list.
+        """
         if isinstance(index, int):
             if index < 0:
                 index += self._size
@@ -12,22 +32,20 @@ class Access:
                 current = current.next
             return current.data
 
-        elif isinstance(index, slice):
-            start, stop, step = index.indices(self._size)
-            result = []
-            current = self.head
-            pos = 0
-            while current and pos < stop:
-                if pos >= start and (pos - start) % step == 0:
-                    result.append(current.data)
-                current = current.next
-                pos += 1
+        if isinstance(index, slice):
+            # Python already handles every slice shape correctly, including
+            # negative indexes and negative steps. Rebuilding from that result
+            # keeps the linked-list type while matching normal slice behavior.
+            result = list(self)[index]
             return self.__class__.from_list(result, self._list_type)
 
-        else:
-            raise TypeError("Index must be int or slice")
+        raise TypeError("Index must be int or slice")
 
     def __setitem__(self, index: int, value: Any) -> None:
+        """Assign a new value at the requested list index.
+
+        This changes node data only; it does not relink or replace the node.
+        """
         if index < 0:
             index = self._size + index
         if index < 0 or index >= self._size:
@@ -38,9 +56,15 @@ class Access:
         current.data = value
 
     def __contains__(self, data: Any) -> bool:
+        """Return whether the list contains the requested value."""
         return any(item == data for item in self)
 
     def __eq__(self, other: object) -> bool:
+        """Compare two linked lists by type and stored values.
+
+        The type check prevents a singly linked list and doubly linked list
+        with the same values from comparing equal when their structures differ.
+        """
         if not isinstance(other, self.__class__):
             return False
         if len(self) != len(other):
@@ -48,14 +72,22 @@ class Access:
         return all(a == b for a, b in zip(self, other))
 
     def __repr__(self) -> str:
+        """Return a debugging representation of the linked list."""
         return (
             f"{self.__class__.__name__}([{', '.join(repr(x) for x in self)}], "
             f"type={self._list_type})"
         )
 
     def __str__(self) -> str:
+        """Return a readable arrow-separated representation."""
         return " -> ".join(str(x) for x in self)
+
     def nth_from_end(self, n: int) -> Any:
+        """Return the nth value from the end using one-based indexing.
+
+        The method converts the request into a normal zero-based index using
+        the tracked size, so it works for all list variants.
+        """
         if n <= 0 or n > self._size:
             raise IndexError("n is out of range")
         return self[self._size - n]

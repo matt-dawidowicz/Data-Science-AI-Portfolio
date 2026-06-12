@@ -1,7 +1,27 @@
+"""Sorting helpers for linked lists.
+
+Merge sort works well for linked lists because it can split and merge chains by
+rewiring node links instead of repeatedly indexing into the structure.
+"""
+
+from operator import lt
 from typing import Any, Callable, Optional
 
+
 class SortMerge:
+    """Provide merge-sort behavior for linked lists.
+
+    The implementation temporarily treats circular lists as linear chains,
+    sorts them, repairs ``prev`` links when needed, and restores circular links
+    afterward.
+    """
+
     def _split(self, head: Any) -> tuple[Any, Any]:
+        """Split a linked chain into two halves.
+
+        The slow/fast pointer technique places ``slow`` near the midpoint while
+        ``fast`` advances two nodes at a time.
+        """
         slow = fast = head
         while fast.next and fast.next.next:
             slow = slow.next  # type: ignore
@@ -12,9 +32,21 @@ class SortMerge:
             middle.prev = None  # type: ignore
         return head, middle
 
-    def _merge_sorted(self, left: Any, right: Any, compare: Optional[Callable[[Any, Any], bool]] = None) -> Any:
+    def _merge_sorted(
+        self,
+        left: Any,
+        right: Any,
+        compare: Optional[Callable[[Any, Any], bool]] = None,
+    ) -> Any:
+        """Merge two sorted linked chains into one sorted chain.
+
+        A dummy node gives the merge a stable starting point, so the loop can
+        always append to ``tail.next`` without treating the first node as a
+        special case.
+        """
         if compare is None:
-            compare = lambda a, b: a < b
+            compare = lt
+
         dummy = self._create_node(None)
         tail = dummy
         while left and right:
@@ -34,7 +66,15 @@ class SortMerge:
             tail.next.prev = tail  # type: ignore
         return dummy.next
 
-    def sort(self, compare: Optional[Callable[[Any, Any], bool]] = None) -> None:
+    def sort(
+        self,
+        compare: Optional[Callable[[Any, Any], bool]] = None,
+    ) -> None:
+        """Sort the linked list in place with merge sort.
+
+        Circular lists are opened before sorting because merge sort expects
+        finite chains that end at ``None``.
+        """
         if self._is_circular and self.tail:
             self.tail.next = None
             if self._list_type == "doubly_circular":
@@ -44,7 +84,11 @@ class SortMerge:
             if not node or not node.next:
                 return node
             left, right = self._split(node)
-            return self._merge_sorted(_merge_sort(left), _merge_sort(right), compare)
+            return self._merge_sorted(
+                _merge_sort(left),
+                _merge_sort(right),
+                compare,
+            )
 
         self.head = _merge_sort(self.head)
 
@@ -58,6 +102,7 @@ class SortMerge:
             current = current.next
 
         if self._is_circular and self.tail:
+            # Restore the circular invariant after the linear sort completes.
             self.tail.next = self.head
             if self._list_type == "doubly_circular":
                 self.head.prev = self.tail

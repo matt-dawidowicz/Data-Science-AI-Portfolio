@@ -202,6 +202,11 @@ class TestSkipList(unittest.TestCase):
         self.assert_skip_list_integrity(skip_list, [1, 2, 3])
         self.assertNotIn(4, skip_list)
 
+        with self.assertRaises(TypeError):
+            skip_list.extend(["bad"])
+
+        self.assert_skip_list_integrity(skip_list, [1, 2, 3])
+
     def test_supports_comparable_unhashable_values(self) -> None:
         skip_list = SkipList([[2], [1], [2]], max_level=8, seed=5)
 

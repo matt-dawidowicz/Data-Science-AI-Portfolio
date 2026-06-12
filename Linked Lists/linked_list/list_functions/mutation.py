@@ -471,8 +471,9 @@ class Mutation:
 
         Both lists must have the same list type. The optional comparison
         function controls ordering and defaults to less-than comparison.
-        Circular lists are merged by value snapshots so the temporary merge
-        process cannot accidentally chase circular links forever.
+        Lists are merged by value snapshots so the temporary merge process
+        cannot accidentally chase circular links forever or relink nodes from
+        ``other`` into this list.
         """
         if self._list_type != other._list_type:
             raise TypeError("Cannot merge lists of different types")
@@ -480,70 +481,27 @@ class Mutation:
         if compare is None:
             compare = lt
 
-        if self._is_circular:
-            # Snapshot circular lists into plain Python lists before merging.
-            # This keeps the merge logic simple and bounded.
-            left_values = self.to_list()
-            right_values = other.to_list()
-            merged = []
-            left_index = right_index = 0
+        left_values = self.to_list()
+        right_values = other.to_list()
+        merged = []
+        left_index = right_index = 0
 
-            while left_index < len(left_values) and right_index < len(
-                right_values
-            ):
-                if compare(left_values[left_index], right_values[right_index]):
-                    merged.append(left_values[left_index])
-                    left_index += 1
-                else:
-                    merged.append(right_values[right_index])
-                    right_index += 1
-
-            merged.extend(left_values[left_index:])
-            merged.extend(right_values[right_index:])
-
-            self.clear()
-            for item in merged:
-                self.append(item)
-            return
-
-        if not self.head:
-            self.head = other.head
-            self.tail = other.tail
-            self._size = other._size
-            return
-        if not other.head:
-            return
-
-        dummy = self._create_node(None)
-        tail = dummy
-        left, right = self.head, other.head
-        new_size = 0
-
-        while left and right:
-            if compare(left.data, right.data):
-                tail.next = left
-                left = left.next
+        while left_index < len(left_values) and right_index < len(
+            right_values
+        ):
+            if compare(left_values[left_index], right_values[right_index]):
+                merged.append(left_values[left_index])
+                left_index += 1
             else:
-                tail.next = right
-                right = right.next
+                merged.append(right_values[right_index])
+                right_index += 1
 
-            tail = tail.next
-            new_size += 1
+        merged.extend(left_values[left_index:])
+        merged.extend(right_values[right_index:])
 
-        tail.next = left or right
-        while tail.next:
-            tail = tail.next
-            new_size += 1
-
-        self.head, self.tail, self._size = dummy.next, tail, new_size
-
-        # The forward links define the merged order first. Afterward, doubly
-        # linked lists need a second pass to make every backward link agree.
-        if self._list_type == "doubly":
-            current, prev = self.head, None
-            while current:
-                current.prev = prev
-                prev, current = current, current.next
+        self.clear()
+        for item in merged:
+            self.append(item)
 
     def extend(self, iterable: Iterable[Any]) -> None:
         """Append all values from ``iterable`` to this list.
@@ -563,38 +521,55 @@ class Mutation:
         lets the duplicate-removal loop use a normal ``while current`` pattern,
         then the circular links are restored at the end.
         """
-        seen = set()
+        seen_hashable: set[Any] = set()
+        seen_unhashable: list[Any] = []
+
+        def already_seen(data: Any) -> bool:
+            try:
+                if data in seen_hashable:
+                    return True
+            except TypeError:
+                pass
+            return any(data == item for item in seen_unhashable)
+
+        def remember(data: Any) -> None:
+            try:
+                seen_hashable.add(data)
+            except TypeError:
+                seen_unhashable.append(data)
 
         if self._is_circular and self.head:
             self.tail.next = None
             if "doubly" in self._list_type:
                 self.head.prev = None
 
-        current = self.head
-        previous = None
+        try:
+            current = self.head
+            previous = None
 
-        while current:
-            if current.data in seen:
-                # Remove duplicate
-                if previous is None:
-                    # Removing duplicate at the head
-                    self.head = current.next
-                    if "doubly" in self._list_type and current.next:
-                        current.next.prev = None
+            while current:
+                next_node = current.next
+                if already_seen(current.data):
+                    if previous is None:
+                        self.head = next_node
+                        if "doubly" in self._list_type and next_node:
+                            next_node.prev = None
+                    else:
+                        previous.next = next_node
+                        if "doubly" in self._list_type and next_node:
+                            next_node.prev = previous
+                    if current == self.tail:
+                        self.tail = previous
+                    current.next = None
+                    if hasattr(current, "prev"):
+                        current.prev = None
+                    self._size -= 1
                 else:
-                    previous.next = current.next
-                    if "doubly" in self._list_type and current.next:
-                        current.next.prev = previous
-                if current == self.tail:
-                    self.tail = previous
-                self._size -= 1
-            else:
-                seen.add(current.data)
-                previous = current
-            current = current.next
-
-        # If the list was circular, restore circularity
-        if self._is_circular and self.tail:
-            self.tail.next = self.head
-            if "doubly" in self._list_type and self.head:
-                self.head.prev = self.tail
+                    remember(current.data)
+                    previous = current
+                current = next_node
+        finally:
+            if self._is_circular and self.tail:
+                self.tail.next = self.head
+                if "doubly" in self._list_type and self.head:
+                    self.head.prev = self.tail

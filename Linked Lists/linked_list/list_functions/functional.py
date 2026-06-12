@@ -11,6 +11,8 @@ from collections.abc import Callable
 from functools import reduce as functools_reduce
 from typing import Any
 
+_MISSING = object()
+
 
 class Functional:
     """Provide map, filter, and reduce operations."""
@@ -37,13 +39,13 @@ class Functional:
     def reduce(
         self,
         func: Callable[[Any, Any], Any],
-        initializer: Any | None = None,
+        initializer: Any = _MISSING,
     ) -> Any:
         """Reduce the list with ``func`` and an optional initializer.
 
         This delegates to ``functools.reduce`` so it follows normal Python
         reduction behavior for empty lists and missing initializers.
         """
-        if initializer is not None:
-            return functools_reduce(func, self, initializer)
-        return functools_reduce(func, self)
+        if initializer is _MISSING:
+            return functools_reduce(func, self)
+        return functools_reduce(func, self, initializer)

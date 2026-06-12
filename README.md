@@ -2,7 +2,8 @@
 
 This repository currently contains a Python linked-list project with singly,
 doubly, singly circular, and doubly circular linked-list variants, plus sorted
-linked-list, linked-deque, and skip-list implementations.
+linked-list, linked-deque, skip-list, unrolled-list, and multilevel-list
+implementations.
 
 ## Project Layout
 
@@ -14,9 +15,11 @@ Linked Lists/
   linked_list/
     __init__.py
     deque.py
+    multilevel_list.py
     py.typed
     skip_list.py
     sorted_list.py
+    unrolled_list.py
     list_functions/
       access.py
       base.py
@@ -33,8 +36,10 @@ Linked Lists/
       singly.py
   test_linked_deque.py
   test_linked_list.py
+  test_multilevel_linked_list.py
   test_skip_list.py
   test_sorted_linked_list.py
+  test_unrolled_linked_list.py
 pyproject.toml
 requirements-dev.txt
 ```
@@ -46,6 +51,8 @@ requirements-dev.txt
 - Sorted linked lists that preserve ascending order after mutation
 - Linked deque backed by a doubly linked list
 - Skip list ordered set with probabilistic multi-level links
+- Unrolled linked list with fixed-capacity value blocks
+- Multilevel linked list with `next` and `child` pointers
 - Append, prepend, insert, remove, remove-at, pop, and pop-front operations
 - Deque operations: `append_left`, `append_right`, `insert`, `pop_left`,
   `pop_right`, `peek_left`, `peek_right`, `extend`, `extend_left`, `remove`,
@@ -56,6 +63,10 @@ requirements-dev.txt
 - Functional helpers: `map`, `filter`, and `reduce`
 - Search and read helpers: `get`, `index`, `find`, and `count`
 - Utility helpers: `is_empty`, `to_list`, `from_list`, `copy`, `deep_copy`, `remove_all`, and `clear`
+- Hierarchy helpers for multilevel lists: child insertion, child detaching,
+  nested snapshots, path lookup, depth-first and breadth-first flattening
+- Block-layout helpers for unrolled lists, including `to_blocks()` for
+  inspecting chunk boundaries
 - PEP 561 typed-package marker and mypy configuration for static type checks
 - Ruff linting and format-check configuration
 - Pytest and coverage configuration for alternate test workflows
@@ -69,7 +80,7 @@ inside out, not just how to call a built-in list or deque. I implemented the
 core linked-list behavior myself, then separated the code into focused modules
 so each part of the data structure is easier to explain, test, and maintain.
 
-At the highest level, the project has four public containers:
+At the highest level, the project has six public containers:
 
 - `LinkedList`, which supports singly linked, doubly linked, singly circular,
   and doubly circular list variants.
@@ -79,12 +90,17 @@ At the highest level, the project has four public containers:
   nodes.
 - `SkipList`, which is a probabilistic ordered set with average logarithmic
   search, insertion, and removal.
+- `UnrolledLinkedList`, which stores multiple values in each linked node to
+  demonstrate chunked linked storage.
+- `MultilevelLinkedList`, which adds child links so nested structures can be
+  traversed, flattened, copied, and mutated.
 
-The two structures are related, but they are not the same thing. A doubly
-linked list is a general-purpose sequence where operations like indexing,
-insertion, removal, sorting, merging, and traversal matter. A deque is focused
-on efficient access at both ends. With `LinkedDeque`, the main design goal is
-to make left-side and right-side operations direct and predictable:
+The linked list and deque structures are related, but they are not the same
+thing. A doubly linked list is a general-purpose sequence where operations
+like indexing, insertion, removal, sorting, merging, and traversal matter. A
+deque is focused on efficient access at both ends. With `LinkedDeque`, the
+main design goal is to make left-side and right-side operations direct and
+predictable:
 `append_left`, `append_right`, `pop_left`, and `pop_right` all work by updating
 only the head, tail, and neighboring links.
 
@@ -229,6 +245,59 @@ The implementation exposes practical ordered-set operations:
 The class accepts `max_level`, `probability`, and `seed` parameters. That keeps
 the public container simple while making tests deterministic and making the
 probabilistic design visible for learning purposes.
+
+## UnrolledLinkedList Design
+
+`UnrolledLinkedList` is a sequence container where each linked node stores a
+small Python list of values instead of only one value. The `node_capacity`
+setting controls the maximum block size.
+
+This structure is useful because it shows a practical linked-list tradeoff:
+fewer node objects and fewer pointer hops at the cost of small in-node array
+operations. It still has linked `head` and `tail` block nodes, but values are
+grouped into chunks:
+
+- `append(value)` and `prepend(value)` add values at the ends.
+- `insert(index, value)` inserts by normal sequence index and splits a full
+  block when needed.
+- `remove`, `remove_at`, `pop`, and `pop_front` remove values and then merge
+  or borrow from neighboring blocks when a block becomes too sparse.
+- `to_blocks()` exposes a snapshot of the block layout for debugging and
+  teaching.
+- `sort`, `reverse`, `rotate`, `remove_duplicates`, `map`, `filter`, and
+  `reduce` give it the same practical sequence surface as the other containers.
+
+The class is intentionally still a linked structure. It is not trying to beat
+Python's built-in `list`; it is meant to make block splitting, block merging,
+and chunked node storage easy to inspect.
+
+## MultilevelLinkedList Design
+
+`MultilevelLinkedList` stores a top-level sibling chain through `next` links,
+and each node may also point to a child chain through `child`. Public iteration
+is depth-first, so `len(multilevel)`, indexing, `to_list()`, and membership
+checks see every reachable node.
+
+The hierarchy-specific API keeps nested behavior explicit:
+
+- `append_child(parent, value)`, `prepend_child(parent, value)`, and
+  `extend_child(parent, iterable)` add child nodes below a parent node.
+- `child_values(parent)` returns only a parent's direct children.
+- `detach_children(parent)` moves a child chain into a new
+  `MultilevelLinkedList`.
+- `from_nested()` builds a hierarchy from values and `(value, children)` pairs.
+- `to_nested_list()` returns the hierarchy in the same nested shape.
+- `path_to(value)` returns sibling indexes from the top level to a matching
+  value.
+- `flatten(order="depth_first")` or `flatten(order="breadth_first")` rewires
+  the existing nodes into one top-level chain.
+- `flattened(order)` returns a new flat list without mutating the original.
+
+Some sequence-style operations intentionally flatten the hierarchy. For
+example, `sort`, `rotate`, `filter`, and `remove_duplicates` produce flat
+top-level lists because their natural meaning is sequence-wide rather than
+subtree-specific. Other operations, such as `copy`, `deep_copy`, `map`,
+`reverse`, and child mutation helpers, preserve the nested shape.
 
 ## Feature Reference
 
@@ -401,6 +470,65 @@ It also supports Python container-style helpers:
 - `to_list()`, `copy()`, and `clear()` provide conversion and lifecycle
   helpers.
 
+### UnrolledLinkedList API
+
+`UnrolledLinkedList` focuses on sequence behavior with chunked node storage:
+
+- `UnrolledLinkedList([1, 2, 3], node_capacity=4)` builds a list whose blocks
+  can hold up to four values each.
+- `from_iterable(iterable, node_capacity=8)` preserves subclass construction.
+- `len(unrolled)`, `bool(unrolled)`, and `is_empty()` report container state.
+- Iteration yields values left to right, and reverse iteration walks blocks
+  from right to left.
+- Indexing, negative indexing, slicing, assignment, `get`, `index`, `find`,
+  `count`, and membership checks are supported.
+- `append`, `prepend`, `insert`, `extend`, and `merge` add values.
+- `pop`, `pop_front`, `remove`, `remove_all`, and `remove_at` remove values.
+- `replace(old, new, count=None)` changes matching values.
+- `sort`, `reverse`, `rotate`, and `remove_duplicates` operate on the whole
+  visible sequence.
+- `map`, `filter`, and `reduce` mirror the functional helpers on `LinkedList`.
+- `to_list()` returns values, while `to_blocks()` returns the internal chunk
+  layout.
+- `copy()`, `deep_copy()`, and `clear()` provide lifecycle helpers.
+
+### MultilevelLinkedList API
+
+`MultilevelLinkedList` focuses on nested linked structures:
+
+- `MultilevelLinkedList([1, 2, 3])` builds a flat top-level chain.
+- `MultilevelLinkedList.from_nested([1, (2, [3, 4])])` builds `2` with child
+  nodes `3` and `4`.
+- `len(multilevel)` counts every reachable node, not only top-level nodes.
+- Default iteration and `to_list()` use depth-first traversal.
+- `to_list("breadth_first")` returns breadth-first traversal.
+- `iter_top_level()`, `to_top_level_list()`, and `top_level_length()` inspect
+  only the top-level sibling chain.
+- `append`, `prepend`, `extend`, `merge`, and `insert` add top-level or
+  depth-indexed sibling values.
+- `append_child`, `prepend_child`, and `extend_child` add nested child values.
+- `child_values(parent)` returns direct children for a matching node or node
+  reference.
+- `detach_children(parent)` moves a child chain into a new list.
+- `find(value)` returns a depth-first index, and `find_node(value)` returns
+  the first matching node.
+- `path_to(value)` returns nested sibling indexes such as `(1, 0, 2)`.
+- `remove(value)` and `remove_at(index)` remove a node and its subtree by
+  default.
+- `remove(..., promote_children=True)` and
+  `remove_at(..., promote_children=True)` remove only the target node and
+  splice its child chain into its place.
+- `pop()` removes the final depth-first node, while `pop_front()` removes the
+  first node and promotes its children so the rest of the sequence remains
+  reachable.
+- `flatten(order)` mutates the list into one level while preserving node
+  objects.
+- `flattened(order)` returns a new flat list.
+- `reverse()` reverses every sibling chain while preserving hierarchy.
+- `sort`, `rotate`, `filter`, and `remove_duplicates` rebuild as flat lists.
+- `copy`, `deep_copy`, `map`, `reduce`, `to_nested_list`, and `clear` are
+  supported.
+
 ## Deque Edge Cases I Handled
 
 The deque implementation intentionally handles several edge cases:
@@ -485,6 +613,51 @@ invariants:
 - Tests walk every active level to verify that shortcut levels stay sorted and
   contain only values present on the bottom level.
 
+## Unrolled List Edge Cases I Handled
+
+The unrolled-list implementation focuses on keeping chunked node storage
+consistent:
+
+- `node_capacity` is validated before any nodes are created.
+- Empty `peek` and `pop` operations raise `IndexError`.
+- Insertions split full blocks without overfilling either block.
+- Removals detach empty blocks and rebalance sparse neighboring blocks.
+- Forward and backward block links are checked after mutation.
+- `extend(self)` snapshots first, and live self-iterators are bounded by the
+  starting size.
+- Sorting computes the sorted value snapshot before rebuilding, so comparison
+  errors leave the original block structure unchanged.
+- `remove_duplicates()` supports unhashable values through an equality-scan
+  fallback.
+- `clear()` empties old block values and detaches old block links.
+- Randomized tests compare append, prepend, insert, remove, pop, replace,
+  reverse, and rotate behavior against Python `list`.
+
+## Multilevel List Edge Cases I Handled
+
+The multilevel-list implementation focuses on preserving or intentionally
+flattening hierarchy:
+
+- Empty reads and pops fail clearly.
+- Nested construction handles plain values separately from `(value, children)`
+  pairs.
+- Depth-first and breadth-first traversal are both supported and tested.
+- Child operations accept either a node reference or the first matching stored
+  parent value.
+- External node references are rejected so one list cannot accidentally attach
+  children to another list's node.
+- Removing a node can remove its full subtree or promote its children into the
+  removed node's place.
+- `pop_front()` promotes children so removing the first top-level node does
+  not silently drop the rest of the depth-first sequence.
+- `detach_children()` moves a child chain into a new list and updates both
+  list sizes.
+- `flatten()` preserves node objects while clearing child links.
+- `copy`, `deep_copy`, and `map` preserve hierarchy.
+- `sort`, `rotate`, `filter`, and `remove_duplicates` intentionally rebuild a
+  flat top-level list because they operate on the whole visible sequence.
+- `clear()` recursively detaches `next` and `child` links from every node.
+
 ## Style and Documentation Standards
 
 I also cleaned the Python code so it follows standard Python style more
@@ -526,6 +699,10 @@ version is:
   end is closer.
 - `SkipList` search, insertion, and removal are O(log n) on average with
   probabilistic shortcut levels, and O(n) in the worst case.
+- `UnrolledLinkedList` end appends are O(1) while middle access and mutation
+  walk block nodes and then edit a small in-block list.
+- `MultilevelLinkedList` depth-first reads are O(n), and flattening or
+  hierarchy-wide operations visit every reachable node.
 - All linked structures use O(n) node storage overall, while the container
   metadata itself is O(1).
 
@@ -611,14 +788,43 @@ For `SkipList`, the tests cover:
   `set` semantics.
 - Internal level invariants for every active skip-list level.
 
-The tests do more than check final lists of values. For the linked deque, they
-also walk the nodes forward and backward to verify that `next` and `prev`
-connections are correct. That is important because a linked structure can look
-correct from one direction while still having broken backward links. For the
-sorted list, the tests also verify that public values remain sorted and that
-circular head-tail links stay intact. For the skip list, the tests verify that
-each shortcut level remains sorted and only references values that exist on
-the bottom level.
+For `UnrolledLinkedList`, the tests cover:
+
+- Empty state, capacity validation, and error behavior.
+- Appending, prepending, inserting, extending, and merging values.
+- Block splitting and block-link integrity.
+- Indexing, slicing, assignment, safe reads, search helpers, and containment.
+- Removing values by value and position, plus block rebalancing after removal.
+- Duplicate removal for hashable and unhashable values.
+- Copying, deep copying, mapping, filtering, and reducing.
+- Sorting, reversing, rotating, and atomic comparison-error behavior.
+- Self-extension and live self-iterator extension.
+- Clearing and detaching old block nodes.
+- Randomized mutation behavior against Python `list`.
+
+For `MultilevelLinkedList`, the tests cover:
+
+- Empty state and traversal-order validation.
+- Nested construction from `(value, children)` pairs.
+- Depth-first, breadth-first, and top-level traversal.
+- Child append, prepend, extension, snapshots, and detaching.
+- Path lookup, node lookup, indexing, slicing, assignment, and merging.
+- Subtree removal and child-promotion removal.
+- Popping from both depth-first ends.
+- Depth-first and breadth-first flattening.
+- Reversing hierarchy, sorting, rotating, and duplicate removal.
+- Copying, deep copying, mapping, filtering, reducing, and equality.
+- Recursive clearing of `next` and `child` links.
+- Randomized flat operations against Python `list`.
+
+The tests do more than check final lists of values. For the linked deque and
+unrolled list, they also walk links in both directions to verify that
+neighboring nodes agree. For the sorted list, the tests verify that public
+values remain sorted and that circular head-tail links stay intact. For the
+skip list, the tests verify that each shortcut level remains sorted and only
+references values that exist on the bottom level. For the multilevel list, the
+tests compare flat traversal, nested snapshots, top-level chains, and child
+links so hierarchy bugs are visible.
 
 ## Requirements
 
@@ -690,7 +896,14 @@ class has to support singly, doubly, circular, and non-circular node shapes.
 ## Example
 
 ```python
-from linked_list import LinkedDeque, LinkedList, SkipList, SortedLinkedList
+from linked_list import (
+    LinkedDeque,
+    LinkedList,
+    MultilevelLinkedList,
+    SkipList,
+    SortedLinkedList,
+    UnrolledLinkedList,
+)
 
 linked_list = LinkedList("doubly_circular")
 for value in [3, 1, 2]:
@@ -740,4 +953,18 @@ print(skip_list.first())       # 2
 print(skip_list.ceiling(3))    # 3
 print(skip_list.floor(6))      # 5
 print(skip_list.to_list())     # [2, 3, 4, 5]
+
+unrolled = UnrolledLinkedList([1, 2, 3, 4], node_capacity=3)
+unrolled.insert(2, 99)
+unrolled.remove(3)
+
+print(unrolled.to_list())    # [1, 2, 99, 4]
+print(unrolled.to_blocks())  # block layout, for example [[1, 2], [99, 4]]
+
+multilevel = MultilevelLinkedList.from_nested([1, (2, [3, 4]), 5])
+multilevel.append_child(2, 6)
+
+print(multilevel.to_list())              # [1, 2, 3, 4, 6, 5]
+print(multilevel.path_to(6))             # (1, 2)
+print(multilevel.to_list("breadth_first"))  # [1, 2, 5, 3, 4, 6]
 ```

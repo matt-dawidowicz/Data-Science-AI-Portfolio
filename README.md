@@ -2,7 +2,7 @@
 
 This repository currently contains a Python linked-list project with singly,
 doubly, singly circular, and doubly circular linked-list variants, plus sorted
-linked-list and linked-deque implementations.
+linked-list, linked-deque, and skip-list implementations.
 
 ## Project Layout
 
@@ -15,6 +15,7 @@ Linked Lists/
     __init__.py
     deque.py
     py.typed
+    skip_list.py
     sorted_list.py
     list_functions/
       access.py
@@ -32,6 +33,7 @@ Linked Lists/
       singly.py
   test_linked_deque.py
   test_linked_list.py
+  test_skip_list.py
   test_sorted_linked_list.py
 pyproject.toml
 requirements-dev.txt
@@ -43,6 +45,7 @@ requirements-dev.txt
 - Singly circular and doubly circular linked lists
 - Sorted linked lists that preserve ascending order after mutation
 - Linked deque backed by a doubly linked list
+- Skip list ordered set with probabilistic multi-level links
 - Append, prepend, insert, remove, remove-at, pop, and pop-front operations
 - Deque operations: `append_left`, `append_right`, `insert`, `pop_left`,
   `pop_right`, `peek_left`, `peek_right`, `extend`, `extend_left`, `remove`,
@@ -66,7 +69,7 @@ inside out, not just how to call a built-in list or deque. I implemented the
 core linked-list behavior myself, then separated the code into focused modules
 so each part of the data structure is easier to explain, test, and maintain.
 
-At the highest level, the project has three public containers:
+At the highest level, the project has four public containers:
 
 - `LinkedList`, which supports singly linked, doubly linked, singly circular,
   and doubly circular list variants.
@@ -74,6 +77,8 @@ At the highest level, the project has three public containers:
   ascending order at all times.
 - `LinkedDeque`, which is a double-ended queue built on top of doubly linked
   nodes.
+- `SkipList`, which is a probabilistic ordered set with average logarithmic
+  search, insertion, and removal.
 
 The two structures are related, but they are not the same thing. A doubly
 linked list is a general-purpose sequence where operations like indexing,
@@ -200,15 +205,40 @@ The deque also includes Python-style aliases:
 These aliases make `LinkedDeque` feel familiar to anyone who has used
 `collections.deque`, while still keeping the explicit left/right method names.
 
+## SkipList Design
+
+`SkipList` is an ordered set built from layered forward links. The bottom level
+contains every value in sorted order. Higher levels contain random shortcuts,
+so searches can skip across ranges of nodes instead of walking every value.
+
+The implementation exposes practical ordered-set operations:
+
+- `add(value)` inserts a comparable value and returns whether it was new.
+- `extend(iterable)` and `update(iterable)` add many values atomically and
+  return the number of new insertions.
+- `remove(value)` and `discard(value)` remove a value and return whether it
+  existed.
+- `find(value)` returns the stored matching value or `None`.
+- `floor(value)` returns the greatest stored value less than or equal to the
+  requested value.
+- `ceiling(value)` returns the smallest stored value greater than or equal to
+  the requested value.
+- `first()` and `last()` read the smallest and largest values.
+- `pop_first()` and `pop_last()` remove the smallest and largest values.
+
+The class accepts `max_level`, `probability`, and `seed` parameters. That keeps
+the public container simple while making tests deterministic and making the
+probabilistic design visible for learning purposes.
+
 ## Feature Reference
 
 The package now exposes enough behavior to use these structures as practical
 teaching containers, not only as minimal linked-list examples.
 
 For detailed Big-O notes, see `docs/complexity.md`. That guide breaks down
-time and space costs for `LinkedList`, `SortedLinkedList`, `LinkedDeque`, node
-storage, circular-list behavior, and the tradeoffs behind snapshot-based
-operations.
+time and space costs for `LinkedList`, `SortedLinkedList`, `LinkedDeque`,
+`SkipList`, node storage, circular-list behavior, and the tradeoffs behind
+snapshot-based operations.
 
 ### LinkedList API
 
@@ -344,6 +374,33 @@ It also supports Python container-style helpers:
 - `to_list()` converts the deque into a Python list.
 - `from_iterable(iterable)` builds a deque from any iterable.
 
+### SkipList API
+
+`SkipList` focuses on sorted unique values:
+
+- `SkipList([3, 1, 2, 2])` builds an ordered set containing `[1, 2, 3]`.
+- `SkipList.from_iterable(values, max_level=16, probability=0.5, seed=None)`
+  builds a skip list with explicit tuning parameters.
+- `len(skip_list)`, `bool(skip_list)`, and `is_empty()` report container
+  state.
+- Iteration yields values in ascending order.
+- Reverse iteration yields values in descending order.
+- `value in skip_list` checks membership.
+- `add(value)` inserts a value and returns `True` only when it was not already
+  present.
+- `extend(iterable)` adds many values and returns the number of new insertions.
+- `update(iterable)` is an alias for `extend`.
+- `remove(value)` and `discard(value)` remove a value and return whether it
+  existed.
+- `find(value)` returns a matching stored value or `None`.
+- `floor(value, default=None)` and `ceiling(value, default=None)` support
+  ordered nearest-neighbor lookups.
+- `first()` and `last()` read the smallest and largest values.
+- `pop_first()` and `pop_last()` remove and return the smallest and largest
+  values.
+- `to_list()`, `copy()`, and `clear()` provide conversion and lifecycle
+  helpers.
+
 ## Deque Edge Cases I Handled
 
 The deque implementation intentionally handles several edge cases:
@@ -404,6 +461,30 @@ The sorted-list implementation focuses on protecting the sorted invariant:
 These rules keep the class honest. If an operation cannot preserve sorted
 order, it fails clearly instead of quietly producing a misleading container.
 
+## Skip List Edge Cases I Handled
+
+The skip-list implementation focuses on ordered-set behavior and level
+invariants:
+
+- Constructor input is sorted and deduplicated through normal insertion.
+- Duplicate `add` calls return `False` without changing the structure.
+- `extend` validates incoming values before mutation, so comparison errors do
+  not partially add values.
+- Removing the head, middle, tail, missing values, and the final value keeps
+  all active levels consistent.
+- `pop_first` and `pop_last` remove sorted edges and raise `IndexError` on an
+  empty skip list.
+- `clear()` detaches old nodes and resets the active level count.
+- `extend(self)` snapshots first so self-extension is bounded.
+- Comparable unhashable values, such as nested lists, are supported because the
+  structure does not rely on hashing.
+- `max_level` and `probability` are validated before any nodes are created.
+- Seeded construction gives deterministic node heights for tests.
+- Invalid tuning parameters fail clearly before any nodes are created.
+- Comparison errors leave existing values unchanged.
+- Tests walk every active level to verify that shortcut levels stay sorted and
+  contain only values present on the bottom level.
+
 ## Style and Documentation Standards
 
 I also cleaned the Python code so it follows standard Python style more
@@ -443,6 +524,8 @@ version is:
   `pop_left`, and `pop_right` are O(1).
 - `LinkedDeque` indexing is O(min(i, n - i)) because it starts from whichever
   end is closer.
+- `SkipList` search, insertion, and removal are O(log n) on average with
+  probabilistic shortcut levels, and O(n) in the worst case.
 - All linked structures use O(n) node storage overall, while the container
   metadata itself is O(1).
 
@@ -511,12 +594,31 @@ For `SortedLinkedList`, the tests cover:
 - Leaving the original list unchanged when comparison errors happen.
 - Preserving circular links and singly linked node shape after mutation.
 
+For `SkipList`, the tests cover:
+
+- Empty-state behavior and invalid configuration values.
+- Constructor sorting and duplicate removal.
+- Adding, duplicate insertion, membership, `find`, `floor`, and `ceiling`.
+- Removing head, middle, tail, missing values, and all remaining values.
+- Removing sorted edges with `pop_first` and `pop_last`.
+- Self-extension, copying, clearing, and subclass-preserving construction.
+- Atomic extension when an incoming value cannot be compared.
+- Comparable unhashable values.
+- Single-level mode, which behaves like a sorted linked set.
+- Equality and reproducible seeded node heights.
+- Comparison errors that leave the original list unchanged.
+- Randomized add/remove/extend/clear/floor/ceiling behavior against Python
+  `set` semantics.
+- Internal level invariants for every active skip-list level.
+
 The tests do more than check final lists of values. For the linked deque, they
 also walk the nodes forward and backward to verify that `next` and `prev`
 connections are correct. That is important because a linked structure can look
 correct from one direction while still having broken backward links. For the
 sorted list, the tests also verify that public values remain sorted and that
-circular head-tail links stay intact.
+circular head-tail links stay intact. For the skip list, the tests verify that
+each shortcut level remains sorted and only references values that exist on
+the bottom level.
 
 ## Requirements
 
@@ -588,7 +690,7 @@ class has to support singly, doubly, circular, and non-circular node shapes.
 ## Example
 
 ```python
-from linked_list import LinkedDeque, LinkedList, SortedLinkedList
+from linked_list import LinkedDeque, LinkedList, SkipList, SortedLinkedList
 
 linked_list = LinkedList("doubly_circular")
 for value in [3, 1, 2]:
@@ -629,4 +731,13 @@ sorted_list.remove_at(1)
 print(sorted_list.peek_front())  # 0
 print(sorted_list.find(30))      # 4
 print(sorted_list.to_list())     # [0, 2, 4, 5, 30]
+
+skip_list = SkipList([4, 1, 3, 2, 2], seed=1)
+skip_list.add(5)
+skip_list.remove(1)
+
+print(skip_list.first())       # 2
+print(skip_list.ceiling(3))    # 3
+print(skip_list.floor(6))      # 5
+print(skip_list.to_list())     # [2, 3, 4, 5]
 ```

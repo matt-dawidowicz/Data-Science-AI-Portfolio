@@ -1,7 +1,7 @@
 # Linked Structure Complexity Guide
 
 This guide explains the time and space complexity of the linked-list,
-sorted-list, and deque containers in this repository.
+sorted-list, deque, and skip-list containers in this repository.
 
 The symbols used below are:
 
@@ -9,6 +9,7 @@ The symbols used below are:
 - `m`: number of incoming values from another iterable or list.
 - `k`: number of positions rotated or number of replacements requested.
 - `r`: number of values that actually match a removal or replacement target.
+- `h`: height of a skip-list node or active skip-list level count.
 
 The code is intentionally educational, so several methods favor clear pointer
 repair over micro-optimizing every case. The tables below describe the actual
@@ -45,7 +46,7 @@ because linked lists do not have array-style random access.
 | `count(value)` | O(n) | O(1) | Traverses every value once. |
 | `nth_from_end(n)` | O(n) | O(1) | Converts `n` into a zero-based index, then walks from `head`. |
 | `to_list()` | O(n) | O(n) | Copies every value into a Python list. |
-| Forward iteration | O(n) | O(1) | Circular lists stop after returning to `head`. |
+| Forward iteration | O(n) | O(1) | Bounded by the size captured at iterator creation. |
 | Reverse iteration | O(n) | O(1) | Supported only by doubly linked variants. |
 
 ### LinkedList Mutation Operations
@@ -73,8 +74,7 @@ because linked lists do not have array-style random access.
 | --- | --- | --- | --- |
 | `sort()` | O(n log n) | O(log n) | Merge sort recursion; nodes are relinked rather than indexed. |
 | `insert_sorted(value)` | O(n) | O(1) | Assumes the list is already sorted. |
-| `merge(other)` linear lists | O(n + m) | O(1) | Relinks nodes from both lists. |
-| `merge(other)` circular lists | O(n + m) | O(n + m) | Uses value snapshots to avoid circular traversal hazards. |
+| `merge(other)` | O(n + m) | O(n + m) | Uses value snapshots so `other` is not relinked or corrupted. |
 | `reverse()` | O(n) | O(1) | Rewrites each node's direction links. |
 | `rotate(k)` circular lists | O(n) | O(1) | Advances `head` and `tail` up to `n` steps. |
 | `rotate(k)` linear lists | O(n) | O(1) | Finds a new break point and reconnects the old tail. |
@@ -179,6 +179,50 @@ educational sequence-style helpers.
 | `clear()` | O(n) | O(1) | Detaches every node before resetting state. |
 | `copy()` | O(n) | O(n) | Builds a new deque with the same values. |
 
+## SkipList Complexity
+
+`SkipList` is an ordered set, so it stores each distinct value once. Its
+probabilistic levels give logarithmic expected performance when the promotion
+probability is balanced, while worst-case behavior is still linear if the
+random levels are unlucky.
+
+### SkipList Reads
+
+| Operation | Expected Time | Worst Time | Extra Space | Notes |
+| --- | --- | --- | --- | --- |
+| `len(skip_list)` | O(1) | O(1) | O(1) | Reads the tracked `_size`. |
+| `bool(skip_list)` | O(1) | O(1) | O(1) | Checks whether `_size` is nonzero. |
+| `is_empty()` | O(1) | O(1) | O(1) | Explicit empty-state helper. |
+| `value in skip_list` | O(log n) | O(n) | O(1) | Walks top-down through shortcut levels. |
+| `find(value)` | O(log n) | O(n) | O(1) | Returns the stored value or `None`. |
+| `floor(value)` | O(log n) | O(n) | O(1) | Finds the closest predecessor. |
+| `ceiling(value)` | O(log n) | O(n) | O(1) | Finds the closest successor. |
+| `first()` | O(1) | O(1) | O(1) | Reads the first bottom-level node. |
+| `last()` | O(1) | O(1) | O(1) | Reads the tracked tail node. |
+| Iteration | O(n) | O(n) | O(1) | Walks the fully populated bottom level. |
+| Reverse iteration | O(n) | O(n) | O(n) | Builds a value snapshot, then yields it backward. |
+| `to_list()` | O(n) | O(n) | O(n) | Copies bottom-level values into a list. |
+
+### SkipList Mutations
+
+| Operation | Expected Time | Worst Time | Extra Space | Notes |
+| --- | --- | --- | --- | --- |
+| Constructor from iterable | O(m log m) | O(m^2) | O(m) | Adds values one at a time and ignores duplicates. |
+| `add(value)` | O(log n) | O(n) | O(h) | Finds predecessors, then links one new node through its levels. |
+| `extend(iterable)` / `update(iterable)` | O((n + m) log(n + m)) | O((n + m)^2) | O(n + m) | Validates a sorted snapshot first so comparison errors are atomic. |
+| `remove(value)` / `discard(value)` | O(log n) | O(n) | O(h) | Finds predecessors, then bypasses the target on each level. |
+| `pop_first()` | O(log n) | O(n) | O(h) | Reads the first value, then removes it. |
+| `pop_last()` | O(log n) | O(n) | O(h) | Reads the tracked tail value, then removes it. |
+| `clear()` | O(n) | O(n) | O(1) | Detaches all bottom-level nodes and resets header links. |
+| `copy()` | O(n log n) | O(n^2) | O(n) | Rebuilds through normal insertion. |
+
+### Why SkipList Is Useful Here
+
+The linked lists in this project teach pointer repair and sequence behavior.
+The skip list adds a different linked-structure idea: extra forward links can
+trade memory for faster ordered lookups. It is still made of linked nodes, but
+its shape is probabilistic rather than purely linear.
+
 ## Space Complexity of Nodes
 
 Each linked-list node stores one data reference plus link references:
@@ -187,9 +231,13 @@ Each linked-list node stores one data reference plus link references:
 - Doubly linked node: `data` + `prev` + `next`.
 - Circular nodes use the same fields as their linear counterparts, but their
   end links point back into the structure instead of to `None`.
+- Skip-list nodes store `data` plus `h` forward links. Most nodes are short;
+  only a few are promoted to high shortcut levels.
 
 The containers themselves store only `head`, `tail`, and `_size`, so container
-state is O(1). The total memory cost for stored nodes is O(n).
+state is O(1) for linked lists and deques. Skip lists also store a fixed-size
+header of `max_level` links. The expected total node-link storage for a skip
+list is O(n) for a fixed promotion probability.
 
 ## Practical Tradeoffs
 

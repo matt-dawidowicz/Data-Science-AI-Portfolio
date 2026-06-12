@@ -46,6 +46,7 @@ disable_error_code = [
 module = [
     "test_linked_deque",
     "test_linked_list",
+    "test_skip_list",
     "test_sorted_linked_list",
 ]
 disable_error_code = [

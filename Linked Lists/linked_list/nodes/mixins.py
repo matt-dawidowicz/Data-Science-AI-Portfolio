@@ -5,13 +5,17 @@ The mixins keep pointer setup reusable. A singly linked node needs only
 circular nodes add ``CircularMixin`` after their normal links exist.
 """
 
-from typing import Optional
+from __future__ import annotations
+
+from typing import Any
 
 
 class NextMixin:
     """Provide a ``next`` pointer for a node."""
 
-    def __init__(self, next_node: Optional[object] = None) -> None:
+    next: Any | None
+
+    def __init__(self, next_node: Any | None = None) -> None:
         """Initialize the forward link."""
         self.next = next_node
 
@@ -19,7 +23,9 @@ class NextMixin:
 class PrevMixin:
     """Provide a ``prev`` pointer for a node."""
 
-    def __init__(self, prev_node: Optional[object] = None) -> None:
+    prev: Any | None
+
+    def __init__(self, prev_node: Any | None = None) -> None:
         """Initialize the backward link."""
         self.prev = prev_node
 

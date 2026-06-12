@@ -5,14 +5,17 @@ the linked-list type. ``map`` and ``filter`` return new linked lists instead of
 plain Python lists.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
 from functools import reduce as functools_reduce
-from typing import Any, Callable, Optional
+from typing import Any
 
 
 class Functional:
     """Provide map, filter, and reduce operations."""
 
-    def map(self, func: Callable[[Any], Any]) -> "LinkedList":
+    def map(self, func: Callable[[Any], Any]) -> Any:
         """Return a new list containing ``func`` applied to each item.
 
         The original list is unchanged. The new list uses the same list type so
@@ -23,7 +26,7 @@ class Functional:
             new_list.append(func(data))
         return new_list
 
-    def filter(self, predicate: Callable[[Any], bool]) -> "LinkedList":
+    def filter(self, predicate: Callable[[Any], bool]) -> Any:
         """Return a new list containing items accepted by ``predicate``."""
         new_list = self.__class__(self._list_type)
         for data in self:
@@ -34,7 +37,7 @@ class Functional:
     def reduce(
         self,
         func: Callable[[Any, Any], Any],
-        initializer: Optional[Any] = None,
+        initializer: Any | None = None,
     ) -> Any:
         """Reduce the list with ``func`` and an optional initializer.
 

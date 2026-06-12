@@ -9,8 +9,14 @@ doubly linked nodes. The conditional logic keeps those variants consistent
 without requiring four separate list classes.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable, Iterable
 from operator import lt
-from typing import Any, Callable, Iterable, Optional
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .linked_list import LinkedList
 
 
 class Mutation:
@@ -151,6 +157,85 @@ class Mutation:
             steps += 1
         return False
 
+    def remove_all(self, data: Any) -> int:
+        """Remove every matching value and return the removal count.
+
+        This builds on ``remove`` so each individual deletion goes through the
+        same link-repair path as normal single-value removal.
+        """
+        removed = 0
+        while self.remove(data):
+            removed += 1
+        return removed
+
+    def remove_at(self, index: int) -> Any:
+        """Remove and return the value at ``index``.
+
+        Positive and negative indexes follow the same rules as ``__getitem__``.
+        Edge removals delegate to ``pop_front`` or ``pop`` so head and tail
+        updates stay centralized. Middle removals splice one node out and then
+        repair circular and doubly linked invariants.
+        """
+        if index < 0:
+            index += self._size
+        if index < 0 or index >= self._size:
+            raise IndexError("Index out of range")
+        if index == 0:
+            return self.pop_front()
+        if index == self._size - 1:
+            return self.pop()
+
+        previous = self.head
+        for _ in range(index - 1):
+            previous = previous.next  # type: ignore
+
+        current = previous.next  # type: ignore
+        next_node = current.next
+        data = current.data
+
+        previous.next = next_node  # type: ignore
+        if "doubly" in self._list_type and next_node:
+            next_node.prev = previous  # type: ignore
+
+        if self._is_circular and self.head and self.tail:
+            self.tail.next = self.head  # type: ignore
+            if "doubly" in self._list_type:
+                self.head.prev = self.tail  # type: ignore
+
+        current.next = None
+        if hasattr(current, "prev"):
+            current.prev = None
+        self._size -= 1
+        return data
+
+    def replace(
+        self,
+        old_data: Any,
+        new_data: Any,
+        count: int | None = None,
+    ) -> int:
+        """Replace matching values and return how many changed.
+
+        Only node data changes; links are left exactly where they are. Passing
+        ``count`` limits the number of replacements from left to right. A
+        non-positive count performs no replacements.
+        """
+        if count is not None and count <= 0:
+            return 0
+
+        replaced = 0
+        current = self.head
+        steps = 0
+        while current is not None and steps < self._size:
+            if current.data == old_data:
+                current.data = new_data
+                replaced += 1
+                if count is not None and replaced == count:
+                    break
+            current = current.next
+            steps += 1
+        return replaced
+
     def pop(self) -> Any:
         """Remove and return the tail value.
 
@@ -199,6 +284,8 @@ class Mutation:
         if previous:
             previous.next = None
             self.tail = previous
+        if hasattr(current, "prev"):
+            current.prev = None
         self._size -= 1
         return data
 
@@ -235,7 +322,7 @@ class Mutation:
     def insert_sorted(
         self,
         data: Any,
-        compare: Optional[Callable[[Any, Any], bool]] = None,
+        compare: Callable[[Any, Any], bool] | None = None,
     ) -> None:
         """Insert ``data`` into an already sorted list.
 
@@ -377,8 +464,8 @@ class Mutation:
 
     def merge(
         self,
-        other: "LinkedList",
-        compare: Optional[Callable[[Any, Any], bool]] = None,
+        other: LinkedList,
+        compare: Callable[[Any, Any], bool] | None = None,
     ) -> None:
         """Merge another sorted list into this one.
 
@@ -401,9 +488,8 @@ class Mutation:
             merged = []
             left_index = right_index = 0
 
-            while (
-                left_index < len(left_values)
-                and right_index < len(right_values)
+            while left_index < len(left_values) and right_index < len(
+                right_values
             ):
                 if compare(left_values[left_index], right_values[right_index]):
                     merged.append(left_values[left_index])

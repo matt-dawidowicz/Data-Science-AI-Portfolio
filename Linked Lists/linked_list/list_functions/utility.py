@@ -4,6 +4,8 @@ These helpers convert between linked lists and ordinary Python collections and
 perform cleanup operations that are shared by all list variants.
 """
 
+from __future__ import annotations
+
 from copy import deepcopy
 from typing import Any
 
@@ -24,7 +26,7 @@ class Utility:
         cls,
         lst: list[Any],
         list_type: str = "singly",
-    ) -> "LinkedList":
+    ) -> Any:
         """Build a linked list from a Python list.
 
         The new list is built through ``append`` so all normal link invariants
@@ -35,14 +37,14 @@ class Utility:
             new_list.append(item)
         return new_list
 
-    def copy(self) -> "LinkedList":
+    def copy(self) -> Any:
         """Return a shallow copy with the same list type.
 
         The node structure is new, but the stored values are the same objects.
         """
         return self.from_list(self.to_list(), self._list_type)
 
-    def deep_copy(self) -> "LinkedList":
+    def deep_copy(self) -> Any:
         """Return a deep copy with the same list type.
 
         Both the node structure and the stored values are copied.

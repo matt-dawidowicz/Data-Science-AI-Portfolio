@@ -5,7 +5,9 @@ That is why tail operations on singly linked lists sometimes require traversal
 from the head.
 """
 
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import Any
 
 from .base_node import BaseNode
 from .mixins import CircularMixin, NextMixin
@@ -17,14 +19,13 @@ class SinglyLinkedNode(BaseNode, NextMixin):
     def __init__(
         self,
         data: Any,
-        next_node: Optional["SinglyLinkedNode"] = None,
+        next_node: SinglyLinkedNode | None = None,
     ) -> None:
         """Initialize a singly linked node."""
         BaseNode.__init__(self, data)
         NextMixin.__init__(self, next_node)
-        if (
-            next_node is not None
-            and not isinstance(next_node, SinglyLinkedNode)
+        if next_node is not None and not isinstance(
+            next_node, SinglyLinkedNode
         ):
             raise TypeError("next_node must be a SinglyLinkedNode or None")
 
@@ -35,7 +36,7 @@ class SinglyCircularLinkedNode(BaseNode, NextMixin, CircularMixin):
     def __init__(
         self,
         data: Any,
-        next_node: Optional["SinglyCircularLinkedNode"] = None,
+        next_node: SinglyCircularLinkedNode | None = None,
     ) -> None:
         """Initialize a singly circular linked node."""
         BaseNode.__init__(self, data)

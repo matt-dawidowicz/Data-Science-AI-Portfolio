@@ -33,15 +33,10 @@ class Access:
             return current.data
 
         if isinstance(index, slice):
-            start, stop, step = index.indices(self._size)
-            result = []
-            current = self.head
-            pos = 0
-            while current and pos < stop:
-                if pos >= start and (pos - start) % step == 0:
-                    result.append(current.data)
-                current = current.next
-                pos += 1
+            # Python already handles every slice shape correctly, including
+            # negative indexes and negative steps. Rebuilding from that result
+            # keeps the linked-list type while matching normal slice behavior.
+            result = list(self)[index]
             return self.__class__.from_list(result, self._list_type)
 
         raise TypeError("Index must be int or slice")

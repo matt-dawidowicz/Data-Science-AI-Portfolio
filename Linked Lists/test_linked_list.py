@@ -60,6 +60,9 @@ class TestLinkedListUnit(unittest.TestCase):
     def test_slice(self) -> None:
         sublist = self.singly[1:3]
         self.assertEqual(sublist.to_list(), [1, 2])
+        self.assertEqual(self.singly[::2].to_list(), [0, 2, 4])
+        self.assertEqual(self.singly[::-1].to_list(), [4, 3, 2, 1, 0])
+        self.assertEqual(self.doubly[4:1:-1].to_list(), [4, 3, 2])
 
     def test_equality(self) -> None:
         another = LinkedList("singly")
@@ -318,6 +321,18 @@ class TestCircularLinkedList(unittest.TestCase):
         self.assertEqual(self.singly_circular.nth_from_end(3), 2)
         self.assertEqual(self.doubly_circular.nth_from_end(1), 4)
         self.assertEqual(self.doubly_circular.nth_from_end(5), 0)
+
+    def test_circular_slices_preserve_type_and_links(self) -> None:
+        singly_reversed = self.singly_circular[::-1]
+        doubly_reversed = self.doubly_circular[-1:-4:-1]
+
+        self.assertEqual(singly_reversed.to_list(), [4, 3, 2, 1, 0])
+        self.assertEqual(doubly_reversed.to_list(), [4, 3, 2])
+        self.assertEqual(singly_reversed._list_type, "singly_circular")
+        self.assertEqual(doubly_reversed._list_type, "doubly_circular")
+        self.assert_circular_links(singly_reversed)
+        self.assert_circular_links(doubly_reversed)
+        self.assert_singly_nodes_have_no_prev(singly_reversed)
 
     def test_circular_insert_sorted_updates_links(self) -> None:
         singly_sorted = LinkedList("singly_circular")

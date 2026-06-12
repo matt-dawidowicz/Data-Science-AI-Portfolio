@@ -3,6 +3,11 @@
 A skip list stores values in sorted order across multiple linked levels. The
 bottom level contains every value. Higher levels contain random shortcuts that
 let search, insertion, and deletion skip over ranges of values on average.
+
+The mental model is "several linked lists stacked on top of each other." A
+search starts at the highest active level, moves right while the next value is
+still before the target, then drops down one level. By the time the search
+reaches level zero, it has skipped much of the bottom chain in typical cases.
 """
 
 from __future__ import annotations
@@ -16,11 +21,16 @@ TSkipList = TypeVar("TSkipList", bound="SkipList")
 
 
 class _SkipListNode:
-    """Store one value plus forward links for its participating levels."""
+    """Store one value plus forward links for its participating levels.
+
+    ``forward[0]`` is the normal bottom-level next pointer. Higher indexes are
+    shortcut pointers used only by nodes that were randomly promoted.
+    """
 
     __slots__ = ("data", "forward")
 
     def __init__(self, data: Any, height: int) -> None:
+        """Initialize a node with ``height`` forward levels."""
         self.data = data
         self.forward: list[_SkipListNode | None] = [None] * height
 
@@ -36,6 +46,10 @@ class SkipList:
     Values must be mutually comparable with ``<``. Duplicate insertions are
     ignored, so the container behaves like a sorted set rather than a
     duplicate-preserving linked list.
+
+    ``max_level`` caps the number of shortcut layers. ``probability`` controls
+    how likely a new node is to be promoted from one level to the next. Tests
+    can pass ``seed`` to make the random tower shape reproducible.
     """
 
     def __init__(
@@ -183,7 +197,12 @@ class SkipList:
         return self._tail.data
 
     def add(self, value: Any) -> bool:
-        """Add ``value`` and return whether a new node was inserted."""
+        """Add ``value`` and return whether a new node was inserted.
+
+        The ``update`` list stores the predecessor at each level. Once the new
+        node height is known, insertion is just local pointer splicing on the
+        levels the node participates in.
+        """
         update = self._find_update(value)
         next_node = update[0].forward[0]
         if next_node is not None and next_node.data == value:
@@ -309,7 +328,12 @@ class SkipList:
         return None
 
     def _find_update(self, value: Any) -> list[_SkipListNode]:
-        """Return predecessor nodes for each level before ``value``."""
+        """Return predecessor nodes for each level before ``value``.
+
+        This is the core skip-list search routine. The returned list answers:
+        "At each level, which node should point to a new node with this value?"
+        The same predecessors are also used to find and remove existing nodes.
+        """
         update = [self._head] * self._max_level
         current = self._head
 
@@ -326,7 +350,11 @@ class SkipList:
         return update
 
     def _random_level(self) -> int:
-        """Randomly choose the height for a new node."""
+        """Randomly choose the height for a new node.
+
+        Each successful promotion adds one more shortcut level. Most nodes stay
+        short; a few become tall enough to speed up future searches.
+        """
         level = 1
         while (
             level < self._max_level

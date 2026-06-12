@@ -1,4 +1,22 @@
-"""Linked-list containers exposed by the package."""
+"""Educational linked-structure containers exposed by the package.
+
+The package groups several related data structures behind one import surface.
+They all use linked nodes in some form, but each one teaches a different
+tradeoff:
+
+- ``LinkedList`` shows the classic singly, doubly, and circular variants.
+- ``LinkedDeque`` focuses on constant-time work at both ends.
+- ``SortedLinkedList`` protects an ordering invariant after every mutation.
+- ``SkipList`` adds probabilistic shortcut links for faster ordered lookup.
+- ``UnrolledLinkedList`` stores small arrays inside linked blocks.
+- ``MultilevelLinkedList`` models nested sibling and child chains.
+- ``PositionalLinkedList`` exposes validated handles to known nodes.
+- ``SelfOrganizingLinkedList`` adapts order after successful access.
+- ``SparseMatrixLinkedList`` stores sparse row and column chains.
+
+The individual modules contain the implementation details. This file keeps the
+public API easy to discover for examples, tests, and portfolio review.
+"""
 
 from __future__ import annotations
 

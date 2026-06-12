@@ -3,6 +3,11 @@
 Only non-zero entries are stored. Each stored cell participates in two linked
 lists at once: a row chain through ``right`` links and a column chain through
 ``down`` links.
+
+This is a linked-structure bridge to data science. Dense matrices spend space
+on every coordinate, including zeros. Sparse matrices store only meaningful
+entries. The row chains make row-wise work easy, and the column chains make it
+possible to inspect the same data by column without rebuilding the matrix.
 """
 
 from __future__ import annotations
@@ -20,11 +25,17 @@ _MISSING = object()
 
 
 class _SparseMatrixNode:
-    """Store one non-zero matrix cell plus row/column links."""
+    """Store one non-zero matrix cell plus row/column links.
+
+    A node is shared by two sorted chains at the same time. ``right`` moves
+    across one row by increasing column, while ``down`` moves down one column
+    by increasing row.
+    """
 
     __slots__ = ("col", "down", "right", "row", "value")
 
     def __init__(self, row: int, col: int, value: Any) -> None:
+        """Initialize one stored matrix coordinate."""
         self.row = row
         self.col = col
         self.value = value
@@ -40,7 +51,13 @@ class _SparseMatrixNode:
 
 
 class SparseMatrixLinkedList:
-    """Sparse matrix with row and column linked lists."""
+    """Sparse matrix with row and column linked lists.
+
+    The matrix stores dictionaries of row heads and column heads. Each stored
+    cell lives in both dictionaries' linked chains through the same node
+    object. Mutation methods therefore repair two chains whenever a cell is
+    inserted or removed.
+    """
 
     def __init__(
         self,
@@ -197,7 +214,12 @@ class SparseMatrixLinkedList:
         return node.value
 
     def set(self, row: int, col: int, value: Any) -> None:
-        """Set a cell value, removing entries equal to zero."""
+        """Set a cell value, removing entries equal to zero.
+
+        Assigning the configured ``zero`` value removes the coordinate instead
+        of storing it. That rule is what keeps the representation sparse after
+        arbitrary updates.
+        """
         self._validate_position(row, col)
         node = self._find_node(row, col)
         if value == self.zero:
@@ -385,7 +407,12 @@ class SparseMatrixLinkedList:
         self: TSparseMatrixLinkedList,
         other: SparseMatrixLinkedList,
     ) -> TSparseMatrixLinkedList:
-        """Return sparse matrix multiplication result."""
+        """Return sparse matrix multiplication result.
+
+        For each stored left value at ``(row, shared_col)``, only stored values
+        in ``other`` row ``shared_col`` can contribute to the result. This
+        skips dense zero work while still producing the same math.
+        """
         if not isinstance(other, SparseMatrixLinkedList):
             raise TypeError("other must be a SparseMatrixLinkedList")
         if self.cols != other.rows:
@@ -451,7 +478,11 @@ class SparseMatrixLinkedList:
         return None
 
     def _insert_into_row(self, node: _SparseMatrixNode) -> None:
-        """Insert ``node`` into its sorted row chain."""
+        """Insert ``node`` into its sorted row chain.
+
+        Row chains are ordered by column, so row iteration and dense conversion
+        naturally produce row-major entries.
+        """
         head = self._row_heads.get(node.row)
         if head is None or node.col < head.col:
             node.right = head
@@ -467,7 +498,11 @@ class SparseMatrixLinkedList:
         previous.right = node
 
     def _insert_into_column(self, node: _SparseMatrixNode) -> None:
-        """Insert ``node`` into its sorted column chain."""
+        """Insert ``node`` into its sorted column chain.
+
+        Column chains are ordered by row. The same node is inserted here after
+        being inserted into its row chain.
+        """
         head = self._col_heads.get(node.col)
         if head is None or node.row < head.row:
             node.down = head
@@ -483,7 +518,11 @@ class SparseMatrixLinkedList:
         previous.down = node
 
     def _remove_from_row(self, row: int, col: int) -> None:
-        """Remove one cell from a row chain."""
+        """Remove one cell from a row chain.
+
+        The caller already knows the coordinate exists. This helper repairs
+        only the row-side links; column-side repair happens separately.
+        """
         current = self._row_heads.get(row)
         previous = None
         while current is not None:
@@ -500,7 +539,11 @@ class SparseMatrixLinkedList:
             current = current.right
 
     def _remove_from_column(self, row: int, col: int) -> None:
-        """Remove one cell from a column chain."""
+        """Remove one cell from a column chain.
+
+        The caller already knows the coordinate exists. This helper repairs
+        only the column-side links; row-side repair happens separately.
+        """
         current = self._col_heads.get(col)
         previous = None
         while current is not None:

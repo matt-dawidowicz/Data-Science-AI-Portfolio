@@ -4,6 +4,11 @@
 ``LinkedList``, but adds one important invariant: values are always stored in
 ascending order. Methods that add or replace values either preserve that order
 or reject the operation before changing the list.
+
+This file is a useful example of how an invariant shapes an API. The node
+structure is not new, but several inherited operations need narrower behavior
+because arbitrary insertion, reversal, or rotation would make the name
+"sorted" untrue.
 """
 
 from __future__ import annotations
@@ -27,6 +32,10 @@ class SortedLinkedList(LinkedList):
     doubly, singly circular, and doubly circular. The difference is that
     insertion-style methods place values according to normal Python less-than
     ordering instead of letting callers choose arbitrary physical positions.
+
+    The implementation often computes a sorted value snapshot before rebuilding
+    links. That is intentionally conservative: if Python cannot compare two
+    incoming values, the original linked structure is left untouched.
     """
 
     def __init__(
@@ -276,7 +285,12 @@ class SortedLinkedList(LinkedList):
         previous: Any | None,
         next_node: Any | None,
     ) -> bool:
-        """Return whether ``data`` can sit between two neighbor nodes."""
+        """Return whether ``data`` can sit between two neighbor nodes.
+
+        This small helper is the local version of the sorted invariant. A value
+        may be inserted or assigned only if it is not smaller than the previous
+        value and not larger than the next value.
+        """
         if previous is not None and data < previous.data:
             return False
         if next_node is not None and next_node.data < data:
@@ -284,7 +298,11 @@ class SortedLinkedList(LinkedList):
         return True
 
     def _rebuild_from_values(self, values: Iterable[Any]) -> None:
-        """Replace the node chain with sorted ``values``."""
+        """Replace the node chain with sorted ``values``.
+
+        Sorting happens before ``clear`` is called. If comparison fails, this
+        method raises without changing the existing list.
+        """
         sorted_values = sorted(values)
         self.clear()
         for item in sorted_values:

@@ -3,6 +3,10 @@
 These methods mirror common functional programming operations while preserving
 the linked-list type. ``map`` and ``filter`` return new linked lists instead of
 plain Python lists.
+
+They are implemented in terms of public iteration and ``append``. That means
+the same code works for singly, doubly, circular, and non-circular lists while
+letting the mutation mixin handle the representation-specific pointer repair.
 """
 
 from __future__ import annotations
@@ -15,7 +19,12 @@ _MISSING = object()
 
 
 class Functional:
-    """Provide map, filter, and reduce operations."""
+    """Provide map, filter, and reduce operations.
+
+    These helpers are intentionally non-mutating except for ``reduce``, which
+    only computes a value. This makes them safe examples of how to build new
+    linked structures from existing traversal behavior.
+    """
 
     def map(self, func: Callable[[Any], Any]) -> Any:
         """Return a new list containing ``func`` applied to each item.

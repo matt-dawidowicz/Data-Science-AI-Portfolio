@@ -1,0 +1,347 @@
+# Linked Structures Walkthrough
+
+This guide explains the linked-structure package as if you are reading the
+code for the first time. It focuses on mental models, invariants, and how to
+trace the algorithms by hand.
+
+The package is educational. Python's built-in `list`, `deque`, and scientific
+libraries are usually faster for production workloads. The value here is seeing
+how linked structures work internally and how small pointer mistakes can affect
+the whole container.
+
+## Reading Order
+
+Start with the files in this order:
+
+1. `linked_list/nodes/`
+2. `linked_list/list_functions/base.py`
+3. `linked_list/list_functions/iteration.py`
+4. `linked_list/list_functions/mutation.py`
+5. `linked_list/list_functions/linked_list.py`
+6. The standalone containers such as `deque.py`, `skip_list.py`, and
+   `sparse_matrix.py`
+
+The node files introduce the fields. The mixin files show how the classic
+`LinkedList` is assembled. The standalone containers then show variations on
+the same linked-structure theme.
+
+## Core Terms
+
+`node`
+: A small object that stores a value and one or more links.
+
+`head`
+: The first visible node in a chain.
+
+`tail`
+: The last visible node in a chain.
+
+`next`
+: A link from one node to the node after it.
+
+`prev`
+: A link from one node to the node before it.
+
+`child`
+: A link from a multilevel node down into a nested chain.
+
+`right` and `down`
+: Sparse-matrix links. `right` moves through a row, and `down` moves through a
+  column.
+
+`invariant`
+: A promise that must remain true after every operation. For example,
+  `len(container)` should match the number of nodes reachable from `head`.
+
+## Classic LinkedList
+
+The core `LinkedList` supports four shapes:
+
+- `singly`
+- `doubly`
+- `singly_circular`
+- `doubly_circular`
+
+All four share the same public class. The selected `list_type` controls which
+node class is created and which links must be repaired.
+
+### Singly Linked
+
+A singly linked node has a value and a `next` pointer:
+
+```text
+head
+ |
+ v
+[1] -> [2] -> [3] -> None
+                  ^
+                  |
+                 tail
+```
+
+Forward traversal is easy. Removing the tail is harder because a singly linked
+node does not know who points to it. The list often needs to walk from `head`
+to find the previous node.
+
+### Doubly Linked
+
+A doubly linked node has `prev` and `next`:
+
+```text
+None <- [1] <-> [2] <-> [3] -> None
+        ^                 ^
+        |                 |
+       head              tail
+```
+
+The extra `prev` link makes reverse traversal and tail-side repairs easier.
+The cost is one more pointer per node and one more link to keep correct.
+
+### Circular Linked
+
+Circular lists do not end at `None`. Their tail points back to the head:
+
+```text
+head
+ |
+ v
+[1] -> [2] -> [3]
+ ^             |
+ |_____________|
+```
+
+This is why iteration must be bounded by `_size`. A loop that waits for
+`None` would never stop on a circular list.
+
+## Mutation Checklist
+
+When reading any method that changes a linked list, check these questions:
+
+1. Does `head` still point to the first visible node?
+2. Does `tail` still point to the last visible node?
+3. Does `_size` match the number of visible values?
+4. For doubly linked lists, do neighboring nodes agree about `prev` and
+   `next`?
+5. For circular lists, does `tail.next` point to `head`?
+6. For doubly circular lists, does `head.prev` point to `tail`?
+7. Are removed nodes detached so old references do not keep stale links?
+
+The tests use these same ideas. They do not only check final values; they also
+walk internal links after many operations.
+
+## LinkedDeque
+
+`LinkedDeque` is a double-ended queue. It is built from doubly linked nodes and
+keeps direct access to both ends.
+
+Its core invariant is:
+
+```text
+head == leftmost node
+tail == rightmost node
+_size == number of nodes from head to tail
+```
+
+End operations are local:
+
+- `append_left` touches the new node and old head.
+- `append_right` touches the new node and old tail.
+- `pop_left` unlinks the old head.
+- `pop_right` unlinks the old tail.
+
+Middle indexing is supported, but it is not the deque's main strength.
+
+## SortedLinkedList
+
+`SortedLinkedList` reuses the core linked-list machinery but protects a new
+promise: values stay in ascending order.
+
+That promise changes method behavior:
+
+- `append` and `prepend` route to sorted insertion.
+- `insert` is allowed only when the requested position keeps order valid.
+- `reverse` and non-trivial `rotate` are rejected.
+- `replace` rebuilds from a sorted snapshot because a changed value may need
+  to move.
+
+This class is a good example of an invariant shaping an API. The pointers are
+ordinary linked-list pointers, but the container's promise is stricter.
+
+## SkipList
+
+`SkipList` is a sorted set with multiple linked levels.
+
+The bottom level stores every value:
+
+```text
+level 0: head -> 1 -> 3 -> 5 -> 8
+```
+
+Higher levels store shortcuts:
+
+```text
+level 2: head ----------> 5
+level 1: head ----> 3 -> 5
+level 0: head -> 1 -> 3 -> 5 -> 8
+```
+
+Search starts high, moves right while the next value is still before the
+target, then drops down. The helper `_find_update(value)` returns the
+predecessor at every level. Insertion and removal both use that same search
+result.
+
+The shape is probabilistic. Most nodes are short; a few are tall. With a
+reasonable promotion probability, the average search path is much shorter than
+walking the whole bottom level.
+
+## UnrolledLinkedList
+
+`UnrolledLinkedList` stores several values per node:
+
+```text
+[1, 2, 3] <-> [4, 5] <-> [6, 7, 8]
+```
+
+This reduces the number of node objects and pointer hops. The tradeoff is that
+each block uses small Python-list operations inside the node.
+
+Important operations:
+
+- `insert` finds a block and offset.
+- `_split_node` divides a full block.
+- `_rebalance_after_remove` removes empty blocks, merges small neighbors, or
+  borrows one value from a fuller neighbor.
+- `to_blocks()` exposes the block layout for debugging and teaching.
+
+## MultilevelLinkedList
+
+`MultilevelLinkedList` adds a `child` pointer:
+
+```text
+1 -> 2 -> 5
+     |
+     v
+     3 -> 4
+```
+
+Depth-first traversal yields:
+
+```text
+1, 2, 3, 4, 5
+```
+
+Breadth-first traversal yields:
+
+```text
+1, 2, 5, 3, 4
+```
+
+Some operations preserve hierarchy, such as `copy`, `deep_copy`, `map`, and
+child insertion. Other operations flatten because their natural meaning is
+sequence-wide, such as `sort`, `rotate`, `filter`, and `remove_duplicates`.
+
+## PositionalLinkedList
+
+`PositionalLinkedList` introduces stable `Position` handles.
+
+An index is just a number. If a value is inserted before that index, the number
+now refers to a different node. A `Position` is different: it points to a
+specific node as long as that node still belongs to the list.
+
+That enables operations such as:
+
+- `add_before(position, value)`
+- `add_after(position, value)`
+- `delete(position)`
+- `replace(position, value)`
+- `move_before(position, target)`
+- `move_after(position, target)`
+
+The important safety rule is validation. A position is valid only when:
+
+- it is a `Position` object,
+- it still has a node,
+- the node still has an owner,
+- and the owner is the exact list receiving the operation.
+
+Deleting or clearing invalidates positions so stale handles fail clearly.
+
+## SelfOrganizingLinkedList
+
+`SelfOrganizingLinkedList` changes order after successful access. It still has
+O(n) worst-case search, but it can improve repeated searches when the access
+pattern is skewed.
+
+Strategies:
+
+- `move_to_front`: move the accessed node directly to `head`.
+- `transpose`: swap the accessed node with its previous neighbor.
+- `frequency_count`: keep higher access counts closer to the front.
+- `none`: record counts without changing order.
+
+Static reads are separate from adaptive reads:
+
+- `value in list`, indexing, and `get` do not reorganize.
+- `find`, `search`, and `access` increment counts and may move nodes.
+
+That separation makes examples and tests predictable.
+
+## SparseMatrixLinkedList
+
+`SparseMatrixLinkedList` stores only non-zero cells. A stored cell belongs to a
+row chain and a column chain at the same time:
+
+```text
+row 0: (0, 1) -> (0, 4)
+row 2: (2, 0) -> (2, 3)
+
+col 0: (2, 0)
+col 1: (0, 1)
+col 3: (2, 3)
+col 4: (0, 4)
+```
+
+The same node object appears in both views. That means insertion and removal
+must repair two chains:
+
+- `_insert_into_row` and `_remove_from_row`
+- `_insert_into_column` and `_remove_from_column`
+
+Assigning the configured `zero` value removes a cell instead of storing it.
+This is what keeps the matrix sparse after updates and arithmetic.
+
+## How To Debug Pointer Bugs
+
+When a linked structure misbehaves, use a small example and draw nodes on
+paper. Then inspect the operation in phases:
+
+1. What nodes exist before the operation?
+2. Which node is being added, removed, or moved?
+3. Which old links should change?
+4. Which old links should stay the same?
+5. Which container metadata should change?
+6. Which removed nodes should be detached?
+
+Good linked-structure tests check both visible values and hidden invariants.
+That is why this project has randomized tests that compare public behavior
+against Python `list` or dense matrix math, then walk internal links afterward.
+
+## Small Example
+
+```python
+from linked_list import PositionalLinkedList, SparseMatrixLinkedList
+
+positions = PositionalLinkedList([1, 3])
+first = positions.first_position()
+middle = positions.add_after(first, 2)
+positions.move_to_front(middle)
+
+print(positions.to_list())  # [2, 1, 3]
+
+sparse = SparseMatrixLinkedList.from_dense([[1, 0, 2], [0, 3, 0]])
+print(sparse.to_entries())  # [(0, 0, 1), (0, 2, 2), (1, 1, 3)]
+print(sparse.multiply_vector([2, 3, 4]))  # [10, 9]
+```
+
+The positional example shows a stable handle being moved. The sparse matrix
+example shows how only the non-zero cells are stored.

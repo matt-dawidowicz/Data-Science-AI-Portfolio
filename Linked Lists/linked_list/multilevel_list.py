@@ -3,6 +3,10 @@
 A multilevel linked list stores a normal sibling chain through ``next`` links,
 and any node may also point to a child chain. This makes it useful for
 teaching nested traversal, flattening, and subtree mutation.
+
+Think of the structure as a tree encoded with linked lists: ``next`` moves to
+the next sibling, while ``child`` moves down one level. Depth-first traversal
+visits a node, then its child chain, then its next sibling.
 """
 
 from __future__ import annotations
@@ -27,6 +31,7 @@ class _MultilevelNode:
     __slots__ = ("child", "data", "next")
 
     def __init__(self, data: Any) -> None:
+        """Initialize a node with no sibling or child links."""
         self.data = data
         self.next: _MultilevelNode | None = None
         self.child: _MultilevelNode | None = None
@@ -43,6 +48,10 @@ class MultilevelLinkedList:
     ``to_list()`` describe all reachable nodes rather than only the top level.
     Methods with ``child`` in their name preserve and manipulate the nested
     hierarchy directly.
+
+    Sequence-wide operations such as ``sort`` and ``rotate`` intentionally
+    rebuild a flat list because their natural meaning is about the visible
+    depth-first sequence. Hierarchy-specific operations preserve child links.
     """
 
     def __init__(self, iterable: Iterable[Any] | None = None) -> None:
@@ -436,7 +445,12 @@ class MultilevelLinkedList:
         self._size = 0
 
     def flatten(self, order: str = "depth_first") -> None:
-        """Flatten the structure in place, preserving node objects."""
+        """Flatten the structure in place, preserving node objects.
+
+        Flattening rewires existing nodes into one top-level chain and clears
+        every ``child`` link. This is different from ``flattened()``, which
+        builds a new list and leaves the original hierarchy alone.
+        """
         if order == "depth_first":
             nodes = list(self._iter_nodes_depth_first())
         elif order == "breadth_first":
@@ -664,7 +678,12 @@ class MultilevelLinkedList:
         return new_head, new_tail, total
 
     def _iter_nodes_depth_first(self) -> Iterator[_MultilevelNode]:
-        """Yield nodes in pre-order depth-first traversal."""
+        """Yield nodes in pre-order depth-first traversal.
+
+        ``stack`` stores next siblings that should be visited after the current
+        child chain finishes. The emitted counter guards against accidental
+        cycles if a structure is corrupted during experimentation.
+        """
         stack: list[_MultilevelNode] = []
         current = self.head
         emitted = 0
@@ -704,7 +723,12 @@ class MultilevelLinkedList:
     ) -> Iterator[
         tuple[_MultilevelNode, _MultilevelNode | None, _MultilevelNode | None]
     ]:
-        """Yield each node with its parent and previous sibling."""
+        """Yield each node with its parent and previous sibling.
+
+        Removal needs more context than traversal alone. The parent tells us
+        whether the node starts a child chain, and the previous sibling tells
+        us how to bypass a middle node.
+        """
         yield from self._references_from_chain(self.head, None)
 
     def _references_from_chain(

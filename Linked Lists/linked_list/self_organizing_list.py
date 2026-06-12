@@ -3,6 +3,11 @@
 Self-organizing lists adapt their order after successful searches. Frequently
 accessed values drift toward the front so later linear searches can be faster
 for skewed access patterns.
+
+This structure is not about improving the worst-case O(n) bound. It is about
+adapting to real access patterns. If a few values are searched often,
+strategies such as move-to-front or frequency-count make those values cheaper
+to find later.
 """
 
 from __future__ import annotations
@@ -26,6 +31,7 @@ class _SelfOrganizingNode:
     __slots__ = ("access_count", "data", "next", "prev")
 
     def __init__(self, data: Any) -> None:
+        """Initialize a node with zero recorded accesses."""
         self.data = data
         self.access_count = 0
         self.prev: _SelfOrganizingNode | None = None
@@ -40,7 +46,12 @@ class _SelfOrganizingNode:
 
 
 class SelfOrganizingLinkedList:
-    """Linked list that reorganizes itself after successful access."""
+    """Linked list that reorganizes itself after successful access.
+
+    ``find``, ``search``, and ``access`` are adaptive operations: they record a
+    successful access and may move a node. Static reads such as membership,
+    indexing, and ``get`` intentionally do not reorganize the list.
+    """
 
     VALID_STRATEGIES = {
         "move_to_front",
@@ -459,7 +470,12 @@ class SelfOrganizingLinkedList:
         return functools_reduce(func, self, initializer)
 
     def _record_access(self, node: _SelfOrganizingNode) -> None:
-        """Increment count and apply the selected strategy."""
+        """Increment count and apply the selected strategy.
+
+        Keeping strategy dispatch in one method makes the adaptive behavior
+        easy to audit. Every successful adaptive read records the count first,
+        then applies exactly one reordering rule.
+        """
         node.access_count += 1
         if self.strategy == "move_to_front":
             self._move_to_front(node)
@@ -503,7 +519,12 @@ class SelfOrganizingLinkedList:
             after_node.prev = previous
 
     def _bubble_by_frequency(self, node: _SelfOrganizingNode) -> None:
-        """Move ``node`` left until frequency order is restored."""
+        """Move ``node`` left until frequency order is restored.
+
+        Frequency-count ordering is local: after a node's count increases, only
+        that node can be out of place, so it bubbles left past lower-frequency
+        predecessors.
+        """
         while (
             node.prev is not None
             and node.access_count > node.prev.access_count
@@ -594,7 +615,11 @@ class SelfOrganizingLinkedList:
         return node.data
 
     def _relink_nodes(self, nodes: list[_SelfOrganizingNode]) -> None:
-        """Relink existing nodes in the given order."""
+        """Relink existing nodes in the given order.
+
+        Sorting, rotating, and frequency reordering all preserve node objects
+        and their access counts. Only the neighbor links change.
+        """
         if not nodes:
             self.head = None
             self.tail = None

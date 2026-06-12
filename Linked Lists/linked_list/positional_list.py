@@ -3,6 +3,11 @@
 A positional list exposes stable position objects instead of making callers
 repeatedly search by index. That is useful when code already has a reference
 to a location and wants to insert, remove, or replace values around it.
+
+The educational idea is the difference between an index and a position. An
+index is a number that can mean a different node after insertions or removals.
+A ``Position`` is a validated handle to a specific node. As long as that node
+remains in the same list, the handle stays meaningful even if the node moves.
 """
 
 from __future__ import annotations
@@ -21,11 +26,16 @@ _MISSING = object()
 
 
 class _PositionNode:
-    """Store one value plus doubly linked neighbors."""
+    """Store one value plus doubly linked neighbors and owner metadata.
+
+    ``owner`` lets the public ``Position`` object detect stale handles. When a
+    node is deleted or a list is cleared, the node owner becomes ``None``.
+    """
 
     __slots__ = ("data", "next", "owner", "prev")
 
     def __init__(self, data: Any, owner: PositionalLinkedList) -> None:
+        """Initialize a node owned by one positional list."""
         self.data = data
         self.owner: PositionalLinkedList | None = owner
         self.prev: _PositionNode | None = None
@@ -37,7 +47,12 @@ class _PositionNode:
 
 
 class Position:
-    """Stable handle to a node inside a `PositionalLinkedList`."""
+    """Stable handle to a node inside a ``PositionalLinkedList``.
+
+    Users interact with positions instead of raw nodes. That keeps the node
+    implementation private while still giving callers a way to say "insert
+    before this exact location" or "move this exact node to the front."
+    """
 
     __slots__ = ("_container", "_node")
 
@@ -46,6 +61,7 @@ class Position:
         container: PositionalLinkedList | None,
         node: _PositionNode | None,
     ) -> None:
+        """Initialize a handle to ``node`` inside ``container``."""
         self._container = container
         self._node = node
 
@@ -79,7 +95,13 @@ class Position:
 
 
 class PositionalLinkedList:
-    """Doubly linked list with validated position objects."""
+    """Doubly linked list with validated position objects.
+
+    The list stores normal ``head`` and ``tail`` references, but public
+    location-aware operations accept ``Position`` objects. Before any such
+    operation mutates links, it checks that the position still belongs to this
+    exact list.
+    """
 
     def __init__(self, iterable: Iterable[Any] | None = None) -> None:
         """Initialize an empty positional list and optional values."""
@@ -554,7 +576,12 @@ class PositionalLinkedList:
         return functools_reduce(func, self, initializer)
 
     def _validate_position(self, position: Position) -> _PositionNode:
-        """Return the node for a live position in this list."""
+        """Return the node for a live position in this list.
+
+        This method is the safety gate for every position-based mutation. It
+        rejects non-position objects, stale positions, and positions from other
+        lists before any links are changed.
+        """
         if not isinstance(position, Position):
             raise TypeError("position must be a Position")
         node = position._node
@@ -609,7 +636,11 @@ class PositionalLinkedList:
         next_node.prev = node
 
     def _detach_node(self, node: _PositionNode) -> None:
-        """Detach ``node`` from the chain without changing size."""
+        """Detach ``node`` from the chain without changing size.
+
+        Moving a node uses this helper because the node should remain alive and
+        owned by the list. Deleting uses ``_unlink_node`` instead.
+        """
         previous = node.prev
         next_node = node.next
         if previous is None:
@@ -624,14 +655,24 @@ class PositionalLinkedList:
         node.next = None
 
     def _unlink_node(self, node: _PositionNode) -> Any:
-        """Detach ``node``, invalidate ownership, and return its value."""
+        """Detach ``node``, invalidate ownership, and return its value.
+
+        Invalidating ownership is what turns old positions into stale handles.
+        The public ``delete`` method also clears the specific ``Position``
+        object passed by the caller.
+        """
         self._detach_node(node)
         node.owner = None
         self._size -= 1
         return node.data
 
     def _relink_nodes(self, nodes: list[_PositionNode]) -> None:
-        """Relink existing nodes in the supplied order."""
+        """Relink existing nodes in the supplied order.
+
+        Sort and rotate preserve node identity by rearranging existing nodes
+        rather than creating replacements. Live positions therefore continue
+        pointing at the same values after the order changes.
+        """
         if not nodes:
             self.head = None
             self.tail = None

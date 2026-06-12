@@ -3,6 +3,11 @@
 These operations read the structure without changing node links. They provide
 Python container behavior such as indexing, slicing, membership checks,
 equality, and readable representations.
+
+For a beginner, the key idea is that indexing a linked list is not constant
+time. The code must walk node by node from the head until it reaches the
+requested position. Slicing takes a finite snapshot first so Python's normal
+slice rules handle negative indexes and negative steps correctly.
 """
 
 from __future__ import annotations
@@ -15,6 +20,10 @@ class Access:
 
     The linked list does not have random access like a Python list, so index
     operations walk from ``head`` to the requested position.
+
+    The methods in this mixin intentionally do not repair links. If one of
+    these helpers ever needs link updates, that behavior belongs in the
+    mutation mixin instead.
     """
 
     def __getitem__(self, index: int | slice) -> Any:
@@ -129,7 +138,11 @@ class Access:
         return all(a == b for a, b in zip(self, other, strict=False))
 
     def __repr__(self) -> str:
-        """Return a debugging representation of the linked list."""
+        """Return a debugging representation of the linked list.
+
+        ``repr`` includes both values and list type because ``LinkedList`` can
+        represent several pointer shapes with the same public class.
+        """
         return (
             f"{self.__class__.__name__}([{', '.join(repr(x) for x in self)}], "
             f"type={self._list_type})"

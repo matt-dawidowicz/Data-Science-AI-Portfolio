@@ -1,7 +1,8 @@
 """Doubly linked node variants.
 
-Doubly linked nodes store both directions of travel. That extra ``prev`` link
-is what makes reverse iteration and right-end deque operations direct.
+Doubly linked nodes store both directions of travel. The extra ``prev`` link
+costs one more reference per node, but it makes reverse iteration, tail-side
+removal, and deque right-end operations direct and easy to reason about.
 """
 
 from __future__ import annotations
@@ -21,7 +22,12 @@ class DoublyLinkedNode(BaseNode, PrevMixin, NextMixin):
         prev_node: DoublyLinkedNode | None = None,
         next_node: DoublyLinkedNode | None = None,
     ) -> None:
-        """Initialize a doubly linked node."""
+        """Initialize a doubly linked node.
+
+        ``prev_node`` and ``next_node`` may be supplied when a caller already
+        knows the neighboring nodes. The constructor validates those neighbors
+        so a doubly linked chain does not accidentally mix node families.
+        """
         BaseNode.__init__(self, data)
         PrevMixin.__init__(self, prev_node)
         NextMixin.__init__(self, next_node)
@@ -37,7 +43,12 @@ class DoublyLinkedNode(BaseNode, PrevMixin, NextMixin):
 
 
 class DoublyCircularLinkedNode(BaseNode, PrevMixin, NextMixin, CircularMixin):
-    """Doubly linked node whose links default to itself."""
+    """Doubly linked node whose links default to itself.
+
+    In a single-node doubly circular list, both directions lead back to the
+    same node. In a larger list, the container rewires ``head.prev`` and
+    ``tail.next`` so traversal can wrap around in either direction.
+    """
 
     def __init__(
         self,

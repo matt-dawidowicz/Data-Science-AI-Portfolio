@@ -2,6 +2,11 @@
 
 These helpers convert between linked lists and ordinary Python collections and
 perform cleanup operations that are shared by all list variants.
+
+Conversion helpers are deliberately simple: they use normal iteration and
+normal appending rather than reaching into node internals. ``clear`` is the
+exception because it must detach every node so old references do not retain
+stale links.
 """
 
 from __future__ import annotations
@@ -11,7 +16,12 @@ from typing import Any
 
 
 class Utility:
-    """Provide conversion, copying, counting, and clearing helpers."""
+    """Provide conversion, copying, counting, and clearing helpers.
+
+    The mixin keeps lifecycle operations separate from mutation algorithms so
+    a reader can find "turn this into a Python list" or "empty the structure"
+    without scanning insertion and deletion code.
+    """
 
     def to_list(self) -> list[Any]:
         """Return the linked-list values as a Python list.

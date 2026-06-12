@@ -10,6 +10,7 @@ positional-list, self-organizing-list, and sparse-matrix implementations.
 ```text
 docs/
   complexity.md
+  linked_structures_walkthrough.md
 .pre-commit-config.yaml
 Linked Lists/
   linked_list/
@@ -87,6 +88,7 @@ requirements-dev.txt
 - Pytest and coverage configuration for alternate test workflows
 - Local pre-commit hooks for linting, type checking, and tests
 - Dedicated complexity guide in `docs/complexity.md`
+- Beginner-friendly code walkthrough in `docs/linked_structures_walkthrough.md`
 
 ## Project Explanation
 
@@ -385,6 +387,11 @@ time and space costs for `LinkedList`, `SortedLinkedList`, `LinkedDeque`,
 `PositionalLinkedList`, `SelfOrganizingLinkedList`, `SparseMatrixLinkedList`,
 node storage, circular-list behavior, and the tradeoffs behind snapshot-based
 operations.
+
+For a reading guide aimed at someone who has never seen the code before, see
+`docs/linked_structures_walkthrough.md`. It explains the node model, pointer
+invariants, each container's core tradeoff, and how to debug linked-structure
+bugs by hand.
 
 ### LinkedList API
 
@@ -885,8 +892,9 @@ organized and why each piece exists.
 
 ## Complexity Overview
 
-The detailed complexity analysis lives in `docs/complexity.md`. The short
-version is:
+The detailed complexity analysis lives in `docs/complexity.md`. The
+beginner-oriented source walkthrough lives in
+`docs/linked_structures_walkthrough.md`. The short version is:
 
 - `LinkedList` head and tail helpers such as `append`, `prepend`,
   `peek_front`, and `peek_back` are O(1), while indexing and searching are

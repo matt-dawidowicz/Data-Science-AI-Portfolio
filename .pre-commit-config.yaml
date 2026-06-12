@@ -1,0 +1,31 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check .
+        language: python
+        additional_dependencies: [ruff>=0.5]
+        pass_filenames: false
+        types_or: [python, pyi]
+      - id: ruff-format-check
+        name: ruff format check
+        entry: ruff format --check .
+        language: python
+        additional_dependencies: [ruff>=0.5]
+        pass_filenames: false
+        types_or: [python, pyi]
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: python
+        additional_dependencies: [mypy>=1.10]
+        pass_filenames: false
+        types_or: [python, pyi]
+      - id: pytest
+        name: pytest
+        entry: pytest -q
+        language: python
+        additional_dependencies: [pytest>=8.2]
+        pass_filenames: false
+        types_or: [python, pyi]

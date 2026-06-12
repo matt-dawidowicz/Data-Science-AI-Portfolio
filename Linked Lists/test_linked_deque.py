@@ -5,6 +5,8 @@ important because a linked structure can return the right values while still
 having broken ``next`` or ``prev`` pointers internally.
 """
 
+from __future__ import annotations
+
 import unittest
 
 from linked_list import LinkedDeque
@@ -73,6 +75,7 @@ class TestLinkedDeque(unittest.TestCase):
         linked_deque = LinkedDeque()
 
         self.assertFalse(linked_deque)
+        self.assertTrue(linked_deque.is_empty())
         self.assertEqual(len(linked_deque), 0)
         self.assertEqual(linked_deque.to_list(), [])
         self.assertEqual(str(linked_deque), "")
@@ -181,7 +184,26 @@ class TestLinkedDeque(unittest.TestCase):
 
         self.assertEqual(linked_deque.peek_left(), 1)
         self.assertEqual(linked_deque.peek_right(), 3)
+        self.assertEqual(linked_deque.peek(), 3)
         self.assert_deque_integrity(linked_deque, [1, 2, 3])
+
+    def test_indexing_and_slicing(self) -> None:
+        linked_deque = LinkedDeque([0, 1, 2, 3, 4])
+
+        self.assertEqual(linked_deque[0], 0)
+        self.assertEqual(linked_deque[2], 2)
+        self.assertEqual(linked_deque[-1], 4)
+        self.assertEqual(linked_deque.get(3), 3)
+        self.assertEqual(linked_deque.get(99, "missing"), "missing")
+        self.assertEqual(linked_deque.get(-99, "missing"), "missing")
+        self.assertEqual(linked_deque[::-1].to_list(), [4, 3, 2, 1, 0])
+        self.assertEqual(linked_deque[1:4].to_list(), [1, 2, 3])
+        self.assertIsInstance(linked_deque[1:4], LinkedDeque)
+
+        with self.assertRaises(IndexError):
+            _ = linked_deque[5]
+        with self.assertRaises(TypeError):
+            _ = linked_deque["bad"]
 
     def test_iteration_and_reversed_iteration(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3, 4])
@@ -194,6 +216,20 @@ class TestLinkedDeque(unittest.TestCase):
 
         self.assertIn("b", linked_deque)
         self.assertNotIn("z", linked_deque)
+
+    def test_count_index_and_find(self) -> None:
+        linked_deque = LinkedDeque(["a", "b", "a", "c", "a"])
+
+        self.assertEqual(linked_deque.count("a"), 3)
+        self.assertEqual(linked_deque.count("z"), 0)
+        self.assertEqual(linked_deque.index("a"), 0)
+        self.assertEqual(linked_deque.index("a", 1), 2)
+        self.assertEqual(linked_deque.index("a", -2), 4)
+        self.assertEqual(linked_deque.find("c"), 3)
+        self.assertIsNone(linked_deque.find("missing"))
+
+        with self.assertRaises(ValueError):
+            linked_deque.index("missing")
 
     def test_repr_and_str(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3])
@@ -316,6 +352,30 @@ class TestLinkedDeque(unittest.TestCase):
 
         self.assert_deque_integrity(linked_deque, [3, 2, 1, 1, 2, 3])
 
+    def test_insert_at_left_middle_right_and_clamped_edges(self) -> None:
+        linked_deque = LinkedDeque([1, 3])
+
+        linked_deque.insert(1, 2)
+        self.assert_deque_integrity(linked_deque, [1, 2, 3])
+
+        linked_deque.insert(0, 0)
+        linked_deque.insert(99, 4)
+        self.assert_deque_integrity(linked_deque, [0, 1, 2, 3, 4])
+
+        linked_deque.insert(-1, "before-tail")
+        linked_deque.insert(-99, "start")
+        self.assert_deque_integrity(
+            linked_deque,
+            ["start", 0, 1, 2, 3, "before-tail", 4],
+        )
+
+    def test_insert_into_empty_deque(self) -> None:
+        linked_deque = LinkedDeque()
+
+        linked_deque.insert(25, "only")
+
+        self.assert_deque_integrity(linked_deque, ["only"])
+
     def test_clear_resets_and_detaches_nodes(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3])
         old_head = linked_deque.head
@@ -335,6 +395,60 @@ class TestLinkedDeque(unittest.TestCase):
         linked_deque.clear()
 
         self.assert_deque_integrity(linked_deque, [])
+
+    def test_remove_first_matching_value(self) -> None:
+        linked_deque = LinkedDeque([1, 2, 3, 2, 4])
+
+        linked_deque.remove(2)
+
+        self.assert_deque_integrity(linked_deque, [1, 3, 2, 4])
+
+        linked_deque.remove(1)
+        linked_deque.remove(4)
+        self.assert_deque_integrity(linked_deque, [3, 2])
+
+        with self.assertRaises(ValueError):
+            linked_deque.remove(99)
+
+    def test_remove_all_matching_values(self) -> None:
+        linked_deque = LinkedDeque([1, 2, 1, 3, 1, 4])
+
+        self.assertEqual(linked_deque.remove_all(1), 3)
+        self.assert_deque_integrity(linked_deque, [2, 3, 4])
+        self.assertEqual(linked_deque.remove_all(99), 0)
+        self.assert_deque_integrity(linked_deque, [2, 3, 4])
+
+    def test_replace_all_and_limited_matches(self) -> None:
+        linked_deque = LinkedDeque(["a", "b", "a", "a"])
+
+        self.assertEqual(linked_deque.replace("a", "z", count=2), 2)
+        self.assert_deque_integrity(linked_deque, ["z", "b", "z", "a"])
+        self.assertEqual(linked_deque.replace("a", "z"), 1)
+        self.assert_deque_integrity(linked_deque, ["z", "b", "z", "z"])
+        self.assertEqual(linked_deque.replace("z", "x", count=0), 0)
+        self.assert_deque_integrity(linked_deque, ["z", "b", "z", "z"])
+
+    def test_remove_and_reverse_empty_and_singleton_states(self) -> None:
+        empty = LinkedDeque()
+        singleton = LinkedDeque(["only"])
+
+        empty.reverse()
+        singleton.reverse()
+        self.assert_deque_integrity(empty, [])
+        self.assert_deque_integrity(singleton, ["only"])
+
+        singleton.remove("only")
+        self.assert_deque_integrity(singleton, [])
+
+    def test_reverse_rewires_links_in_place(self) -> None:
+        linked_deque = LinkedDeque([1, 2, 3, 4])
+
+        linked_deque.reverse()
+
+        self.assert_deque_integrity(linked_deque, [4, 3, 2, 1])
+
+        linked_deque.reverse()
+        self.assert_deque_integrity(linked_deque, [1, 2, 3, 4])
 
     def test_rotate_right(self) -> None:
         linked_deque = LinkedDeque([1, 2, 3, 4])

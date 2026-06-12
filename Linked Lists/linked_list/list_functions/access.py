@@ -5,7 +5,9 @@ Python container behavior such as indexing, slicing, membership checks,
 equality, and readable representations.
 """
 
-from typing import Any, Union
+from __future__ import annotations
+
+from typing import Any
 
 
 class Access:
@@ -15,7 +17,7 @@ class Access:
     operations walk from ``head`` to the requested position.
     """
 
-    def __getitem__(self, index: Union[int, slice]) -> Any:
+    def __getitem__(self, index: int | slice) -> Any:
         """Return an item or sublist at the requested index or slice.
 
         Integer indexes return a single value. Slice indexes collect values
@@ -59,6 +61,59 @@ class Access:
         """Return whether the list contains the requested value."""
         return any(item == data for item in self)
 
+    def get(self, index: int, default: Any = None) -> Any:
+        """Return an item by index, or ``default`` if it is out of range.
+
+        Normal indexing is still strict and raises ``IndexError``. This helper
+        is useful when an out-of-range position is an expected possibility and
+        the caller wants a fallback value instead of an exception.
+        """
+        try:
+            return self[index]
+        except IndexError:
+            return default
+
+    def index(
+        self,
+        data: Any,
+        start: int = 0,
+        stop: int | None = None,
+    ) -> int:
+        """Return the first index of ``data`` within the optional bounds.
+
+        The method follows Python list semantics for ``start`` and ``stop``,
+        including negative bounds. It raises ``ValueError`` when the value is
+        not present inside the requested range.
+        """
+        values = list(self)
+        if stop is None:
+            return values.index(data, start)
+        return values.index(data, start, stop)
+
+    def find(
+        self,
+        data: Any,
+        start: int = 0,
+        stop: int | None = None,
+    ) -> int | None:
+        """Return the first matching index or ``None`` if not found."""
+        try:
+            return self.index(data, start, stop)
+        except ValueError:
+            return None
+
+    def peek_front(self) -> Any:
+        """Return the head value without removing it."""
+        if self.head is None:
+            raise IndexError("Peek from empty list")
+        return self.head.data
+
+    def peek_back(self) -> Any:
+        """Return the tail value without removing it."""
+        if self.tail is None:
+            raise IndexError("Peek from empty list")
+        return self.tail.data
+
     def __eq__(self, other: object) -> bool:
         """Compare two linked lists by type and stored values.
 
@@ -69,7 +124,7 @@ class Access:
             return False
         if len(self) != len(other):
             return False
-        return all(a == b for a, b in zip(self, other))
+        return all(a == b for a, b in zip(self, other, strict=False))
 
     def __repr__(self) -> str:
         """Return a debugging representation of the linked list."""

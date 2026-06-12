@@ -4,7 +4,10 @@ Iteration is where circular lists need special attention. Linear lists stop at
 ``None``. Circular lists stop when traversal returns to the starting node.
 """
 
-from typing import Any, Iterator
+from __future__ import annotations
+
+from collections.abc import Iterator
+from typing import Any
 
 
 class Iteration:

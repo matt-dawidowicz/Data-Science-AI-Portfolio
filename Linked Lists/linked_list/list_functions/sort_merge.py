@@ -4,8 +4,11 @@ Merge sort works well for linked lists because it can split and merge chains by
 rewiring node links instead of repeatedly indexing into the structure.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
 from operator import lt
-from typing import Any, Callable, Optional
+from typing import Any
 
 
 class SortMerge:
@@ -36,7 +39,7 @@ class SortMerge:
         self,
         left: Any,
         right: Any,
-        compare: Optional[Callable[[Any, Any], bool]] = None,
+        compare: Callable[[Any, Any], bool] | None = None,
     ) -> Any:
         """Merge two sorted linked chains into one sorted chain.
 
@@ -68,7 +71,7 @@ class SortMerge:
 
     def sort(
         self,
-        compare: Optional[Callable[[Any, Any], bool]] = None,
+        compare: Callable[[Any, Any], bool] | None = None,
     ) -> None:
         """Sort the linked list in place with merge sort.
 

@@ -5,7 +5,9 @@ The rest of the linked-list mixins depend on this shared state. The selected
 each mutation must preserve.
 """
 
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import Any
 
 from ..nodes import (
     DoublyCircularLinkedNode,
@@ -36,13 +38,21 @@ class BaseLinkedList:
             raise ValueError(f"Invalid list_type: {list_type}")
         self._list_type = normalized_type
         self._is_circular = "circular" in normalized_type
-        self.head: Optional[Any] = None
-        self.tail: Optional[Any] = None
+        self.head: Any | None = None
+        self.tail: Any | None = None
         self._size: int = 0
 
     def __len__(self) -> int:
         """Return the number of values stored in the list."""
         return self._size
+
+    def __bool__(self) -> bool:
+        """Return whether the list contains at least one value."""
+        return self._size > 0
+
+    def is_empty(self) -> bool:
+        """Return whether the list currently stores no values."""
+        return self._size == 0
 
     def _create_node(self, data: Any) -> Any:
         """Create a node that matches the configured list type.

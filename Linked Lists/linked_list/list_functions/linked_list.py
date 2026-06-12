@@ -5,8 +5,10 @@ access methods live in one file, mutation methods in another, and so on. The
 final ``LinkedList`` type combines those pieces into the class users import.
 """
 
-from .base import BaseLinkedList
+from __future__ import annotations
+
 from .access import Access
+from .base import BaseLinkedList
 from .functional import Functional
 from .iteration import Iteration
 from .mutation import Mutation

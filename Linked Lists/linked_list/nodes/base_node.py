@@ -4,6 +4,8 @@ Every concrete node stores data the same way. Link-specific behavior is added
 by mixins and subclasses.
 """
 
+from __future__ import annotations
+
 from typing import Any
 
 

@@ -1,0 +1,77 @@
+[tool.coverage.run]
+branch = true
+source = ["Linked Lists/linked_list"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+
+[tool.mypy]
+python_version = "3.10"
+files = ["Linked Lists"]
+mypy_path = ["Linked Lists"]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+pretty = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_return_any = false
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = ["linked_list.list_functions.*"]
+disable_error_code = [
+    "attr-defined",
+    "arg-type",
+    "call-arg",
+    "call-overload",
+    "has-type",
+    "misc",
+    "name-defined",
+    "operator",
+    "unreachable",
+]
+
+[[tool.mypy.overrides]]
+module = ["linked_list.nodes.*"]
+disable_error_code = [
+    "misc",
+    "union-attr",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "test_linked_deque",
+    "test_linked_list",
+    "test_sorted_linked_list",
+]
+disable_error_code = [
+    "assignment",
+    "index",
+    "union-attr",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+python_files = ["test_*.py"]
+pythonpath = ["Linked Lists"]
+testpaths = ["Linked Lists"]
+
+[tool.ruff]
+line-length = 79
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "B",
+    "E",
+    "F",
+    "I",
+    "UP",
+]
+
+[tool.ruff.format]
+quote-style = "double"

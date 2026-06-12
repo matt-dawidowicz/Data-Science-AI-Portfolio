@@ -153,6 +153,34 @@ These use cases are intentionally framed around learning and inspection. For
 production code, Python's standard library and scientific ecosystem often
 provide faster and more battle-tested choices.
 
+## Real-World Occasions
+
+The table below connects the educational structures to practical software
+situations. The point is not that every production system literally uses this
+exact Python class. The point is that these are the product and system shapes
+where the same linked-structure tradeoffs appear.
+
+| Structure | Real products and systems | Good occasion to reach for the idea |
+| --- | --- | --- |
+| `LinkedList("singly")` | Allocator free lists, packet chains, compiler token streams, simple processing pipelines | Data moves forward, old nodes can be discarded, and backward navigation is unnecessary |
+| `LinkedList("doubly")` | Browser history, playlists, photo viewers, undo/redo stacks, LRU cache ordering | Users or algorithms need to move to the previous and next neighbor |
+| `LinkedList("singly_circular")` | Round-robin CPU scheduling, rotating worker pools, multiplayer turn order, sensor polling | The same participants repeat in a fixed cycle |
+| `LinkedList("doubly_circular")` | Carousel widgets, gallery navigation, circular media queues, ring menus | A user should be able to wrap around in either direction |
+| `LinkedDeque` | Job queues, BFS in crawlers or route planners, sliding-window analytics, message buffers | Work arrives or leaves from both ends, or a queue/stack needs one shared structure |
+| `SortedLinkedList` | Small timer queues, ordered event feeds, ranked waiting rooms, simple priority queues | New entries arrive over time and the list should stay sorted immediately |
+| `SkipList` | Leaderboards, ordered indexes, autocomplete ranges, time-series windows, Redis-style sorted sets | Ordered search, range lookup, `floor`, or `ceiling` matters more than raw append speed |
+| `UnrolledLinkedList` | Text buffers, log viewers, packet batching, cache-friendlier queues | Neighboring values are usually handled in groups, but chunks still need to split and merge |
+| `MultilevelLinkedList` | File explorers, nested comments, menu systems, org charts, document outlines | Items can contain child lists and sometimes need to be flattened for display or export |
+| `PositionalLinkedList` | Text editor cursors, playlist editors, timeline editors, kanban boards, drag-and-drop UIs | Code already has a handle to an item and wants to mutate around that exact item |
+| `SelfOrganizingLinkedList` | Command palettes, contact lists, autocomplete candidates, small embedded lookup menus | Repeatedly accessed values should drift closer to the front over time |
+| `SparseMatrixLinkedList` | Recommender ratings, graph adjacency matrices, search indexes, ML feature matrices, simulations | The data is mostly empty and storing explicit zeros would waste memory |
+
+For real production Python, the final implementation choice often changes:
+`collections.deque`, `dict`, `set`, NumPy, SciPy, pandas, graph libraries, or
+a maintained sorted-collection package may be the right deployment tool. This
+package is useful because it lets you inspect and explain the structure behind
+those choices.
+
 ## LinkedDeque
 
 `LinkedDeque` is a double-ended queue. It is built from doubly linked nodes and

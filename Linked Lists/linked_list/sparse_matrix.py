@@ -36,9 +36,9 @@ class _SparseMatrixNode:
 
     def __init__(self, row: int, col: int, value: Any) -> None:
         """Initialize one stored matrix coordinate."""
-        self.row = row
-        self.col = col
-        self.value = value
+        self.row: int = row
+        self.col: int = col
+        self.value: Any = value
         self.right: _SparseMatrixNode | None = None
         self.down: _SparseMatrixNode | None = None
 
@@ -70,12 +70,12 @@ class SparseMatrixLinkedList:
         """Initialize an empty sparse matrix and optional entries."""
         self._validate_dimension(rows, "rows")
         self._validate_dimension(cols, "cols")
-        self.rows = rows
-        self.cols = cols
-        self.zero = zero
+        self.rows: int = rows
+        self.cols: int = cols
+        self.zero: Any = zero
         self._row_heads: dict[int, _SparseMatrixNode] = {}
         self._col_heads: dict[int, _SparseMatrixNode] = {}
-        self._size = 0
+        self._size: int = 0
 
         if entries is not None:
             for row, col, value in entries:

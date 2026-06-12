@@ -25,7 +25,7 @@ class BaseNode:
 
     def __init__(self, data: Any) -> None:
         """Initialize the node with its payload."""
-        self.data = data
+        self.data: Any = data
 
     def __repr__(self) -> str:
         """Return a debugging representation for the node."""

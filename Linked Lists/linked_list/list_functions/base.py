@@ -52,8 +52,8 @@ class BaseLinkedList:
         normalized_type = list_type.strip().lower()
         if normalized_type not in valid_types:
             raise ValueError(f"Invalid list_type: {list_type}")
-        self._list_type = normalized_type
-        self._is_circular = "circular" in normalized_type
+        self._list_type: str = normalized_type
+        self._is_circular: bool = "circular" in normalized_type
         self.head: Any | None = None
         self.tail: Any | None = None
         self._size: int = 0

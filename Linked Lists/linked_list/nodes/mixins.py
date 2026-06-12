@@ -28,7 +28,7 @@ class NextMixin:
 
     def __init__(self, next_node: Any | None = None) -> None:
         """Initialize the forward link."""
-        self.next = next_node
+        self.next: Any | None = next_node
 
 
 class PrevMixin:
@@ -42,7 +42,7 @@ class PrevMixin:
 
     def __init__(self, prev_node: Any | None = None) -> None:
         """Initialize the backward link."""
-        self.prev = prev_node
+        self.prev: Any | None = prev_node
 
 
 class CircularMixin:

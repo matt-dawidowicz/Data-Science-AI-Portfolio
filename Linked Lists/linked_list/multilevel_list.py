@@ -32,7 +32,7 @@ class _MultilevelNode:
 
     def __init__(self, data: Any) -> None:
         """Initialize a node with no sibling or child links."""
-        self.data = data
+        self.data: Any = data
         self.next: _MultilevelNode | None = None
         self.child: _MultilevelNode | None = None
 

@@ -1,7 +1,8 @@
 # Linked Structure Complexity Guide
 
 This guide explains the time and space complexity of the linked-list,
-sorted-list, deque, and skip-list containers in this repository.
+sorted-list, deque, skip-list, unrolled-list, and multilevel-list containers in
+this repository.
 
 The symbols used below are:
 
@@ -10,6 +11,7 @@ The symbols used below are:
 - `k`: number of positions rotated or number of replacements requested.
 - `r`: number of values that actually match a removal or replacement target.
 - `h`: height of a skip-list node or active skip-list level count.
+- `b`: maximum number of values per unrolled-list block.
 
 The code is intentionally educational, so several methods favor clear pointer
 repair over micro-optimizing every case. The tables below describe the actual
@@ -72,7 +74,7 @@ because linked lists do not have array-style random access.
 
 | Operation | Time | Extra Space | Notes |
 | --- | --- | --- | --- |
-| `sort()` | O(n log n) | O(log n) | Merge sort recursion; nodes are relinked rather than indexed. |
+| `sort()` | O(n log n) | O(n) | Sorts a node snapshot first, then relinks after comparisons succeed. |
 | `insert_sorted(value)` | O(n) | O(1) | Assumes the list is already sorted. |
 | `merge(other)` | O(n + m) | O(n + m) | Uses value snapshots so `other` is not relinked or corrupted. |
 | `reverse()` | O(n) | O(1) | Rewrites each node's direction links. |
@@ -209,7 +211,7 @@ random levels are unlucky.
 | --- | --- | --- | --- | --- |
 | Constructor from iterable | O(m log m) | O(m^2) | O(m) | Adds values one at a time and ignores duplicates. |
 | `add(value)` | O(log n) | O(n) | O(h) | Finds predecessors, then links one new node through its levels. |
-| `extend(iterable)` / `update(iterable)` | O((n + m) log(n + m)) | O((n + m)^2) | O(n + m) | Validates a sorted snapshot first so comparison errors are atomic. |
+| `extend(iterable)` / `update(iterable)` | O(m log m + m log n) | O(m log m + mn) | O(m) | Sorts incoming values and searches the existing structure before mutation. |
 | `remove(value)` / `discard(value)` | O(log n) | O(n) | O(h) | Finds predecessors, then bypasses the target on each level. |
 | `pop_first()` | O(log n) | O(n) | O(h) | Reads the first value, then removes it. |
 | `pop_last()` | O(log n) | O(n) | O(h) | Reads the tracked tail value, then removes it. |
@@ -223,6 +225,124 @@ The skip list adds a different linked-structure idea: extra forward links can
 trade memory for faster ordered lookups. It is still made of linked nodes, but
 its shape is probabilistic rather than purely linear.
 
+## UnrolledLinkedList Complexity
+
+`UnrolledLinkedList` stores up to `b` values in each linked block. The block
+chain has about `ceil(n / b)` nodes when values are well packed. Operations
+that find a position walk block nodes first, then perform a small Python-list
+operation inside one block.
+
+### UnrolledLinkedList Reads
+
+| Operation | Time | Extra Space | Notes |
+| --- | --- | --- | --- |
+| `len(unrolled)` | O(1) | O(1) | Reads the tracked `_size`. |
+| `bool(unrolled)` | O(1) | O(1) | Checks whether `_size` is nonzero. |
+| `is_empty()` | O(1) | O(1) | Explicit empty-state helper. |
+| `peek_front()` / `peek_back()` | O(1) | O(1) | Reads the first or last block. |
+| `unrolled[index]` | O(n / b + b) | O(1) | Walks from the closer end, then indexes inside one block. |
+| `unrolled[start:stop:step]` | O(n + s) | O(s) | Builds a value snapshot and returns a new unrolled list. |
+| `get(index, default)` | O(n / b + b) | O(1) | Strict indexing wrapped with a fallback. |
+| `value in unrolled` | O(n) | O(1) | Scans values until a match is found. |
+| `count(value)` | O(n) | O(1) | Scans all values. |
+| `index(value)` / `find(value)` | O(n) | O(n) | Uses a value snapshot for Python index semantics. |
+| `to_list()` | O(n) | O(n) | Copies all values. |
+| `to_blocks()` | O(n) | O(n) | Copies each block layout. |
+| Forward/reverse iteration | O(n) | O(1) | Walks block nodes and in-block values. |
+
+### UnrolledLinkedList Mutations
+
+| Operation | Time | Extra Space | Notes |
+| --- | --- | --- | --- |
+| `append(value)` | O(1) amortized | O(1) | Appends into the tail block or adds one new block. |
+| `prepend(value)` | O(b) | O(1) | Inserts into the head block or adds one new block. |
+| `insert(index, value)` | O(n / b + b) | O(1) | Locates a block, splits if full, then inserts inside a block. |
+| `extend(iterable)` / `merge(iterable)` | O(m) | O(1) or O(n) | Self-extension snapshots first. |
+| `pop()` | O(b) | O(1) | Removes from the tail block, then may rebalance. |
+| `pop_front()` | O(b) | O(1) | Removes from the head block, then may rebalance. |
+| `remove_at(index)` | O(n / b + b) | O(1) | Locates a block, removes one value, then rebalances. |
+| `remove(value)` | O(n + b) | O(1) | Scans for the first match, then rebalances. |
+| `remove_all(value)` | O(n) | O(n) | Builds kept values and rebuilds blocks if anything changed. |
+| `replace(old, new)` | O(n) | O(n) | Computes updated values before rebuilding. |
+| `remove_duplicates()` | O(n) average, O(n^2) fallback | O(n) | Uses hashing when possible and equality fallback for unhashable values. |
+| `clear()` | O(n / b) | O(1) | Detaches each block node. |
+
+### UnrolledLinkedList Algorithms
+
+| Operation | Time | Extra Space | Notes |
+| --- | --- | --- | --- |
+| `sort()` | O(n log n) | O(n) | Sorts values before rebuilding so comparison errors are atomic. |
+| `reverse()` | O(n) | O(n) | Rebuilds from reversed values. |
+| `rotate(k)` | O(n) | O(n) | Rebuilds from a rotated value snapshot. |
+| `map(func)` | O(n) | O(n) | Builds a new unrolled list. |
+| `filter(predicate)` | O(n) | O(n) | Builds a new unrolled list. |
+| `reduce(func)` | O(n) | O(1) | Delegates to `functools.reduce`. |
+| `copy()` | O(n) | O(n) | Copies block nodes but not stored values. |
+| `deep_copy()` | O(n + d) | O(n + d) | Deep-copies stored values too. |
+
+## MultilevelLinkedList Complexity
+
+`MultilevelLinkedList` can be read as a hierarchy or as a depth-first
+sequence. The implementation tracks the total number of reachable nodes, so
+`len()` is constant-time even though traversal may cross child chains.
+
+### MultilevelLinkedList Reads
+
+| Operation | Time | Extra Space | Notes |
+| --- | --- | --- | --- |
+| `len(multilevel)` | O(1) | O(1) | Reads the tracked total node count. |
+| `bool(multilevel)` | O(1) | O(1) | Checks whether `_size` is nonzero. |
+| `is_empty()` | O(1) | O(1) | Explicit empty-state helper. |
+| `peek_front()` | O(1) | O(1) | Reads the top-level head. |
+| `peek_back()` | O(n) | O(1) | Locates the final depth-first node. |
+| `multilevel[index]` | O(n) | O(1) | Walks depth-first to the requested node. |
+| `multilevel[start:stop:step]` | O(n + s) | O(s) | Builds a flat value snapshot and sliced flat list. |
+| `to_list("depth_first")` | O(n) | O(n) | Copies depth-first values. |
+| `to_list("breadth_first")` | O(n) | O(w) | Uses a queue; `w` is the widest pending frontier. |
+| `to_top_level_list()` | O(t) | O(t) | Copies only `t` top-level values. |
+| `to_nested_list()` | O(n) | O(n) | Recursively snapshots hierarchy. |
+| `find(value)` / `find_node(value)` | O(n) | O(1) | Depth-first scan. |
+| `path_to(value)` | O(n) | O(depth) | Recursively tracks sibling indexes. |
+| `child_values(parent)` | O(n + c) | O(c) | Resolves parent, then copies `c` direct children. |
+| `value in multilevel` | O(n) | O(1) | Depth-first scan. |
+
+### MultilevelLinkedList Mutations
+
+| Operation | Time | Extra Space | Notes |
+| --- | --- | --- | --- |
+| `append(value)` | O(1) | O(1) | Uses the top-level tail. |
+| `prepend(value)` | O(1) | O(1) | Updates the top-level head. |
+| `extend(iterable)` / `merge(iterable)` | O(m) | O(1) or O(n) | Self-extension snapshots first. |
+| `insert(index, value)` | O(n) | O(1) | Finds a depth-first reference and inserts as a sibling. |
+| `append_child(parent, value)` | O(n + c) | O(1) | Resolves parent, then walks to child-chain tail. |
+| `prepend_child(parent, value)` | O(n) | O(1) | Resolves parent and updates child head. |
+| `extend_child(parent, iterable)` | O(n + c + m) | O(m) | Materializes incoming values, then appends children. |
+| `detach_children(parent)` | O(n + c) | O(1) | Moves direct child chain into a new list. |
+| `remove(value)` | O(n + s) | O(depth) | Finds a node and removes its subtree of size `s`. |
+| `remove(..., promote_children=True)` | O(n + c) | O(depth) | Removes one node and splices in direct children. |
+| `remove_all(value)` | O(n * r) | O(depth) | Repeatedly removes the first matching node. |
+| `remove_at(index)` | O(n + s) | O(depth) | Finds by depth-first index, then removes a subtree. |
+| `pop()` | O(n) | O(depth) | Removes the final depth-first node. |
+| `pop_front()` | O(c) | O(1) | Removes the head and promotes its direct children. |
+| `clear()` | O(n) | O(depth) | Recursively detaches every `next` and `child` link. |
+
+### MultilevelLinkedList Algorithms
+
+| Operation | Time | Extra Space | Notes |
+| --- | --- | --- | --- |
+| `flatten("depth_first")` | O(n) | O(n) | Rewires existing nodes in depth-first order. |
+| `flatten("breadth_first")` | O(n) | O(n) | Rewires existing nodes in breadth-first order. |
+| `flattened(order)` | O(n) | O(n) | Builds a new flat list. |
+| `reverse()` | O(n) | O(depth) | Reverses every sibling chain recursively. |
+| `sort()` | O(n log n) | O(n) | Sorts values and rebuilds a flat list after comparisons succeed. |
+| `rotate(k)` | O(n) | O(n) | Rebuilds a flat rotated list. |
+| `remove_duplicates()` | O(n) average, O(n^2) fallback | O(n) | Keeps first depth-first occurrences and rebuilds flat. |
+| `map(func)` | O(n) | O(n) | Builds a new hierarchy with transformed values. |
+| `filter(predicate)` | O(n) | O(n) | Builds a new flat list of accepted values. |
+| `reduce(func)` | O(n) | O(1) | Reduces depth-first values. |
+| `copy()` | O(n) | O(n) | Copies nodes but not stored values. |
+| `deep_copy()` | O(n + d) | O(n + d) | Deep-copies stored values too. |
+
 ## Space Complexity of Nodes
 
 Each linked-list node stores one data reference plus link references:
@@ -233,11 +353,16 @@ Each linked-list node stores one data reference plus link references:
   end links point back into the structure instead of to `None`.
 - Skip-list nodes store `data` plus `h` forward links. Most nodes are short;
   only a few are promoted to high shortcut levels.
+- Unrolled-list nodes store a Python value block plus `next` and `prev` block
+  links. With capacity `b`, there are usually far fewer nodes than values.
+- Multilevel-list nodes store `data`, `next`, and `child`, which makes nested
+  structures possible without adding backward links.
 
 The containers themselves store only `head`, `tail`, and `_size`, so container
-state is O(1) for linked lists and deques. Skip lists also store a fixed-size
-header of `max_level` links. The expected total node-link storage for a skip
-list is O(n) for a fixed promotion probability.
+state is O(1) for linked lists, deques, unrolled lists, and multilevel lists.
+Skip lists also store a fixed-size header of `max_level` links. The expected
+total node-link storage for a skip list is O(n) for a fixed promotion
+probability.
 
 ## Practical Tradeoffs
 
@@ -246,6 +371,8 @@ Linked structures are strongest when:
 - Frequent insertions or removals happen near known nodes or at the ends.
 - Stable node references matter.
 - The educational goal is to understand pointer repair and invariants.
+- Chunked linked storage, nested traversal, or probabilistic ordered lookup is
+  the concept being demonstrated.
 
 Python's built-in `list` is usually faster for index-heavy workloads because
 it stores values contiguously and supports O(1) random access. This project is

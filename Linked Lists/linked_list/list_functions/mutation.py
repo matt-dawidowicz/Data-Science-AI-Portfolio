@@ -246,10 +246,14 @@ class Mutation:
         if not self.head:
             raise IndexError("Pop from empty list")
         if self._size == 1:
-            data = self.head.data
+            old_tail = self.head
+            data = old_tail.data
             self.head = None
             self.tail = None
             self._size = 0
+            old_tail.next = None
+            if hasattr(old_tail, "prev"):
+                old_tail.prev = None
             return data
         if self._is_circular:
             old_tail = self.tail
@@ -304,6 +308,9 @@ class Mutation:
             self.head = None
             self.tail = None
             self._size = 0
+            old_head.next = None
+            if hasattr(old_head, "prev"):
+                old_head.prev = None
             return data
 
         self.head = old_head.next

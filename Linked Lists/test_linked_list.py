@@ -254,6 +254,54 @@ class TestLinkedListUnit(unittest.TestCase):
         reversed_list.sort()
         self.assertEqual(reversed_list.to_list(), [0, 1, 2, 3, 4])
 
+    def test_sort_preserves_nodes_and_custom_compare_order(self) -> None:
+        linked_list = LinkedList("doubly")
+        for value in [2, 1, 3]:
+            linked_list.append(value)
+
+        original_nodes = []
+        current = linked_list.head
+        while current is not None:
+            original_nodes.append(current)
+            current = current.next
+
+        linked_list.sort(compare=lambda left, right: left > right)
+
+        sorted_nodes = []
+        current = linked_list.head
+        while current is not None:
+            sorted_nodes.append(current)
+            current = current.next
+
+        self.assertEqual(linked_list.to_list(), [3, 2, 1])
+        self.assertEqual(
+            {id(node) for node in sorted_nodes},
+            {id(node) for node in original_nodes},
+        )
+        self.assertIsNone(linked_list.head.prev)
+        self.assertIsNone(linked_list.tail.next)
+
+    def test_sort_comparison_error_leaves_linear_links_unchanged(
+        self,
+    ) -> None:
+        for list_type in ("singly", "doubly"):
+            linked_list = LinkedList(list_type)
+            for value in [1, "bad", 2]:
+                linked_list.append(value)
+
+            original_head = linked_list.head
+            original_tail = linked_list.tail
+
+            with self.assertRaises(TypeError):
+                linked_list.sort()
+
+            self.assertEqual(linked_list.to_list(), [1, "bad", 2])
+            self.assertIs(linked_list.head, original_head)
+            self.assertIs(linked_list.tail, original_tail)
+            self.assertIsNone(linked_list.tail.next)
+            if list_type == "doubly":
+                self.assertIsNone(linked_list.head.prev)
+
     def test_merge(self) -> None:
         left = LinkedList("singly")
         right = LinkedList("singly")
@@ -494,6 +542,39 @@ class TestCircularLinkedList(unittest.TestCase):
         self.assertEqual(self.doubly_circular.head.data, 4)
         self.assertEqual(self.doubly_circular.tail.data, 0)
         self.assert_circular_links(self.doubly_circular)
+
+    def test_circular_sort_comparison_error_preserves_links(self) -> None:
+        for list_type in ("singly_circular", "doubly_circular"):
+            linked_list = LinkedList(list_type)
+            for value in [1, "bad", 2]:
+                linked_list.append(value)
+
+            original_head = linked_list.head
+            original_tail = linked_list.tail
+
+            with self.assertRaises(TypeError):
+                linked_list.sort()
+
+            self.assertEqual(linked_list.to_list(), [1, "bad", 2])
+            self.assertIs(linked_list.head, original_head)
+            self.assertIs(linked_list.tail, original_tail)
+            self.assert_circular_links(linked_list)
+
+    def test_singleton_pop_detaches_removed_circular_node(self) -> None:
+        for list_type in ("singly_circular", "doubly_circular"):
+            for method_name in ("pop", "pop_front"):
+                linked_list = LinkedList(list_type)
+                linked_list.append("only")
+                old_node = linked_list.head
+
+                self.assertEqual(getattr(linked_list, method_name)(), "only")
+
+                self.assertEqual(len(linked_list), 0)
+                self.assertIsNone(linked_list.head)
+                self.assertIsNone(linked_list.tail)
+                self.assertIsNone(old_node.next)
+                if list_type == "doubly_circular":
+                    self.assertIsNone(old_node.prev)
 
     def test_circular_merge_preserves_sorted_order_and_links(self) -> None:
         for list_type in ("singly_circular", "doubly_circular"):

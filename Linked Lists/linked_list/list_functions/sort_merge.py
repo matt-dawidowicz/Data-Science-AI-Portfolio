@@ -1,7 +1,8 @@
 """Sorting helpers for linked lists.
 
-Merge sort works well for linked lists because it can split and merge chains by
-rewiring node links instead of repeatedly indexing into the structure.
+Merge sort gives linked lists predictable O(n log n) ordering. This module
+sorts a snapshot of node references first, then relinks those existing nodes
+only after every comparison succeeds.
 """
 
 from __future__ import annotations
@@ -14,60 +15,74 @@ from typing import Any
 class SortMerge:
     """Provide merge-sort behavior for linked lists.
 
-    The implementation temporarily treats circular lists as linear chains,
-    sorts them, repairs ``prev`` links when needed, and restores circular links
-    afterward.
+    Sorting keeps node identity stable while avoiding partial rewires when a
+    comparison raises. Circular and doubly linked invariants are restored in a
+    single relinking pass after the sorted node order is known.
     """
 
-    def _split(self, head: Any) -> tuple[Any, Any]:
-        """Split a linked chain into two halves.
-
-        The slow/fast pointer technique places ``slow`` near the midpoint while
-        ``fast`` advances two nodes at a time.
-        """
-        slow = fast = head
-        while fast.next and fast.next.next:
-            slow = slow.next  # type: ignore
-            fast = fast.next.next  # type: ignore
-        middle = slow.next  # type: ignore
-        slow.next = None  # type: ignore
-        if self._list_type == "doubly" and middle:
-            middle.prev = None  # type: ignore
-        return head, middle
-
-    def _merge_sorted(
+    def _merge_sort_nodes(
         self,
-        left: Any,
-        right: Any,
-        compare: Callable[[Any, Any], bool] | None = None,
-    ) -> Any:
-        """Merge two sorted linked chains into one sorted chain.
+        nodes: list[Any],
+        compare: Callable[[Any, Any], bool],
+    ) -> list[Any]:
+        """Return nodes ordered by their data without changing links."""
+        if len(nodes) <= 1:
+            return nodes[:]
 
-        A dummy node gives the merge a stable starting point, so the loop can
-        always append to ``tail.next`` without treating the first node as a
-        special case.
-        """
-        if compare is None:
-            compare = lt
+        midpoint = len(nodes) // 2
+        left = self._merge_sort_nodes(nodes[:midpoint], compare)
+        right = self._merge_sort_nodes(nodes[midpoint:], compare)
+        return self._merge_node_runs(left, right, compare)
 
-        dummy = self._create_node(None)
-        tail = dummy
-        while left and right:
-            if compare(left.data, right.data):
-                tail.next = left
-                if self._list_type == "doubly":
-                    left.prev = tail  # type: ignore
-                left = left.next
+    def _merge_node_runs(
+        self,
+        left: list[Any],
+        right: list[Any],
+        compare: Callable[[Any, Any], bool],
+    ) -> list[Any]:
+        """Merge two sorted node lists using the configured comparator."""
+        merged = []
+        left_index = right_index = 0
+
+        while left_index < len(left) and right_index < len(right):
+            if compare(
+                left[left_index].data,
+                right[right_index].data,
+            ):
+                merged.append(left[left_index])
+                left_index += 1
             else:
-                tail.next = right
-                if self._list_type == "doubly":
-                    right.prev = tail  # type: ignore
-                right = right.next
-            tail = tail.next  # type: ignore
-        tail.next = left or right
-        if self._list_type == "doubly" and tail.next:
-            tail.next.prev = tail  # type: ignore
-        return dummy.next
+                merged.append(right[right_index])
+                right_index += 1
+
+        merged.extend(left[left_index:])
+        merged.extend(right[right_index:])
+        return merged
+
+    def _relink_nodes(self, nodes: list[Any]) -> None:
+        """Relink sorted nodes according to the current list variant."""
+        if not nodes:
+            self.head = self.tail = None
+            return
+
+        self.head = nodes[0]
+        self.tail = nodes[-1]
+        for index, node in enumerate(nodes):
+            previous = None
+            if index > 0:
+                previous = nodes[index - 1]
+            elif self._is_circular:
+                previous = self.tail
+
+            next_node = None
+            if index < len(nodes) - 1:
+                next_node = nodes[index + 1]
+            elif self._is_circular:
+                next_node = self.head
+
+            node.next = next_node
+            if self._list_type in ("doubly", "doubly_circular"):
+                node.prev = previous
 
     def sort(
         self,
@@ -75,37 +90,20 @@ class SortMerge:
     ) -> None:
         """Sort the linked list in place with merge sort.
 
-        Circular lists are opened before sorting because merge sort expects
-        finite chains that end at ``None``.
+        The sorted order is computed before links are changed. If comparison
+        fails, the list remains exactly as it was before ``sort`` was called.
         """
-        if self._is_circular and self.tail:
-            self.tail.next = None
-            if self._list_type == "doubly_circular":
-                self.head.prev = None
+        if self._size <= 1:
+            return
 
-        def _merge_sort(node: Any) -> Any:
-            if not node or not node.next:
-                return node
-            left, right = self._split(node)
-            return self._merge_sorted(
-                _merge_sort(left),
-                _merge_sort(right),
-                compare,
-            )
+        if compare is None:
+            compare = lt
 
-        self.head = _merge_sort(self.head)
-
-        current, prev = self.head, None
-        while current:
-            if self._list_type in ("doubly", "doubly_circular"):
-                current.prev = prev
-            prev = current
-            if current.next is None:
-                self.tail = current
+        nodes = []
+        current = self.head
+        for _ in range(self._size):
+            assert current is not None
+            nodes.append(current)
             current = current.next
 
-        if self._is_circular and self.tail:
-            # Restore the circular invariant after the linear sort completes.
-            self.tail.next = self.head
-            if self._list_type == "doubly_circular":
-                self.head.prev = self.tail
+        self._relink_nodes(self._merge_sort_nodes(nodes, compare))

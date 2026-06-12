@@ -86,12 +86,12 @@ class SkipList:
         return self._level
 
     @property
-    def head(self) -> Any | None:
+    def head(self) -> _SkipListNode | None:
         """Return the first data node, or ``None`` when empty."""
         return self._head.forward[0]
 
     @property
-    def tail(self) -> Any | None:
+    def tail(self) -> _SkipListNode | None:
         """Return the final data node, or ``None`` when empty."""
         return self._tail
 
@@ -122,7 +122,12 @@ class SkipList:
         """Compare skip lists by their ordered values."""
         if type(other) is not type(self):
             return False
-        return self.to_list() == other.to_list()
+        if len(self) != len(other):
+            return False
+        return all(
+            left == right
+            for left, right in zip(self, other, strict=False)
+        )
 
     def __repr__(self) -> str:
         """Return a debugging representation."""
@@ -333,7 +338,8 @@ class SkipList:
 
     def _validate_values(self, values: Iterable[Any]) -> None:
         """Validate that incoming values compare with existing values."""
-        sorted([*self, *values])
+        for value in sorted(values):
+            self._find_update(value)
 
     @staticmethod
     def _is_before(left: Any, right: Any) -> bool:

@@ -246,8 +246,9 @@ It also supports mutation and algorithms:
 - `sort()` sorts the list in place using merge sort.
 - `insert_sorted(value)` inserts into a list that is already sorted.
 - `merge(other)` merges another sorted linked list of the same type.
-- `remove_duplicates()` keeps the first copy of each value.
-- `extend(iterable)` appends many values.
+- `remove_duplicates()` keeps the first copy of each value, including
+  comparable unhashable values.
+- `extend(iterable)` appends many values using bounded list iteration.
 - `clear()` removes all nodes and resets the list.
 
 For conversion and copying:
@@ -291,7 +292,7 @@ It also supports sorted-safe mutation:
 - `remove`, `remove_all`, `remove_at`, `pop`, `pop_front`, `clear`,
   `remove_duplicates`, `copy`, `deep_copy`, `map`, `filter`, and `reduce` are
   available. The sorted-list version of `remove_duplicates` compares adjacent
-  values instead of hashing them.
+  values, which avoids the fallback scan needed by unsorted lists.
 - `sort()` can re-sort the list if internal node values were changed
   directly.
 

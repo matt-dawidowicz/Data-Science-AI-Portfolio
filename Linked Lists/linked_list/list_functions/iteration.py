@@ -1,7 +1,8 @@
 """Iteration helpers for linked-list variants.
 
-Iteration is where circular lists need special attention. Linear lists stop at
-``None``. Circular lists stop when traversal returns to the starting node.
+Iteration is where circular lists need special attention. Traversal is bounded
+by the size captured when iteration begins, so live appends do not make
+iteration chase newly added nodes forever.
 """
 
 from __future__ import annotations
@@ -16,23 +17,16 @@ class Iteration:
     def __iter__(self) -> Iterator[Any]:
         """Yield list values from head to tail.
 
-        For circular lists, the first node is yielded once and then traversal
-        stops when it reaches that same node again.
+        Iteration is bounded by the starting size. That keeps circular lists
+        finite and keeps linear lists finite even if callers append during
+        iteration.
         """
-        if self._is_circular:
-            if self.head is None:
-                return
-            current = self.head
+        current = self.head
+        remaining = self._size
+        while current is not None and remaining > 0:
             yield current.data
             current = current.next
-            while current is not None and current != self.head:
-                yield current.data
-                current = current.next
-        else:
-            current = self.head
-            while current:
-                yield current.data
-                current = current.next
+            remaining -= 1
 
     def __reversed__(self) -> Iterator[Any]:
         """Yield list values from tail to head for doubly linked lists.

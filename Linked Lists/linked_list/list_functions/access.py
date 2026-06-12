@@ -120,7 +120,9 @@ class Access:
         The type check prevents a singly linked list and doubly linked list
         with the same values from comparing equal when their structures differ.
         """
-        if not isinstance(other, self.__class__):
+        if type(other) is not type(self):
+            return False
+        if self._list_type != other._list_type:
             return False
         if len(self) != len(other):
             return False

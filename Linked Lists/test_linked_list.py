@@ -90,9 +90,27 @@ class TestLinkedListUnit(unittest.TestCase):
             another.append(value)
         self.assertEqual(self.singly, another)
 
+        same_values_different_type = LinkedList("doubly")
+        for value in range(5):
+            same_values_different_type.append(value)
+        self.assertNotEqual(self.singly, same_values_different_type)
+        self.assertNotEqual(same_values_different_type, self.singly)
+
     def test_extend(self) -> None:
         self.singly.extend([10, 11, 12])
         self.assertEqual(self.singly.to_list()[-3:], [10, 11, 12])
+
+    def test_extend_with_self_iterator_is_bounded(self) -> None:
+        linked_list = LinkedList("doubly")
+        for value in [1, 2, 3]:
+            linked_list.append(value)
+
+        linked_list.extend(iter(linked_list))
+
+        self.assertEqual(linked_list.to_list(), [1, 2, 3, 1, 2, 3])
+        self.assertEqual(len(linked_list), 6)
+        self.assertIsNone(linked_list.head.prev)
+        self.assertIsNone(linked_list.tail.next)
 
     def test_count(self) -> None:
         self.singly.append(2)
@@ -173,6 +191,20 @@ class TestLinkedListUnit(unittest.TestCase):
         )
         self.assertEqual(result_init, 20)
 
+        empty = LinkedList("singly")
+        self.assertIsNone(
+            empty.reduce(lambda left, right: right, None),
+        )
+
+        def append_item(items: list[int] | None, item: int) -> list[int]:
+            return [*items, item] if items is not None else [item]
+
+        none_init_result = self.singly.reduce(
+            append_item,
+            None,
+        )
+        self.assertEqual(none_init_result, [0, 1, 2, 3, 4])
+
     def test_insert_sorted(self) -> None:
         sorted_list = LinkedList("singly")
         for value in [1, 3, 5, 7]:
@@ -233,6 +265,38 @@ class TestLinkedListUnit(unittest.TestCase):
         left.merge(right)
 
         self.assertEqual(left.to_list(), [1, 2, 3, 4, 5, 6])
+        self.assertEqual(right.to_list(), [2, 4, 6])
+        self.assertEqual(len(right), 3)
+
+        right.append(8)
+        self.assertEqual(left.to_list(), [1, 2, 3, 4, 5, 6])
+        self.assertEqual(right.to_list(), [2, 4, 6, 8])
+
+    def test_merge_with_empty_left_copies_other_nodes(self) -> None:
+        left = LinkedList("doubly")
+        right = LinkedList("doubly")
+        for value in [1, 2, 3]:
+            right.append(value)
+
+        left.merge(right)
+        right.append(4)
+
+        self.assertEqual(left.to_list(), [1, 2, 3])
+        self.assertEqual(right.to_list(), [1, 2, 3, 4])
+        self.assertEqual(len(left), 3)
+        self.assertEqual(len(right), 4)
+        self.assertIsNone(left.head.prev)
+        self.assertIsNone(left.tail.next)
+
+    def test_merge_with_self_uses_snapshot(self) -> None:
+        linked_list = LinkedList("singly")
+        for value in [1, 3]:
+            linked_list.append(value)
+
+        linked_list.merge(linked_list)
+
+        self.assertEqual(linked_list.to_list(), [1, 1, 3, 3])
+        self.assertEqual(len(linked_list), 4)
 
     def test_rotate(self) -> None:
         self.singly.rotate(2)
@@ -445,6 +509,29 @@ class TestCircularLinkedList(unittest.TestCase):
             self.assertEqual(left.to_list(), [1, 2, 3, 4, 5, 6])
             self.assertEqual(left.tail.data, 6)
             self.assert_circular_links(left)
+            self.assertEqual(right.to_list(), [2, 4, 6])
+            self.assertEqual(len(right), 3)
+            self.assert_circular_links(right)
+
+            right.append(8)
+            self.assertEqual(left.to_list(), [1, 2, 3, 4, 5, 6])
+            self.assertEqual(right.to_list(), [2, 4, 6, 8])
+            self.assert_circular_links(left)
+            self.assert_circular_links(right)
+
+    def test_circular_merge_with_self_uses_snapshot(self) -> None:
+        for list_type in ("singly_circular", "doubly_circular"):
+            linked_list = LinkedList(list_type)
+            for value in [1, 3]:
+                linked_list.append(value)
+
+            linked_list.merge(linked_list)
+
+            self.assertEqual(linked_list.to_list(), [1, 1, 3, 3])
+            self.assertEqual(len(linked_list), 4)
+            self.assert_circular_links(linked_list)
+            if list_type == "singly_circular":
+                self.assert_singly_nodes_have_no_prev(linked_list)
 
     def test_circular_remove_duplicates_preserves_links(self) -> None:
         singly = LinkedList("singly_circular")
@@ -461,6 +548,30 @@ class TestCircularLinkedList(unittest.TestCase):
         doubly.remove_duplicates()
         self.assertEqual(doubly.to_list(), [1, 2, 3])
         self.assert_circular_links(doubly)
+
+    def test_remove_duplicates_supports_unhashable_values(self) -> None:
+        for list_type in (
+            "singly",
+            "doubly",
+            "singly_circular",
+            "doubly_circular",
+        ):
+            linked_list = LinkedList(list_type)
+            for value in [[1], [2], [1], [3], [2]]:
+                linked_list.append(value)
+
+            linked_list.remove_duplicates()
+
+            self.assertEqual(linked_list.to_list(), [[1], [2], [3]])
+            self.assertEqual(len(linked_list), 3)
+            if "circular" in list_type:
+                self.assert_circular_links(linked_list)
+            else:
+                self.assertIsNone(linked_list.tail.next)
+                if "doubly" in list_type:
+                    self.assertIsNone(linked_list.head.prev)
+            if list_type.startswith("singly"):
+                self.assert_singly_nodes_have_no_prev(linked_list)
 
     def test_circular_remove_all_preserves_links(self) -> None:
         singly = LinkedList("singly_circular")

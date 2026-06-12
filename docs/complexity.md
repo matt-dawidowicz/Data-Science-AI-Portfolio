@@ -64,8 +64,8 @@ because linked lists do not have array-style random access.
 | `pop()` on doubly lists | O(n) | O(1) | Current implementation still walks for linear doubly lists. |
 | `pop()` on doubly circular lists | O(1) | O(1) | Uses `tail.prev`. |
 | `clear()` | O(n) | O(1) | Detaches every node before resetting state. |
-| `extend(iterable)` | O(m) | O(1) or O(n) | Self-extension snapshots first, otherwise appends as it reads. |
-| `remove_duplicates()` | O(n) average | O(n) | Uses a `set`, so stored values must be hashable. |
+| `extend(iterable)` | O(m) | O(1) or O(n) | Self-extension snapshots first; iterators are size-bounded. |
+| `remove_duplicates()` | O(n) average, O(n^2) fallback | O(n) | Uses a `set` for hashable values and equality fallback for unhashable values. |
 
 ### LinkedList Algorithms
 

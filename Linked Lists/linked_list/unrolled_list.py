@@ -132,8 +132,7 @@ class UnrolledLinkedList:
         if len(self) != len(other):
             return False
         return all(
-            left == right
-            for left, right in zip(self, other, strict=False)
+            left == right for left, right in zip(self, other, strict=False)
         )
 
     def __repr__(self) -> str:

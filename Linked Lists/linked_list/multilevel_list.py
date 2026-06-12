@@ -570,8 +570,7 @@ class MultilevelLinkedList:
     def _contains_node(self, candidate: _MultilevelNode) -> bool:
         """Return whether ``candidate`` is reachable from ``head``."""
         return any(
-            node is candidate
-            for node in self._iter_nodes_depth_first()
+            node is candidate for node in self._iter_nodes_depth_first()
         )
 
     def _remove_reference(

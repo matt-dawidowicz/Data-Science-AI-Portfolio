@@ -47,8 +47,11 @@ module = [
     "test_linked_deque",
     "test_linked_list",
     "test_multilevel_linked_list",
+    "test_positional_linked_list",
+    "test_self_organizing_linked_list",
     "test_skip_list",
     "test_sorted_linked_list",
+    "test_sparse_matrix_linked_list",
     "test_unrolled_linked_list",
 ]
 disable_error_code = [

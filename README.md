@@ -2,8 +2,8 @@
 
 This repository currently contains a Python linked-list project with singly,
 doubly, singly circular, and doubly circular linked-list variants, plus sorted
-linked-list, linked-deque, skip-list, unrolled-list, and multilevel-list
-implementations.
+linked-list, linked-deque, skip-list, unrolled-list, multilevel-list,
+positional-list, self-organizing-list, and sparse-matrix implementations.
 
 ## Project Layout
 
@@ -16,9 +16,12 @@ Linked Lists/
     __init__.py
     deque.py
     multilevel_list.py
+    positional_list.py
     py.typed
+    self_organizing_list.py
     skip_list.py
     sorted_list.py
+    sparse_matrix.py
     unrolled_list.py
     list_functions/
       access.py
@@ -37,8 +40,11 @@ Linked Lists/
   test_linked_deque.py
   test_linked_list.py
   test_multilevel_linked_list.py
+  test_positional_linked_list.py
+  test_self_organizing_linked_list.py
   test_skip_list.py
   test_sorted_linked_list.py
+  test_sparse_matrix_linked_list.py
   test_unrolled_linked_list.py
 pyproject.toml
 requirements-dev.txt
@@ -53,6 +59,9 @@ requirements-dev.txt
 - Skip list ordered set with probabilistic multi-level links
 - Unrolled linked list with fixed-capacity value blocks
 - Multilevel linked list with `next` and `child` pointers
+- Positional linked list with stable validated `Position` handles
+- Self-organizing linked list with adaptive search strategies
+- Sparse matrix backed by linked row and column chains
 - Append, prepend, insert, remove, remove-at, pop, and pop-front operations
 - Deque operations: `append_left`, `append_right`, `insert`, `pop_left`,
   `pop_right`, `peek_left`, `peek_right`, `extend`, `extend_left`, `remove`,
@@ -67,6 +76,12 @@ requirements-dev.txt
   nested snapshots, path lookup, depth-first and breadth-first flattening
 - Block-layout helpers for unrolled lists, including `to_blocks()` for
   inspecting chunk boundaries
+- Position-aware helpers: `positions`, `add_before`, `add_after`,
+  `move_before`, `move_after`, `swap`, and stale-position validation
+- Adaptive search strategies: move-to-front, transpose, frequency-count, and
+  no-reorder counting
+- Sparse matrix helpers: dense conversion, row/column iteration, matrix
+  arithmetic, transposition, vector multiplication, and matrix multiplication
 - PEP 561 typed-package marker and mypy configuration for static type checks
 - Ruff linting and format-check configuration
 - Pytest and coverage configuration for alternate test workflows
@@ -80,7 +95,7 @@ inside out, not just how to call a built-in list or deque. I implemented the
 core linked-list behavior myself, then separated the code into focused modules
 so each part of the data structure is easier to explain, test, and maintain.
 
-At the highest level, the project has six public containers:
+At the highest level, the project has nine public containers:
 
 - `LinkedList`, which supports singly linked, doubly linked, singly circular,
   and doubly circular list variants.
@@ -94,6 +109,12 @@ At the highest level, the project has six public containers:
   demonstrate chunked linked storage.
 - `MultilevelLinkedList`, which adds child links so nested structures can be
   traversed, flattened, copied, and mutated.
+- `PositionalLinkedList`, which exposes stable position handles for direct
+  insert, delete, move, and replace operations around known nodes.
+- `SelfOrganizingLinkedList`, which adapts order after successful searches
+  using move-to-front, transpose, frequency-count, or count-only strategies.
+- `SparseMatrixLinkedList`, which stores non-zero matrix cells in linked row
+  and column chains for sparse data-structure practice.
 
 The linked list and deque structures are related, but they are not the same
 thing. A doubly linked list is a general-purpose sequence where operations
@@ -299,6 +320,60 @@ top-level lists because their natural meaning is sequence-wide rather than
 subtree-specific. Other operations, such as `copy`, `deep_copy`, `map`,
 `reverse`, and child mutation helpers, preserve the nested shape.
 
+## PositionalLinkedList Design
+
+`PositionalLinkedList` is a doubly linked sequence that returns stable
+`Position` objects for nodes. That mirrors the textbook positional-list API:
+when client code already has a location, it can insert, delete, move, swap, or
+replace around that location without searching by value or numeric index.
+
+The implementation validates every position before mutation:
+
+- Positions are tied to exactly one owning list.
+- Deleting a position invalidates that handle.
+- Clearing the list invalidates every existing handle.
+- Moving, reversing, rotating, and sorting relink existing nodes while keeping
+  valid position handles attached to their original values.
+- Foreign positions from another list are rejected before any links change.
+
+This is useful for teaching the difference between "a value at an index" and
+"a stable handle to a node." It also highlights a common linked-list strength:
+once a location is known, local insertion and deletion can be direct.
+
+## SelfOrganizingLinkedList Design
+
+`SelfOrganizingLinkedList` is a sequence that adapts after successful access.
+Each node stores an access count, and `find`, `search`, and `access` update
+the node according to the selected strategy:
+
+- `move_to_front` moves the accessed node directly to the head.
+- `transpose` swaps the accessed node one step toward the head.
+- `frequency_count` keeps more frequently accessed nodes earlier.
+- `none` records access counts without changing order.
+
+The class still supports regular sequence operations such as indexing,
+insertion, removal, replacement, sorting, rotation, copying, mapping,
+filtering, and reducing. Membership checks and static reads do not reorganize
+the list, which keeps adaptive behavior intentional and testable.
+
+## SparseMatrixLinkedList Design
+
+`SparseMatrixLinkedList` stores only non-zero cells. Each stored cell belongs
+to two linked chains at the same time:
+
+- A row chain through `right` pointers, sorted by column.
+- A column chain through `down` pointers, sorted by row.
+
+That dual-link representation makes it easy to inspect sparse matrix
+invariants directly. Row-major iteration, row lookups, column lookups, dense
+conversion, transposition, addition, subtraction, scalar multiplication,
+matrix-vector multiplication, and matrix multiplication all operate on the
+stored entries rather than every dense cell when possible.
+
+Cells equal to the configured `zero` value are pruned instead of stored. This
+keeps the data structure sparse after construction, assignment, arithmetic,
+mapping, and explicit cleanup.
+
 ## Feature Reference
 
 The package now exposes enough behavior to use these structures as practical
@@ -306,8 +381,10 @@ teaching containers, not only as minimal linked-list examples.
 
 For detailed Big-O notes, see `docs/complexity.md`. That guide breaks down
 time and space costs for `LinkedList`, `SortedLinkedList`, `LinkedDeque`,
-`SkipList`, node storage, circular-list behavior, and the tradeoffs behind
-snapshot-based operations.
+`SkipList`, `UnrolledLinkedList`, `MultilevelLinkedList`,
+`PositionalLinkedList`, `SelfOrganizingLinkedList`, `SparseMatrixLinkedList`,
+node storage, circular-list behavior, and the tradeoffs behind snapshot-based
+operations.
 
 ### LinkedList API
 
@@ -529,6 +606,76 @@ It also supports Python container-style helpers:
 - `copy`, `deep_copy`, `map`, `reduce`, `to_nested_list`, and `clear` are
   supported.
 
+### PositionalLinkedList API
+
+`PositionalLinkedList` focuses on stable node handles:
+
+- `PositionalLinkedList([1, 2, 3])` builds a doubly linked positional list.
+- `positions()` yields `Position` handles from head to tail.
+- `first_position()`, `last_position()`, and `position_at(index)` return
+  direct handles.
+- `before(position)` and `after(position)` navigate around a handle.
+- `add_first`, `add_last`, `add_before`, `add_after`, `append`, `prepend`,
+  `insert`, `extend`, and `merge` add values and return positions where
+  appropriate.
+- `delete(position)` removes a specific position and invalidates that handle.
+- `replace(position, value)` changes one position and returns the old value.
+- `move_to_front`, `move_to_back`, `move_before`, `move_after`, and `swap`
+  reorganize existing nodes without invalidating live positions.
+- Indexing, slicing, assignment, `get`, `find`, `index`, `count`,
+  containment checks, forward iteration, and reverse iteration are supported.
+- `remove`, `remove_all`, `remove_at`, `pop_first`, `pop_last`,
+  `replace_value`, `reverse`, `rotate`, `sort`, and `remove_duplicates`
+  provide sequence-style mutation.
+- `copy`, `deep_copy`, `map`, `filter`, `reduce`, `to_list`, and `clear`
+  provide conversion, functional, and lifecycle helpers.
+
+### SelfOrganizingLinkedList API
+
+`SelfOrganizingLinkedList` focuses on adaptive search:
+
+- `SelfOrganizingLinkedList(values, strategy="move_to_front")` selects the
+  initial reorganization strategy.
+- Supported strategies are `move_to_front`, `transpose`, `frequency_count`,
+  and `none`.
+- `find(value)` returns the pre-access index and reorganizes on success.
+- `search(value, default=None)` returns the matching value or a fallback.
+- `access(index)` reads by numeric index, increments the access count, and
+  applies the selected strategy.
+- `contains_static(value)`, `get(index)`, indexing, slicing, iteration, and
+  membership checks read without reorganizing.
+- `to_access_counts()`, `access_count(value)`, `reset_counts()`, and
+  `set_strategy(strategy)` expose adaptive state.
+- `append`, `prepend`, `insert`, `extend`, `merge`, `remove`, `remove_all`,
+  `remove_at`, `pop_front`, `pop`, `replace`, `reverse`, `rotate`, `sort`,
+  and `remove_duplicates` provide sequence mutation.
+- `copy(preserve_counts=True)` and `deep_copy(preserve_counts=True)` can keep
+  or reset access counts.
+- `map`, `filter`, `reduce`, `to_list`, and `clear` round out the helper API.
+
+### SparseMatrixLinkedList API
+
+`SparseMatrixLinkedList` focuses on sparse numeric data:
+
+- `SparseMatrixLinkedList(rows, cols, entries, zero=0)` builds a sparse
+  matrix from `(row, col, value)` triples.
+- `from_dense(dense, zero=0)` and `from_entries(rows, cols, entries)` provide
+  alternate constructors.
+- `shape`, `len(matrix)`, `bool(matrix)`, `is_empty()`, and `density()`
+  describe matrix state.
+- `matrix[row, col]`, `get(row, col, default)`, `set(row, col, value)`,
+  `remove(row, col)`, and `pop(row, col, default)` read and mutate cells.
+- `items()`, `values()`, `row_items(row)`, `column_items(col)`,
+  `to_entries()`, and `to_dense()` expose sparse and dense snapshots.
+- `transpose()`, `row_sum(row)`, `column_sum(col)`, and `trace()` support
+  common matrix reads.
+- `add_matrix`, `subtract_matrix`, `scalar_multiply`, `multiply_vector`, and
+  `matmul` implement arithmetic; `+`, `-`, and `@` call the corresponding
+  matrix operations.
+- `map_values(func)` transforms stored cells, while `prune()` removes cells
+  that became equal to the configured zero value.
+- `copy`, `deep_copy`, and `clear` provide lifecycle helpers.
+
 ## Deque Edge Cases I Handled
 
 The deque implementation intentionally handles several edge cases:
@@ -658,6 +805,61 @@ flattening hierarchy:
   flat top-level list because they operate on the whole visible sequence.
 - `clear()` recursively detaches `next` and `child` links from every node.
 
+## Positional List Edge Cases I Handled
+
+The positional-list implementation focuses on keeping position handles honest:
+
+- Empty peeks, pops, and position lookups raise `IndexError`.
+- Non-position arguments raise `TypeError` before mutation.
+- Positions from another list are rejected before any links are changed.
+- Deleted positions and positions from a cleared list become invalid.
+- Other live positions to moved nodes remain valid after moves, swaps,
+  reversing, rotating, and sorting.
+- `extend(self)` snapshots first so self-extension is bounded.
+- Sorting compares nodes before relinking, so comparison errors leave the
+  original order intact.
+- Duplicate removal supports hashable and unhashable values.
+- Tests walk forward links, backward links, owners, head, tail, and every
+  yielded position after randomized list-style operations.
+
+## Self-Organizing List Edge Cases I Handled
+
+The self-organizing implementation keeps adaptive behavior explicit:
+
+- Invalid strategy names fail before list state is created or changed.
+- Membership checks, indexing, slicing, and static reads do not reorganize or
+  increment access counts.
+- `find`, `search`, and `access` report the pre-access location or value, then
+  apply the selected strategy.
+- Move-to-front, transpose, frequency-count, and count-only behavior are
+  tested separately.
+- Access counts survive in-place sequence operations such as reverse, rotate,
+  sort, and strategy changes.
+- Copies can preserve or reset access counts.
+- Duplicate removal supports unhashable values through an equality fallback.
+- Randomized tests compare non-adaptive mutations against Python `list` while
+  checking every forward and backward link.
+
+## Sparse Matrix Edge Cases I Handled
+
+The sparse-matrix implementation protects both row and column chains:
+
+- Matrix dimensions, row indexes, column indexes, and tuple keys are validated
+  before mutation.
+- Entries equal to `zero` are never stored, and assigning `zero` removes an
+  existing cell.
+- Duplicate constructor entries update the existing cell instead of creating
+  multiple nodes for one coordinate.
+- Row chains stay sorted by column, and column chains stay sorted by row.
+- Removing a head, middle, or tail cell repairs both linked chains.
+- Dense construction rejects ragged rows.
+- Addition, subtraction, matrix multiplication, trace, and vector
+  multiplication validate shape compatibility.
+- Explicit `get` defaults can differ from the configured zero value.
+- Tests compare every randomized mutation and arithmetic result against dense
+  Python-list math, then verify that row and column chains contain the same
+  node objects.
+
 ## Style and Documentation Standards
 
 I also cleaned the Python code so it follows standard Python style more
@@ -703,6 +905,12 @@ version is:
   walk block nodes and then edit a small in-block list.
 - `MultilevelLinkedList` depth-first reads are O(n), and flattening or
   hierarchy-wide operations visit every reachable node.
+- `PositionalLinkedList` end operations and known-position insertions are
+  O(1), while numeric lookup and value search remain O(n).
+- `SelfOrganizingLinkedList` keeps search O(n) in the worst case, but adaptive
+  strategies can move frequently accessed values closer to the head.
+- `SparseMatrixLinkedList` stores only non-zero cells, so storage is O(z) for
+  `z` stored entries instead of O(rows * cols).
 - All linked structures use O(n) node storage overall, while the container
   metadata itself is O(1).
 
@@ -817,6 +1025,47 @@ For `MultilevelLinkedList`, the tests cover:
 - Recursive clearing of `next` and `child` links.
 - Randomized flat operations against Python `list`.
 
+For `PositionalLinkedList`, the tests cover:
+
+- Empty state, invalid positions, foreign positions, and stale positions.
+- Adding before and after known positions.
+- Position navigation with `before`, `after`, first, last, and index lookup.
+- Indexing, slicing, assignment, search helpers, and containment.
+- Deleting, replacing, moving, swapping, popping, and removing values.
+- Preserving position identity through reverse, rotate, and sort.
+- Duplicate removal for unhashable values.
+- Copying, deep copying, mapping, filtering, reducing, and self-extension.
+- Clearing behavior that invalidates existing positions.
+- Randomized mutation behavior against Python `list` while checking node
+  owners and both directions of links.
+
+For `SelfOrganizingLinkedList`, the tests cover:
+
+- Empty state and strategy validation.
+- Move-to-front, transpose, frequency-count, and no-reorder strategies.
+- Access-count increments, resets, strategy changes, and static reads.
+- Adaptive `find`, `search`, and `access` behavior.
+- Indexing, slicing, assignment, containment, and safe default reads.
+- Removing, replacing, reversing, rotating, sorting, and duplicate removal.
+- Copying and deep copying with count preservation.
+- Mapping, filtering, reducing, and self-extension.
+- Randomized non-adaptive mutation behavior against Python `list`.
+
+For `SparseMatrixLinkedList`, the tests cover:
+
+- Empty matrices, dimension validation, key validation, and shape errors.
+- Construction from entries and dense rectangular iterables.
+- Duplicate entries, zero pruning, assignment, removal, popping, and clearing.
+- Row iteration, column iteration, values, density, and custom zero values.
+- Copying, deep copying, equality, and transposition.
+- Matrix addition, subtraction, scalar multiplication, vector multiplication,
+  matrix multiplication, and trace.
+- Value mapping and explicit pruning of cells that become zero.
+- Randomized mutations against dense Python matrices.
+- Randomized arithmetic against dense Python-list matrix math.
+- Internal row-chain and column-chain invariants after every randomized
+  operation.
+
 The tests do more than check final lists of values. For the linked deque and
 unrolled list, they also walk links in both directions to verify that
 neighboring nodes agree. For the sorted list, the tests verify that public
@@ -824,7 +1073,9 @@ values remain sorted and that circular head-tail links stay intact. For the
 skip list, the tests verify that each shortcut level remains sorted and only
 references values that exist on the bottom level. For the multilevel list, the
 tests compare flat traversal, nested snapshots, top-level chains, and child
-links so hierarchy bugs are visible.
+links so hierarchy bugs are visible. For positional and self-organizing lists,
+the tests walk both `prev` and `next` links. For sparse matrices, the tests
+verify that row chains and column chains contain the same stored node objects.
 
 ## Requirements
 
@@ -900,8 +1151,11 @@ from linked_list import (
     LinkedDeque,
     LinkedList,
     MultilevelLinkedList,
+    PositionalLinkedList,
+    SelfOrganizingLinkedList,
     SkipList,
     SortedLinkedList,
+    SparseMatrixLinkedList,
     UnrolledLinkedList,
 )
 
@@ -967,4 +1221,25 @@ multilevel.append_child(2, 6)
 print(multilevel.to_list())              # [1, 2, 3, 4, 6, 5]
 print(multilevel.path_to(6))             # (1, 2)
 print(multilevel.to_list("breadth_first"))  # [1, 2, 5, 3, 4, 6]
+
+positional = PositionalLinkedList([1, 3])
+middle = positional.add_after(positional.first_position(), 2)
+positional.move_to_front(middle)
+
+print(positional.to_list())  # [2, 1, 3]
+
+self_organizing = SelfOrganizingLinkedList(
+    ["cold", "warm", "hot"],
+    strategy="move_to_front",
+)
+self_organizing.search("hot")
+
+print(self_organizing.to_list())          # ['hot', 'cold', 'warm']
+print(self_organizing.to_access_counts()) # [('hot', 1), ('cold', 0), ('warm', 0)]
+
+sparse = SparseMatrixLinkedList.from_dense([[1, 0, 2], [0, 3, 0]])
+
+print(sparse.to_entries())          # [(0, 0, 1), (0, 2, 2), (1, 1, 3)]
+print(sparse.multiply_vector([2, 3, 4]))  # [10, 9]
+print((sparse @ sparse.transpose()).to_dense())  # [[5, 0], [0, 9]]
 ```

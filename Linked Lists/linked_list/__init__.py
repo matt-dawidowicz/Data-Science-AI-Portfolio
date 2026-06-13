@@ -29,6 +29,7 @@ from .skip_list import SkipList
 from .sorted_list import SortedLinkedList
 from .sparse_matrix import SparseMatrixLinkedList
 from .unrolled_list import UnrolledLinkedList
+from .visualize import to_mermaid
 
 __all__ = [
     "LinkedDeque",
@@ -41,4 +42,5 @@ __all__ = [
     "SparseMatrixLinkedList",
     "SortedLinkedList",
     "UnrolledLinkedList",
+    "to_mermaid",
 ]

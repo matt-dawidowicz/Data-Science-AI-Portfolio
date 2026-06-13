@@ -1,5 +1,7 @@
 # Data Science AI Portfolio
 
+[![CI](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml)
+
 This repository currently contains a Python linked-list project with singly,
 doubly, singly circular, and doubly circular linked-list variants, plus sorted
 linked-list, linked-deque, skip-list, unrolled-list, multilevel-list,
@@ -9,9 +11,26 @@ positional-list, self-organizing-list, and sparse-matrix implementations.
 
 ```text
 docs/
+  api_reference.md
   complexity.md
   linked_structures_walkthrough.md
+  package_readiness.md
+.github/
+  workflows/
+    ci.yml
 .pre-commit-config.yaml
+benchmarks/
+  benchmark_structures.py
+examples/
+  adaptive_command_palette.py
+  document_outline.py
+  job_queue.py
+  leaderboard.py
+  lru_cache.py
+  round_robin_scheduler.py
+  sparse_recommender.py
+  text_buffer_blocks.py
+  text_cursor.py
 Linked Lists/
   linked_list/
     __init__.py
@@ -24,6 +43,7 @@ Linked Lists/
     sorted_list.py
     sparse_matrix.py
     unrolled_list.py
+    visualize.py
     list_functions/
       access.py
       base.py
@@ -42,11 +62,15 @@ Linked Lists/
   test_linked_list.py
   test_multilevel_linked_list.py
   test_positional_linked_list.py
+  test_property_invariants.py
   test_self_organizing_linked_list.py
   test_skip_list.py
   test_sorted_linked_list.py
   test_sparse_matrix_linked_list.py
+  test_typing_and_visualization.py
   test_unrolled_linked_list.py
+CHANGELOG.md
+LICENSE
 pyproject.toml
 requirements-dev.txt
 ```
@@ -83,12 +107,80 @@ requirements-dev.txt
   no-reorder counting
 - Sparse matrix helpers: dense conversion, row/column iteration, matrix
   arithmetic, transposition, vector multiplication, and matrix multiplication
+- Mermaid visualization helper for small structure diagrams
+- Public generic aliases such as `LinkedDeque[int]` and `SkipList[str]`
+- Real-world examples for schedulers, job queues, leaderboards, text buffers,
+  nested outlines, cache eviction, command palettes, and sparse recommenders
+- Standard-library benchmark runner for comparing educational structures with
+  built-in containers
 - PEP 561 typed-package marker and mypy configuration for static type checks
 - Ruff linting and format-check configuration
-- Pytest and coverage configuration for alternate test workflows
+- Pytest, optional Hypothesis property tests, and coverage configuration
 - Local pre-commit hooks for linting, type checking, and tests
+- GitHub Actions CI for Python 3.10, 3.11, and 3.12
+- Installable package metadata in `pyproject.toml`
+- API reference in `docs/api_reference.md`
 - Dedicated complexity guide in `docs/complexity.md`
 - Beginner-friendly code walkthrough in `docs/linked_structures_walkthrough.md`
+- Package readiness guide in `docs/package_readiness.md`
+
+## Install
+
+Install the package from a local checkout:
+
+```powershell
+python -m pip install -e .
+```
+
+Install development tools, including optional property-based tests:
+
+```powershell
+python -m pip install -e ".[dev]"
+```
+
+The import package is `linked_list`:
+
+```python
+from linked_list import LinkedDeque, SkipList, SparseMatrixLinkedList
+
+jobs: LinkedDeque[str] = LinkedDeque(["ingest", "transform", "load"])
+scores: SkipList[int] = SkipList([100, 200, 150])
+ratings: SparseMatrixLinkedList[float] = SparseMatrixLinkedList.from_entries(
+    3,
+    3,
+    [(0, 2, 4.5)],
+)
+```
+
+## Examples And Benchmarks
+
+Run real-world examples from the repository root:
+
+```powershell
+python examples/job_queue.py
+python examples/leaderboard.py
+python examples/sparse_recommender.py
+```
+
+Run the lightweight benchmark comparison:
+
+```powershell
+python benchmarks/benchmark_structures.py
+```
+
+The benchmark is meant to teach tradeoffs. It is not a claim that these
+educational structures beat Python's optimized built-ins.
+
+## Visualization
+
+Small structures can be exported as Mermaid diagrams:
+
+```python
+from linked_list import LinkedDeque, to_mermaid
+
+queue = LinkedDeque(["ingest", "transform", "load"])
+print(to_mermaid(queue, title="ETL queue"))
+```
 
 ## Project Explanation
 

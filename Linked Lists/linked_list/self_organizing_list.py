@@ -15,8 +15,9 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
+T = TypeVar("T")
 TSelfOrganizingLinkedList = TypeVar(
     "TSelfOrganizingLinkedList",
     bound="SelfOrganizingLinkedList",
@@ -45,7 +46,7 @@ class _SelfOrganizingNode:
         )
 
 
-class SelfOrganizingLinkedList:
+class SelfOrganizingLinkedList(Generic[T]):
     """Linked list that reorganizes itself after successful access.
 
     ``find``, ``search``, and ``access`` are adaptive operations: they record a

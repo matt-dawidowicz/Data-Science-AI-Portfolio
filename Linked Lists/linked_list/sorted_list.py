@@ -14,18 +14,19 @@ because arbitrary insertion, reversal, or rotation would make the name
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
 from .list_functions.linked_list import LinkedList
 from .list_functions.mutation import Mutation
 
+T = TypeVar("T")
 TSortedLinkedList = TypeVar(
     "TSortedLinkedList",
     bound="SortedLinkedList",
 )
 
 
-class SortedLinkedList(LinkedList):
+class SortedLinkedList(LinkedList[T], Generic[T]):
     """Linked list that keeps values sorted after every mutation.
 
     The class supports the same list variants as ``LinkedList``: singly,

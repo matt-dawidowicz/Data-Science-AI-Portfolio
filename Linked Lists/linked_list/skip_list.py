@@ -15,8 +15,9 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 from operator import lt
 from random import Random
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
+T = TypeVar("T")
 TSkipList = TypeVar("TSkipList", bound="SkipList")
 
 
@@ -40,7 +41,7 @@ class _SkipListNode:
         return len(self.forward)
 
 
-class SkipList:
+class SkipList(Generic[T]):
     """Ordered set with average logarithmic search, insert, and remove.
 
     Values must be mutually comparable with ``<``. Duplicate insertions are

@@ -14,8 +14,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
+T = TypeVar("T")
 TSparseMatrixLinkedList = TypeVar(
     "TSparseMatrixLinkedList",
     bound="SparseMatrixLinkedList",
@@ -50,7 +51,7 @@ class _SparseMatrixNode:
         )
 
 
-class SparseMatrixLinkedList:
+class SparseMatrixLinkedList(Generic[T]):
     """Sparse matrix with row and column linked lists.
 
     The matrix stores dictionaries of row heads and column heads. Each stored

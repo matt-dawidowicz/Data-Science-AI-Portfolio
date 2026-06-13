@@ -222,7 +222,10 @@ class TestCoreLinkedListCoverageEdges(unittest.TestCase):
             linked_list.append("duplicate")
             linked_list.append("survivor")
 
-            with patch("builtins.set", AlwaysContainsSet):
+            with patch(
+                "linked_list.list_functions.mutation._make_seen_set",
+                AlwaysContainsSet,
+            ):
                 linked_list.remove_duplicates()
 
             self.assertEqual(linked_list.to_list(), [])

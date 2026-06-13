@@ -23,6 +23,11 @@ if TYPE_CHECKING:
     from .linked_list import LinkedList
 
 
+def _make_seen_set() -> set[Any]:
+    """Create the hashable-value tracker used by duplicate removal."""
+    return set()
+
+
 class Mutation:
     """Provide mutating operations for linked lists.
 
@@ -536,7 +541,7 @@ class Mutation:
         lets the duplicate-removal loop use a normal ``while current`` pattern,
         then the circular links are restored at the end.
         """
-        seen_hashable: set[Any] = set()
+        seen_hashable = _make_seen_set()
         seen_unhashable: list[Any] = []
 
         def already_seen(data: Any) -> bool:

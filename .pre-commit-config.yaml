@@ -3,29 +3,29 @@ repos:
     hooks:
       - id: ruff-check
         name: ruff check
-        entry: ruff check .
+        entry: python Linked_List_Showcase/tools/run_check.py ruff-check
         language: python
         additional_dependencies: [ruff>=0.5]
         pass_filenames: false
         types_or: [python, pyi]
       - id: ruff-format-check
         name: ruff format check
-        entry: ruff format --check .
+        entry: python Linked_List_Showcase/tools/run_check.py ruff-format
         language: python
         additional_dependencies: [ruff>=0.5]
         pass_filenames: false
         types_or: [python, pyi]
       - id: mypy
         name: mypy
-        entry: mypy
+        entry: python Linked_List_Showcase/tools/run_check.py mypy
         language: python
         additional_dependencies: [mypy>=1.10]
         pass_filenames: false
         types_or: [python, pyi]
       - id: pytest
         name: pytest
-        entry: pytest -q
+        entry: python Linked_List_Showcase/tools/run_check.py pytest
         language: python
-        additional_dependencies: [pytest>=8.2]
+        additional_dependencies: [hypothesis>=6.100, pytest>=8.2]
         pass_filenames: false
         types_or: [python, pyi]

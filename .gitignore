@@ -5,6 +5,7 @@ __pycache__/
 
 # Test and coverage artifacts
 .pytest_cache/
+.hypothesis/
 .coverage
 coverage.xml
 htmlcov/

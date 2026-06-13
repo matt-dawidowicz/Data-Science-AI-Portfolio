@@ -11,7 +11,7 @@ without turning the root directory into one large mixed codebase.
 
 | Project | Location | Type | Status |
 | --- | --- | --- | --- |
-| Linked Structure Lab | `linked-structure-lab` | Installable Python package | Active |
+| Linked Structure Lab | `Linked_List_Showcase` | Installable Python package | Active |
 
 ## Linked Structure Lab
 
@@ -24,14 +24,14 @@ benchmarks.
 Work with it from its package folder:
 
 ```bash
-cd linked-structure-lab
+cd Linked_List_Showcase
 python -m pip install -e ".[dev]"
 python -m pytest
 python -m unittest discover -s tests -t . -v
 ```
 
 The package documentation, examples, benchmarks, changelog, and packaging
-metadata are all inside `linked-structure-lab`.
+metadata are all inside `Linked_List_Showcase`.
 
 ## Repository Layout
 
@@ -40,7 +40,7 @@ metadata are all inside `linked-structure-lab`.
   workflows/
     ci.yml
     tests.yml
-linked-structure-lab/
+Linked_List_Showcase/
   benchmarks/
   docs/
   examples/

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: linked-structure-lab
+        working-directory: Linked_List_Showcase
 
     strategy:
       fail-fast: false

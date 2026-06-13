@@ -1,37 +1,59 @@
 # Data Science AI Portfolio
 
 [![CI](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
+[![Coverage 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](Linked_List_Showcase/README.md#testing-strategy)
 
-This repository is organized as a portfolio workspace. Each substantial
-project lives in its own folder so the repository can grow into a showcase of
-data structures, data science, machine learning, analytics, and AI projects
-without turning the root directory into one large mixed codebase.
+This repository is organized as a portfolio workspace. Each major top-level
+folder is intended to stand on its own as a project with its own README,
+dependencies, examples, tests, and technical writeup.
+
+The first completed project is a Python data-structures showcase. It is not
+trying to replace Python's standard library. It is built to demonstrate
+implementation skill, type-aware package design, regression testing,
+documentation, CI discipline, and the ability to explain tradeoffs clearly.
 
 ## Projects
 
-| Project | Location | Type | Status |
+| Project | Location | What it demonstrates | Status |
 | --- | --- | --- | --- |
-| Linked Structure Lab | `Linked_List_Showcase` | Installable Python package | Active |
+| Linked List Showcase | [`Linked_List_Showcase`](Linked_List_Showcase) | Python package design, linked data structures, typed APIs, 100% coverage, CI, examples, benchmarks, and educational documentation | Complete showcase |
 
-## Linked Structure Lab
+## Featured Project: Linked List Showcase
 
-`Linked Structure Lab` is an educational Python package for linked data
-structures. It includes singly, doubly, circular, sorted, skip-list,
-deque-backed, unrolled, multilevel, positional, self-organizing, and sparse
-matrix linked structures, with extensive tests, documentation, examples, and
-benchmarks.
+`Linked_List_Showcase` contains the installable `linked-structure-lab`
+package. It implements and tests:
 
-Work with it from its package folder:
+- singly, doubly, singly circular, and doubly circular linked lists
+- linked deque
+- sorted linked list
+- skip list
+- unrolled linked list
+- multilevel linked list
+- positional linked list
+- self-organizing linked list
+- sparse matrix linked list
+
+Fast reviewer path:
 
 ```bash
 cd Linked_List_Showcase
 python -m pip install -e ".[dev]"
 python -m pytest
-python -m unittest discover -s tests -t . -v
+python -m coverage run -m pytest
+python -m coverage report
 ```
 
-The package documentation, examples, benchmarks, changelog, and packaging
-metadata are all inside `Linked_List_Showcase`.
+Best entry points:
+
+- [Project README](Linked_List_Showcase/README.md): install, examples, API
+  overview, edge cases, and testing strategy.
+- [Portfolio Showcase](Linked_List_Showcase/docs/portfolio_showcase.md):
+  reviewer-facing summary of what the project proves.
+- [Benchmark Results](Linked_List_Showcase/docs/benchmark_results.md):
+  measured output and interpretation for the educational structures.
+- [Source Walkthrough](Linked_List_Showcase/docs/linked_structures_walkthrough.md):
+  beginner-friendly explanation of invariants and pointer repair.
 
 ## Repository Layout
 
@@ -57,18 +79,17 @@ LICENSE
 README.md
 ```
 
-## Adding More Portfolio Projects
+## Portfolio Structure
 
-Add future projects as separate top-level folders, for example:
+Future projects should be added as separate top-level folders, for example:
 
 ```text
-dashboard-project/
+analytics-dashboard/
 customer-segmentation/
 forecasting-case-study/
-another-python-package/
+ml-model-monitoring/
 ```
 
-Keep each project self-contained with its own README, dependencies,
-instructions, tests, and artifacts. The root README should stay a concise map
-of the portfolio rather than becoming the full documentation for every
-project.
+The root README stays a concise map. Each project folder should carry the
+full explanation, setup instructions, validation notes, and artifacts for that
+specific project.

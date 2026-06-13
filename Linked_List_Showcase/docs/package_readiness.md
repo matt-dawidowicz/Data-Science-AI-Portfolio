@@ -49,3 +49,11 @@ python benchmarks/benchmark_structures.py
 The benchmark output is a teaching aid, not a formal performance claim. It
 helps readers compare the educational linked implementations with Python's
 optimized built-in containers.
+
+For the current benchmark snapshot and interpretation, see
+`benchmark_results.md`.
+
+## Portfolio Review
+
+For a reviewer-facing overview of what the project demonstrates, see
+`portfolio_showcase.md`.

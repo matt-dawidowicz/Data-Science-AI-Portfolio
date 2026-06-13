@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/linked-structure-lab
+        working-directory: linked-structure-lab
 
     strategy:
       fail-fast: false

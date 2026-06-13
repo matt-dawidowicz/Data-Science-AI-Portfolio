@@ -11,7 +11,7 @@ without turning the root directory into one large mixed codebase.
 
 | Project | Location | Type | Status |
 | --- | --- | --- | --- |
-| Linked Structure Lab | `packages/linked-structure-lab` | Installable Python package | Active |
+| Linked Structure Lab | `linked-structure-lab` | Installable Python package | Active |
 
 ## Linked Structure Lab
 
@@ -24,14 +24,14 @@ benchmarks.
 Work with it from its package folder:
 
 ```bash
-cd packages/linked-structure-lab
+cd linked-structure-lab
 python -m pip install -e ".[dev]"
 python -m pytest
 python -m unittest discover -s tests -t . -v
 ```
 
 The package documentation, examples, benchmarks, changelog, and packaging
-metadata are all inside `packages/linked-structure-lab`.
+metadata are all inside `linked-structure-lab`.
 
 ## Repository Layout
 
@@ -40,18 +40,17 @@ metadata are all inside `packages/linked-structure-lab`.
   workflows/
     ci.yml
     tests.yml
-packages/
-  linked-structure-lab/
-    benchmarks/
-    docs/
-    examples/
-    src/
-      linked_list/
-    tests/
-    CHANGELOG.md
-    pyproject.toml
-    README.md
-    requirements-dev.txt
+linked-structure-lab/
+  benchmarks/
+  docs/
+  examples/
+  src/
+    linked_list/
+  tests/
+  CHANGELOG.md
+  pyproject.toml
+  README.md
+  requirements-dev.txt
 .gitignore
 .pre-commit-config.yaml
 LICENSE
@@ -63,14 +62,10 @@ README.md
 Add future projects as separate top-level folders, for example:
 
 ```text
-apps/
-  dashboard-project/
-notebooks/
-  customer-segmentation/
-packages/
-  another-python-package/
-reports/
-  forecasting-case-study/
+dashboard-project/
+customer-segmentation/
+forecasting-case-study/
+another-python-package/
 ```
 
 Keep each project self-contained with its own README, dependencies,

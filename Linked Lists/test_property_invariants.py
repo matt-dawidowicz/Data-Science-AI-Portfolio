@@ -10,6 +10,7 @@ import importlib
 import unittest
 from typing import Any, cast
 
+import pytest
 from linked_list import (
     LinkedDeque,
     LinkedList,
@@ -34,8 +35,15 @@ def test_linked_list_round_trips_python_values(values: list[int]) -> None:
     linked.extend(values)
 
     assert linked.to_list() == values
-    assert list(reversed(linked)) == list(reversed(values))
     assert len(linked) == len(values)
+
+    with pytest.raises(NotImplementedError):
+        list(reversed(linked))
+
+    doubly_linked: LinkedList[int] = LinkedList("doubly")
+    doubly_linked.extend(values)
+
+    assert list(reversed(doubly_linked)) == list(reversed(values))
 
 
 @hypothesis.given(st.lists(st.integers(), max_size=40))

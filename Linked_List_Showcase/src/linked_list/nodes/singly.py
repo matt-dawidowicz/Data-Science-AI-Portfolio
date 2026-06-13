@@ -6,8 +6,6 @@ smaller, but operations such as removing the tail may need to traverse from
 the head to find the previous node.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 from .base_node import BaseNode
@@ -20,7 +18,7 @@ class SinglyLinkedNode(BaseNode, NextMixin):
     def __init__(
         self,
         data: Any,
-        next_node: SinglyLinkedNode | None = None,
+        next_node: "SinglyLinkedNode | None" = None,
     ) -> None:
         """Initialize a singly linked node.
 
@@ -46,7 +44,7 @@ class SinglyCircularLinkedNode(BaseNode, NextMixin, CircularMixin):
     def __init__(
         self,
         data: Any,
-        next_node: SinglyCircularLinkedNode | None = None,
+        next_node: "SinglyCircularLinkedNode | None" = None,
     ) -> None:
         """Initialize a singly circular linked node."""
         BaseNode.__init__(self, data)

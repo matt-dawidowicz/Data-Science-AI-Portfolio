@@ -10,8 +10,6 @@ first understand ``BaseNode.data``, then layer on forward links, backward
 links, and circular self-links one idea at a time.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 

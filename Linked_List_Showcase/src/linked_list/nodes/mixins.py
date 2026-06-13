@@ -11,8 +11,6 @@ Using mixins here makes the code easier to teach: each field is introduced by
 the mixin that owns it instead of being hidden inside one large node class.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 

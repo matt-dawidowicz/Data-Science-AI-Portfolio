@@ -4,8 +4,6 @@ These tests focus on the sorted invariant: every public mutation should either
 keep values in ascending order or reject the operation before changing links.
 """
 
-from __future__ import annotations
-
 import unittest
 
 from linked_list import LinkedList, SortedLinkedList

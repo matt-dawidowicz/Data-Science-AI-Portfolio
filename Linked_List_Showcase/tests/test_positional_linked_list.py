@@ -1,7 +1,5 @@
 """Tests for the position-based linked-list container."""
 
-from __future__ import annotations
-
 import random
 import unittest
 

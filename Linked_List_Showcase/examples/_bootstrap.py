@@ -1,7 +1,5 @@
 """Allow examples to run from a source checkout without installation."""
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 

@@ -15,8 +15,6 @@ the tail for the empty-list case. A right-side operation is the same idea from
 the opposite end.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable, Iterator
 from reprlib import recursive_repr
 from typing import Any, Generic, TypeVar

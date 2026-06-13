@@ -5,8 +5,6 @@ private state to verify defensive guards that should never trigger through the
 normal API but still exist to make invariant failures explicit.
 """
 
-from __future__ import annotations
-
 import unittest
 from typing import Any
 from unittest.mock import patch

@@ -5,8 +5,6 @@ important because a linked structure can return the right values while still
 having broken ``next`` or ``prev`` pointers internally.
 """
 
-from __future__ import annotations
-
 import unittest
 
 from linked_list import LinkedDeque

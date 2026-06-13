@@ -15,8 +15,6 @@ When reading this file, keep three invariants in mind:
 - Circular lists must reconnect ``tail.next`` to ``head`` after changes.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Iterable
 from operator import lt
 from typing import TYPE_CHECKING, Any
@@ -481,7 +479,7 @@ class Mutation:
 
     def merge(
         self,
-        other: LinkedList,
+        other: "LinkedList",
         compare: Callable[[Any, Any], bool] | None = None,
     ) -> None:
         """Merge another sorted list into this one.

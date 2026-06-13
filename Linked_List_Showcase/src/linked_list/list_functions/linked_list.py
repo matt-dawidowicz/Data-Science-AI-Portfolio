@@ -8,8 +8,6 @@ For someone reading the code for the first time, this file is the table of
 contents. The real behavior lives in the inherited mixins listed below.
 """
 
-from __future__ import annotations
-
 from typing import Generic, TypeVar
 
 from .access import Access

@@ -1,7 +1,5 @@
 """Tests for generic public aliases and Mermaid visualization."""
 
-from __future__ import annotations
-
 import unittest
 
 from linked_list import (

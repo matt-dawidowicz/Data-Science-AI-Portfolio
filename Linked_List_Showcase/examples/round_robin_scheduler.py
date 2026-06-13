@@ -1,7 +1,5 @@
 """Round-robin worker scheduling with a circular linked list."""
 
-from __future__ import annotations
-
 import _bootstrap  # noqa: F401
 from linked_list import LinkedList
 

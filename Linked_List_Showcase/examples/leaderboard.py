@@ -1,7 +1,5 @@
 """Leaderboard rankings with a skip list."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 import _bootstrap  # noqa: F401

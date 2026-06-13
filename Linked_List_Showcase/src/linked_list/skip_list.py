@@ -10,8 +10,6 @@ still before the target, then drops down one level. By the time the search
 reaches level zero, it has skipped much of the bottom chain in typical cases.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable, Iterator
 from operator import lt
 from random import Random

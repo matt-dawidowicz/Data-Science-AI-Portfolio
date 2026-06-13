@@ -10,8 +10,6 @@ node snapshot before touching links, the original list remains unchanged if
 ordering fails.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from operator import lt
 from typing import Any

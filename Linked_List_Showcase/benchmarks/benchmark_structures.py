@@ -5,8 +5,6 @@ shows where Python's optimized built-ins tend to win and where the linked
 structures make tradeoffs visible.
 """
 
-from __future__ import annotations
-
 import bisect
 import statistics
 import sys

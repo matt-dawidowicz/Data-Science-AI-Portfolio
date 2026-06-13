@@ -9,8 +9,6 @@ exception because it must detach every node so old references do not retain
 stale links.
 """
 
-from __future__ import annotations
-
 from copy import deepcopy
 from typing import Any
 

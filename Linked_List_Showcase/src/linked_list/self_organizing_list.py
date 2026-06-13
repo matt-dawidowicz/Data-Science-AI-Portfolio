@@ -10,8 +10,6 @@ strategies such as move-to-front or frequency-count make those values cheaper
 to find later.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce

@@ -18,8 +18,6 @@ The individual modules contain the implementation details. This file keeps the
 public API easy to discover for examples, tests, and portfolio review.
 """
 
-from __future__ import annotations
-
 from .deque import LinkedDeque
 from .list_functions.linked_list import LinkedList
 from .multilevel_list import MultilevelLinkedList

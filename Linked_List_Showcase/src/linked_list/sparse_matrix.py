@@ -10,8 +10,6 @@ entries. The row chains make row-wise work easy, and the column chains make it
 possible to inspect the same data by column without rebuilding the matrix.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from typing import Any, Generic, TypeVar
@@ -129,21 +127,21 @@ class SparseMatrixLinkedList(Generic[T]):
 
     def __add__(
         self: TSparseMatrixLinkedList,
-        other: SparseMatrixLinkedList,
+        other: "SparseMatrixLinkedList",
     ) -> TSparseMatrixLinkedList:
         """Return matrix addition result."""
         return self.add_matrix(other)
 
     def __sub__(
         self: TSparseMatrixLinkedList,
-        other: SparseMatrixLinkedList,
+        other: "SparseMatrixLinkedList",
     ) -> TSparseMatrixLinkedList:
         """Return matrix subtraction result."""
         return self.subtract_matrix(other)
 
     def __matmul__(
         self: TSparseMatrixLinkedList,
-        other: SparseMatrixLinkedList,
+        other: "SparseMatrixLinkedList",
     ) -> TSparseMatrixLinkedList:
         """Return sparse matrix multiplication result."""
         return self.matmul(other)
@@ -362,7 +360,7 @@ class SparseMatrixLinkedList(Generic[T]):
 
     def add_matrix(
         self: TSparseMatrixLinkedList,
-        other: SparseMatrixLinkedList,
+        other: "SparseMatrixLinkedList",
     ) -> TSparseMatrixLinkedList:
         """Return the sum of two matrices with the same shape."""
         self._validate_same_shape(other)
@@ -373,7 +371,7 @@ class SparseMatrixLinkedList(Generic[T]):
 
     def subtract_matrix(
         self: TSparseMatrixLinkedList,
-        other: SparseMatrixLinkedList,
+        other: "SparseMatrixLinkedList",
     ) -> TSparseMatrixLinkedList:
         """Return the difference of two matrices with the same shape."""
         self._validate_same_shape(other)
@@ -406,7 +404,7 @@ class SparseMatrixLinkedList(Generic[T]):
 
     def matmul(
         self: TSparseMatrixLinkedList,
-        other: SparseMatrixLinkedList,
+        other: "SparseMatrixLinkedList",
     ) -> TSparseMatrixLinkedList:
         """Return sparse matrix multiplication result.
 
@@ -573,7 +571,7 @@ class SparseMatrixLinkedList(Generic[T]):
         self._validate_index(row, self.rows, "row")
         self._validate_index(col, self.cols, "col")
 
-    def _validate_same_shape(self, other: SparseMatrixLinkedList) -> None:
+    def _validate_same_shape(self, other: "SparseMatrixLinkedList") -> None:
         """Raise when two matrices cannot be combined element-wise."""
         if not isinstance(other, SparseMatrixLinkedList):
             raise TypeError("other must be a SparseMatrixLinkedList")

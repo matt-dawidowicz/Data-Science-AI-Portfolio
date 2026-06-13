@@ -1,7 +1,5 @@
 """Sparse ratings matrix for a small recommender-style workflow."""
 
-from __future__ import annotations
-
 import _bootstrap  # noqa: F401
 from linked_list import SparseMatrixLinkedList
 

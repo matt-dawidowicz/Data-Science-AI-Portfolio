@@ -11,8 +11,6 @@ because arbitrary insertion, reversal, or rotation would make the name
 "sorted" untrue.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Iterable
 from typing import Any, Generic, TypeVar
 

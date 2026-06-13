@@ -9,8 +9,6 @@ middle insertion first finds the block, then inserts inside that small Python
 list. When a block is full, it splits into two linked blocks.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce

@@ -10,8 +10,6 @@ requested position. Slicing takes a finite snapshot first so Python's normal
 slice rules handle negative indexes and negative steps correctly.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 

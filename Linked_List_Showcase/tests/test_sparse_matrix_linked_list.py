@@ -1,7 +1,5 @@
 """Tests for the linked sparse-matrix container."""
 
-from __future__ import annotations
-
 import random
 import unittest
 from typing import Any

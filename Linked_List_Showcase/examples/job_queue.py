@@ -1,7 +1,5 @@
 """Producer-consumer job queue with a linked deque."""
 
-from __future__ import annotations
-
 import _bootstrap  # noqa: F401
 from linked_list import LinkedDeque
 

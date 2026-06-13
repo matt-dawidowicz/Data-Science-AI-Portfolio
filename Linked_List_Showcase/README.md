@@ -117,7 +117,7 @@ requirements-dev.txt
 - Ruff linting and format-check configuration
 - Pytest, optional Hypothesis property tests, and coverage configuration
 - Local pre-commit hooks for linting, type checking, and tests
-- GitHub Actions CI for Python 3.10, 3.11, and 3.12
+- GitHub Actions CI for Python 3.14
 - Installable package metadata in `pyproject.toml`
 - API reference in `docs/api_reference.md`
 - Dedicated complexity guide in `docs/complexity.md`
@@ -1281,7 +1281,7 @@ verify that row chains and column chains contain the same stored node objects.
 
 ## Requirements
 
-- Python 3.10 or newer
+- Python 3.14 or newer
 - No third-party runtime dependencies
 - Optional development dependencies for local checks: `mypy`, `ruff`,
   `pytest`, `coverage`, and `pre-commit`

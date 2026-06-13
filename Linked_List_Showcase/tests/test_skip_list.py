@@ -4,8 +4,6 @@ The skip-list tests check user-facing ordered-set behavior and the internal
 level invariants that make search efficient on average.
 """
 
-from __future__ import annotations
-
 import random
 import unittest
 

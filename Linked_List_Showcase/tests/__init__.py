@@ -6,8 +6,6 @@ The package uses a ``src`` layout. Pytest reads ``pythonpath`` from
 ``linked_list`` before an editable install has happened.
 """
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 

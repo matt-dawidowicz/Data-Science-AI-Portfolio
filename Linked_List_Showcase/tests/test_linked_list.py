@@ -4,8 +4,6 @@ The linked-list tests cover normal sequence behavior, circular-list edge cases,
 and the pointer invariants that are easiest to break during mutation.
 """
 
-from __future__ import annotations
-
 import unittest
 
 from linked_list import LinkedList

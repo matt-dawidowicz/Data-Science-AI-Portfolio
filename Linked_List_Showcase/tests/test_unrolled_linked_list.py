@@ -1,7 +1,5 @@
 """Tests for the unrolled linked-list sequence container."""
 
-from __future__ import annotations
-
 import random
 import unittest
 

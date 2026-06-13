@@ -1,7 +1,5 @@
 """Tests for the adaptive self-organizing linked list."""
 
-from __future__ import annotations
-
 import random
 import unittest
 

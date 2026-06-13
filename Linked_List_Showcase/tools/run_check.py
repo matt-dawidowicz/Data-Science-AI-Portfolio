@@ -5,8 +5,6 @@ Pre-commit executes hooks from the repository root. The package itself uses a
 small helper normalizes the working directory before delegating to each tool.
 """
 
-from __future__ import annotations
-
 import subprocess
 import sys
 from pathlib import Path

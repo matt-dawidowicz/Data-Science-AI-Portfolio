@@ -6,8 +6,6 @@ educational readers can inspect exactly which pointer fields each container
 uses.
 """
 
-from __future__ import annotations
-
 from .doubly import DoublyCircularLinkedNode, DoublyLinkedNode
 from .singly import SinglyCircularLinkedNode, SinglyLinkedNode
 

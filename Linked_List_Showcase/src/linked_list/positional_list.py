@@ -10,8 +10,6 @@ A ``Position`` is a validated handle to a specific node. As long as that node
 remains in the same list, the handle stays meaningful even if the node moves.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce
@@ -35,10 +33,10 @@ class _PositionNode:
 
     __slots__ = ("data", "next", "owner", "prev")
 
-    def __init__(self, data: Any, owner: PositionalLinkedList) -> None:
+    def __init__(self, data: Any, owner: "PositionalLinkedList") -> None:
         """Initialize a node owned by one positional list."""
         self.data: Any = data
-        self.owner: PositionalLinkedList | None = owner
+        self.owner: "PositionalLinkedList | None" = owner
         self.prev: _PositionNode | None = None
         self.next: _PositionNode | None = None
 
@@ -59,11 +57,11 @@ class Position(Generic[T]):
 
     def __init__(
         self,
-        container: PositionalLinkedList | None,
+        container: "PositionalLinkedList | None",
         node: _PositionNode | None,
     ) -> None:
         """Initialize a handle to ``node`` inside ``container``."""
-        self._container: PositionalLinkedList | None = container
+        self._container: "PositionalLinkedList | None" = container
         self._node: _PositionNode | None = node
 
     @property

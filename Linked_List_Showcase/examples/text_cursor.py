@@ -1,7 +1,5 @@
 """Text editing around a stable cursor position."""
 
-from __future__ import annotations
-
 import _bootstrap  # noqa: F401
 from linked_list import Position, PositionalLinkedList
 

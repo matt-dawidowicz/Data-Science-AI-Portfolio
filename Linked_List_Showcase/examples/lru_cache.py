@@ -1,7 +1,5 @@
 """Tiny LRU cache using stable positions for recency order."""
 
-from __future__ import annotations
-
 import _bootstrap  # noqa: F401
 from linked_list import Position, PositionalLinkedList
 

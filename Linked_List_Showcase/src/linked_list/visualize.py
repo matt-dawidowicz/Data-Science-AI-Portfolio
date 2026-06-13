@@ -6,8 +6,6 @@ iterable and renders the visible order as a Mermaid flowchart. It intentionally
 uses only public iteration instead of reaching into node internals.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterable
 from typing import Any
 

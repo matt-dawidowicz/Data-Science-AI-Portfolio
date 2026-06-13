@@ -10,8 +10,6 @@ extends a list while iterating over it, the iterator stops after the original
 number of values rather than chasing newly appended nodes forever.
 """
 
-from __future__ import annotations
-
 from collections.abc import Iterator
 from typing import Any
 

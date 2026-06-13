@@ -1,7 +1,5 @@
 """Adaptive command palette with a self-organizing linked list."""
 
-from __future__ import annotations
-
 import _bootstrap  # noqa: F401
 from linked_list import SelfOrganizingLinkedList
 

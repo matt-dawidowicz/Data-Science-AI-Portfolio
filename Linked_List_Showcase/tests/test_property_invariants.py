@@ -4,8 +4,6 @@ The module skips automatically when Hypothesis is not installed. Installing
 the `dev` or `test` extra enables these tests locally and in CI.
 """
 
-from __future__ import annotations
-
 import importlib
 import unittest
 from typing import Any, cast

@@ -1,7 +1,5 @@
 """Chunked text-buffer edits with an unrolled linked list."""
 
-from __future__ import annotations
-
 import _bootstrap  # noqa: F401
 from linked_list import UnrolledLinkedList
 

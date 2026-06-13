@@ -9,8 +9,6 @@ the same code works for singly, doubly, circular, and non-circular lists while
 letting the mutation mixin handle the representation-specific pointer repair.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from functools import reduce as functools_reduce
 from typing import Any

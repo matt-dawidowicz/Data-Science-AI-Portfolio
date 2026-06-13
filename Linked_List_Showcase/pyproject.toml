@@ -7,7 +7,7 @@ name = "linked-structure-lab"
 version = "0.1.0"
 description = "Educational linked data structures with tests, examples, and typed APIs."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [
     { name = "Data Science AI Portfolio contributors" },
@@ -25,9 +25,7 @@ classifiers = [
     "Intended Audience :: Education",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
 ]
 dependencies = []
@@ -72,7 +70,7 @@ skip_empty = true
 fail_under = 100
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.14"
 files = ["src", "tests", "examples", "benchmarks", "tools"]
 mypy_path = ["src"]
 check_untyped_defs = true
@@ -124,7 +122,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 79
-target-version = "py310"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = [
@@ -133,6 +131,12 @@ select = [
     "F",
     "I",
     "UP",
+]
+ignore = [
+    # Python 3.14 makes these annotation forms optional, but the explicit
+    # spellings remain readable and tooling-friendly for this educational code.
+    "UP037",
+    "UP046",
 ]
 
 [tool.ruff.lint.per-file-ignores]

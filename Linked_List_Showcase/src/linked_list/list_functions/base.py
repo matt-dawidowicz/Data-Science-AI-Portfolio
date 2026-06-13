@@ -13,8 +13,6 @@ The selected ``list_type`` controls which node class is created and which
 pointer invariants every mutation must preserve.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 from ..nodes import (

@@ -9,8 +9,6 @@ the next sibling, while ``child`` moves down one level. Depth-first traversal
 visits a node, then its child chain, then its next sibling.
 """
 
-from __future__ import annotations
-
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy

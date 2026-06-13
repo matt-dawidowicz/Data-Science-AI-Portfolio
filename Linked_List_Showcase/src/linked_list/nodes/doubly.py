@@ -5,8 +5,6 @@ costs one more reference per node, but it makes reverse iteration, tail-side
 removal, and deque right-end operations direct and easy to reason about.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 from .base_node import BaseNode
@@ -19,8 +17,8 @@ class DoublyLinkedNode(BaseNode, PrevMixin, NextMixin):
     def __init__(
         self,
         data: Any,
-        prev_node: DoublyLinkedNode | None = None,
-        next_node: DoublyLinkedNode | None = None,
+        prev_node: "DoublyLinkedNode | None" = None,
+        next_node: "DoublyLinkedNode | None" = None,
     ) -> None:
         """Initialize a doubly linked node.
 
@@ -53,8 +51,8 @@ class DoublyCircularLinkedNode(BaseNode, PrevMixin, NextMixin, CircularMixin):
     def __init__(
         self,
         data: Any,
-        prev: DoublyCircularLinkedNode | None = None,
-        next_node: DoublyCircularLinkedNode | None = None,
+        prev: "DoublyCircularLinkedNode | None" = None,
+        next_node: "DoublyCircularLinkedNode | None" = None,
     ) -> None:
         """Initialize a doubly circular linked node."""
         BaseNode.__init__(self, data)

@@ -1,14 +1,73 @@
 # Linked Structure Lab
 
 [![CI](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
+[![Coverage 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](#testing-strategy)
+[![Typed](https://img.shields.io/badge/typing-PEP%20561-informational.svg)](src/linked_list/py.typed)
 
 Linked Structure Lab is an educational Python package with singly, doubly,
 singly circular, and doubly circular linked-list variants, plus sorted
 linked-list, linked-deque, skip-list, unrolled-list, multilevel-list,
 positional-list, self-organizing-list, and sparse-matrix implementations.
 
-This folder is intentionally self-contained so the repository root can remain
-a portfolio workspace for additional projects.
+This is a portfolio project, not a claim that these educational containers
+should replace Python's built-ins in production. The goal is to make the
+implementation visible: pointer repair, invariants, type hints, examples,
+benchmarks, CI, and regression tests are all part of the showcase.
+
+## Portfolio Reviewer Quick Read
+
+This project demonstrates that I can take a broad computer-science topic and
+turn it into a maintainable Python package:
+
+- Package structure with `pyproject.toml`, `src/` layout, PEP 561 typing
+  marker, optional dependencies, and GitHub Actions.
+- Nine public containers covering classic and specialized linked structures
+  with consistent APIs and educational documentation.
+- Regression tests for public behavior and internal link invariants.
+- Property-style tests for list, deque, sorted, unrolled, and sparse matrix
+  behavior.
+- 100% branch coverage over `src/linked_list`.
+- Practical examples that connect structures to queues, schedulers,
+  leaderboards, text buffers, outlines, caches, command palettes, and sparse
+  recommenders.
+- Benchmark output that compares the educational structures with optimized
+  built-in containers without pretending to beat them.
+
+Fast local check:
+
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest
+python -m coverage run -m pytest
+python -m coverage report
+```
+
+Best reviewer entry points:
+
+- [Portfolio showcase](docs/portfolio_showcase.md): what this project proves,
+  how it is organized, and where to look first.
+- [Benchmark results](docs/benchmark_results.md): current benchmark snapshot
+  and interpretation.
+- [Linked structures walkthrough](docs/linked_structures_walkthrough.md):
+  beginner-friendly explanation of nodes, invariants, and pointer repair.
+- [Complexity guide](docs/complexity.md): time and space tradeoffs by
+  structure.
+- [API reference](docs/api_reference.md): public containers and core methods.
+
+## Showcase Map
+
+| Structure | What it teaches | Real product or system analogy | Demo | Primary tests |
+| --- | --- | --- | --- | --- |
+| `LinkedList` | Node links, circularity, mutation invariants | playlists, browser history, schedulers | [round_robin_scheduler.py](examples/round_robin_scheduler.py) | [test_linked_list.py](tests/test_linked_list.py) |
+| `LinkedDeque` | O(1) end operations with two-sided links | job queues, BFS frontiers, sliding windows | [job_queue.py](examples/job_queue.py) | [test_linked_deque.py](tests/test_linked_deque.py) |
+| `SortedLinkedList` | APIs constrained by sorted-order invariants | ranked waiting rooms, timer queues | [leaderboard.py](examples/leaderboard.py) | [test_sorted_linked_list.py](tests/test_sorted_linked_list.py) |
+| `SkipList` | Probabilistic ordered-set search | leaderboards, ordered indexes, range lookup | [leaderboard.py](examples/leaderboard.py) | [test_skip_list.py](tests/test_skip_list.py) |
+| `UnrolledLinkedList` | Chunked linked storage and block repair | text buffers, log viewers, packet batching | [text_buffer_blocks.py](examples/text_buffer_blocks.py) | [test_unrolled_linked_list.py](tests/test_unrolled_linked_list.py) |
+| `MultilevelLinkedList` | Hierarchy, child links, flattening | file explorers, nested comments, outlines | [document_outline.py](examples/document_outline.py) | [test_multilevel_linked_list.py](tests/test_multilevel_linked_list.py) |
+| `PositionalLinkedList` | Stable handles to known nodes | editor cursors, playlist editors, kanban moves | [text_cursor.py](examples/text_cursor.py) | [test_positional_linked_list.py](tests/test_positional_linked_list.py) |
+| `SelfOrganizingLinkedList` | Adaptive search heuristics | command palettes, contact lists, help menus | [adaptive_command_palette.py](examples/adaptive_command_palette.py) | [test_self_organizing_linked_list.py](tests/test_self_organizing_linked_list.py) |
+| `SparseMatrixLinkedList` | Linked row and column chains | recommenders, graph matrices, feature matrices | [sparse_recommender.py](examples/sparse_recommender.py) | [test_sparse_matrix_linked_list.py](tests/test_sparse_matrix_linked_list.py) |
 
 ## Project Layout
 
@@ -17,9 +76,11 @@ benchmarks/
   benchmark_structures.py
 docs/
   api_reference.md
+  benchmark_results.md
   complexity.md
   linked_structures_walkthrough.md
   package_readiness.md
+  portfolio_showcase.md
 examples/
   adaptive_command_palette.py
   document_outline.py
@@ -120,7 +181,9 @@ requirements-dev.txt
 - GitHub Actions CI for Python 3.14
 - Installable package metadata in `pyproject.toml`
 - API reference in `docs/api_reference.md`
+- Portfolio showcase in `docs/portfolio_showcase.md`
 - Dedicated complexity guide in `docs/complexity.md`
+- Benchmark snapshot and interpretation in `docs/benchmark_results.md`
 - Beginner-friendly code walkthrough in `docs/linked_structures_walkthrough.md`
 - Package readiness guide in `docs/package_readiness.md`
 
@@ -169,7 +232,8 @@ python benchmarks/benchmark_structures.py
 ```
 
 The benchmark is meant to teach tradeoffs. It is not a claim that these
-educational structures beat Python's optimized built-ins.
+educational structures beat Python's optimized built-ins. See
+`docs/benchmark_results.md` for the current snapshot and interpretation.
 
 ## Visualization
 

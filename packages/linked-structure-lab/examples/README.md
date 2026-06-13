@@ -3,7 +3,7 @@
 These scripts show where the linked structures appear in real product and
 systems work. They are intentionally small enough to read in one sitting.
 
-Run any example from the repository root:
+Run any example from this package directory:
 
 ```powershell
 python examples/job_queue.py

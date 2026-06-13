@@ -5,7 +5,7 @@ educational library.
 
 ## Install Locally
 
-From the repository root:
+From this package directory:
 
 ```powershell
 python -m pip install -e .

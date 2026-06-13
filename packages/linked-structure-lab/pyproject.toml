@@ -54,17 +54,17 @@ Homepage = "https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio"
 Repository = "https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio"
 
 [tool.setuptools]
-package-dir = { "" = "Linked Lists" }
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
-where = ["Linked Lists"]
+where = ["src"]
 
 [tool.setuptools.package-data]
 linked_list = ["py.typed"]
 
 [tool.coverage.run]
 branch = true
-source = ["Linked Lists/linked_list"]
+source = ["src/linked_list"]
 
 [tool.coverage.report]
 show_missing = true
@@ -72,8 +72,8 @@ skip_empty = true
 
 [tool.mypy]
 python_version = "3.10"
-files = ["Linked Lists"]
-mypy_path = ["Linked Lists"]
+files = ["src", "tests", "examples", "benchmarks", "tools"]
+mypy_path = ["src"]
 check_untyped_defs = true
 disallow_incomplete_defs = true
 no_implicit_optional = true
@@ -107,19 +107,7 @@ disable_error_code = [
 ]
 
 [[tool.mypy.overrides]]
-module = [
-    "test_linked_deque",
-    "test_linked_list",
-    "test_multilevel_linked_list",
-    "test_positional_linked_list",
-    "test_property_invariants",
-    "test_self_organizing_linked_list",
-    "test_skip_list",
-    "test_sorted_linked_list",
-    "test_sparse_matrix_linked_list",
-    "test_typing_and_visualization",
-    "test_unrolled_linked_list",
-]
+module = ["tests.*"]
 disable_error_code = [
     "assignment",
     "index",
@@ -130,8 +118,8 @@ disable_error_code = [
 [tool.pytest.ini_options]
 addopts = "-ra"
 python_files = ["test_*.py"]
-pythonpath = ["Linked Lists"]
-testpaths = ["Linked Lists"]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 79
@@ -145,6 +133,9 @@ select = [
     "I",
     "UP",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/*.py" = ["I001"]
 
 [tool.ruff.format]
 quote-style = "double"

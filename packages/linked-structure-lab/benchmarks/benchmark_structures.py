@@ -15,7 +15,7 @@ from collections.abc import Callable
 from pathlib import Path
 from time import perf_counter
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "Linked Lists"
+PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "src"
 PACKAGE_ROOT_TEXT = str(PACKAGE_ROOT)
 if PACKAGE_ROOT_TEXT not in sys.path:
     sys.path.insert(0, PACKAGE_ROOT_TEXT)

@@ -17,6 +17,21 @@ For development tools and optional property-based tests:
 python -m pip install -e ".[dev]"
 ```
 
+If you opened the full portfolio repository in PyCharm, the package will not
+be importable until the nested project is installed or its `src` folder is
+marked as a source root. The importable package name is `linked_list`; the
+installable distribution name is `linked-structure-lab`.
+
+Recommended PyCharm setup:
+
+```powershell
+cd Linked_List_Showcase
+python -m pip install -e ".[dev]"
+```
+
+Then select the same Python 3.12+ interpreter in PyCharm. As an alternative,
+mark `Linked_List_Showcase/src` as `Sources Root`.
+
 ## Run Quality Gates
 
 ```powershell

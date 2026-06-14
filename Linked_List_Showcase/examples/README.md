@@ -9,6 +9,7 @@ Run any example from this package directory:
 python examples/job_queue.py
 python examples/leaderboard.py
 python examples/sparse_recommender.py
+python examples/product_ops_demo.py
 ```
 
 | Example | Structure | Real-world pattern |
@@ -22,3 +23,4 @@ python examples/sparse_recommender.py
 | `adaptive_command_palette.py` | `SelfOrganizingLinkedList` | Frequently used commands moving forward |
 | `text_buffer_blocks.py` | `UnrolledLinkedList` | Chunked text buffers |
 | `sparse_recommender.py` | `SparseMatrixLinkedList` | Mostly-empty ratings matrices |
+| `product_ops_demo.py` | Several structures | Incident response, escalation, command reuse, sparse impact, and audit blocks |

@@ -62,12 +62,16 @@ Best entry points:
 
 - [Project README](Linked_List_Showcase/README.md): install, examples, API
   overview, edge cases, and testing strategy.
+- [Reviewer Demo Script](Linked_List_Showcase/docs/demo_script.md): a 3-5
+  minute run path for checks, examples, and source-test inspection.
 - [Portfolio Showcase](Linked_List_Showcase/docs/portfolio_showcase.md):
   reviewer-facing summary of what the project proves.
 - [Benchmark Results](Linked_List_Showcase/docs/benchmark_results.md):
   measured output and interpretation for the educational structures.
 - [Source Walkthrough](Linked_List_Showcase/docs/linked_structures_walkthrough.md):
   beginner-friendly explanation of invariants and pointer repair.
+- [Portfolio Roadmap](PORTFOLIO_ROADMAP.md): how future top-level projects
+  should be organized.
 
 ## Repository Layout
 
@@ -90,6 +94,7 @@ Linked_List_Showcase/
 .gitignore
 .pre-commit-config.yaml
 LICENSE
+PORTFOLIO_ROADMAP.md
 README.md
 ```
 
@@ -106,4 +111,5 @@ ml-model-monitoring/
 
 The root README stays a concise map. Each project folder should carry the
 full explanation, setup instructions, validation notes, and artifacts for that
-specific project.
+specific project. See [Portfolio Roadmap](PORTFOLIO_ROADMAP.md) for the
+folder contract and future project slots.

@@ -1,7 +1,7 @@
 # Linked Structure Lab
 
 [![CI](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml)
-[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 [![Coverage 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](#testing-strategy)
 [![Typed](https://img.shields.io/badge/typing-PEP%20561-informational.svg)](src/linked_list/py.typed)
 
@@ -178,7 +178,7 @@ requirements-dev.txt
 - Ruff linting and format-check configuration
 - Pytest, optional Hypothesis property tests, and coverage configuration
 - Local pre-commit hooks for linting, type checking, and tests
-- GitHub Actions CI for Python 3.14
+- GitHub Actions CI for Python 3.12 through 3.14
 - Installable package metadata in `pyproject.toml`
 - API reference in `docs/api_reference.md`
 - Portfolio showcase in `docs/portfolio_showcase.md`
@@ -200,6 +200,38 @@ Install development tools, including optional property-based tests:
 ```powershell
 python -m pip install -e ".[dev]"
 ```
+
+If the repository is opened from the portfolio root, first change into this
+project folder:
+
+```powershell
+cd Linked_List_Showcase
+python -m pip install -e ".[dev]"
+```
+
+### PyCharm Import Setup
+
+The distribution package is named `linked-structure-lab`, but the importable
+Python package is named `linked_list`.
+
+This project uses the standard `src/` layout:
+
+```text
+Linked_List_Showcase/
+  src/
+    linked_list/
+```
+
+If PyCharm reports `ModuleNotFoundError: No module named 'linked_list'`, use
+one of these setup options:
+
+- Preferred: open a terminal in `Linked_List_Showcase` and run
+  `python -m pip install -e ".[dev]"` with the same interpreter selected in
+  PyCharm.
+- IDE-only: right-click `Linked_List_Showcase/src` in PyCharm and choose
+  `Mark Directory as > Sources Root`.
+- Run configuration: set the working directory to `Linked_List_Showcase` for
+  examples, tests, and scripts in this project.
 
 The import package is `linked_list`:
 
@@ -1345,7 +1377,7 @@ verify that row chains and column chains contain the same stored node objects.
 
 ## Requirements
 
-- Python 3.14 or newer
+- Python 3.12 or newer
 - No third-party runtime dependencies
 - Optional development dependencies for local checks: `mypy`, `ruff`,
   `pytest`, `coverage`, and `pre-commit`

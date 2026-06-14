@@ -1,7 +1,7 @@
 # Data Science AI Portfolio
 
 [![CI](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml)
-[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 [![Coverage 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](Linked_List_Showcase/README.md#testing-strategy)
 
 This repository is organized as a portfolio workspace. Each major top-level
@@ -43,6 +43,20 @@ python -m pytest
 python -m coverage run -m pytest
 python -m coverage report
 ```
+
+PyCharm setup note:
+
+The import package is `linked_list`, but it lives in the nested
+`Linked_List_Showcase/src` directory. If PyCharm says it cannot find
+`linked_list`, use a Python 3.12+ interpreter and install the showcase project
+in editable mode:
+
+```bash
+cd Linked_List_Showcase
+python -m pip install -e ".[dev]"
+```
+
+Alternatively, mark `Linked_List_Showcase/src` as a PyCharm Sources Root.
 
 Best entry points:
 

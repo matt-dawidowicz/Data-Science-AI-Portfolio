@@ -92,7 +92,7 @@ flowchart TD
 | Data structures | Classic, circular, sorted, deque, skip-list, unrolled, multilevel, positional, self-organizing, and sparse-matrix variants |
 | API design | Shared sequence behavior plus structure-specific operations such as `floor`, `ceiling`, `to_blocks`, `positions`, and matrix arithmetic |
 | Testing discipline | 238 tests, edge-case tests, property-style tests, invariant checks, and 100% branch coverage |
-| Static quality | Ruff linting, Ruff formatting, mypy, Python 3.14 CI, and typed package marker |
+| Static quality | Ruff linting, Ruff formatting, mypy, Python 3.12+ CI, and typed package marker |
 | Documentation | README, API reference, complexity guide, source walkthrough, package readiness guide, benchmark summary |
 | Practical framing | Examples for queues, scheduling, leaderboards, text editing, outlines, caches, command palettes, and recommender matrices |
 

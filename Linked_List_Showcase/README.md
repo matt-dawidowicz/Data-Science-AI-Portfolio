@@ -47,6 +47,8 @@ Best reviewer entry points:
 
 - [Portfolio showcase](docs/portfolio_showcase.md): what this project proves,
   how it is organized, and where to look first.
+- [Reviewer demo script](docs/demo_script.md): a 3-5 minute path through
+  setup, checks, a realistic demo, and source-test pairs.
 - [Benchmark results](docs/benchmark_results.md): current benchmark snapshot
   and interpretation.
 - [Linked structures walkthrough](docs/linked_structures_walkthrough.md):
@@ -78,6 +80,7 @@ docs/
   api_reference.md
   benchmark_results.md
   complexity.md
+  demo_script.md
   linked_structures_walkthrough.md
   package_readiness.md
   portfolio_showcase.md
@@ -87,6 +90,7 @@ examples/
   job_queue.py
   leaderboard.py
   lru_cache.py
+  product_ops_demo.py
   round_robin_scheduler.py
   sparse_recommender.py
   text_buffer_blocks.py
@@ -123,6 +127,7 @@ tests/
   test_linked_list.py
   test_multilevel_linked_list.py
   test_positional_linked_list.py
+  test_product_ops_demo.py
   test_property_invariants.py
   test_self_organizing_linked_list.py
   test_skip_list.py
@@ -171,7 +176,8 @@ requirements-dev.txt
 - Mermaid visualization helper for small structure diagrams
 - Public generic aliases such as `LinkedDeque[int]` and `SkipList[str]`
 - Real-world examples for schedulers, job queues, leaderboards, text buffers,
-  nested outlines, cache eviction, command palettes, and sparse recommenders
+  nested outlines, cache eviction, command palettes, sparse recommenders, and
+  a multi-structure product-operations workflow
 - Standard-library benchmark runner for comparing educational structures with
   built-in containers
 - PEP 561 typed-package marker and mypy configuration for static type checks
@@ -252,10 +258,14 @@ ratings: SparseMatrixLinkedList[float] = SparseMatrixLinkedList.from_entries(
 Run real-world examples from this package directory:
 
 ```powershell
+python examples/product_ops_demo.py
 python examples/job_queue.py
 python examples/leaderboard.py
 python examples/sparse_recommender.py
 ```
+
+For a quick reviewer path through setup, validation, and the product-ops
+example, see `docs/demo_script.md`.
 
 Run the lightweight benchmark comparison:
 

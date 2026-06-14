@@ -51,6 +51,7 @@ python -m pip install -e ".[dev]"
 python -m pytest
 python -m coverage run -m pytest
 python -m coverage report
+python examples/product_ops_demo.py
 python examples/job_queue.py
 python examples/sparse_recommender.py
 python benchmarks/benchmark_structures.py
@@ -91,9 +92,9 @@ flowchart TD
 | --- | --- |
 | Data structures | Classic, circular, sorted, deque, skip-list, unrolled, multilevel, positional, self-organizing, and sparse-matrix variants |
 | API design | Shared sequence behavior plus structure-specific operations such as `floor`, `ceiling`, `to_blocks`, `positions`, and matrix arithmetic |
-| Testing discipline | 238 tests, edge-case tests, property-style tests, invariant checks, and 100% branch coverage |
+| Testing discipline | 239 tests, edge-case tests, property-style tests, invariant checks, and 100% branch coverage |
 | Static quality | Ruff linting, Ruff formatting, mypy, Python 3.12+ CI, and typed package marker |
-| Documentation | README, API reference, complexity guide, source walkthrough, package readiness guide, benchmark summary |
+| Documentation | README, demo script, API reference, complexity guide, source walkthrough, package readiness guide, benchmark summary |
 | Practical framing | Examples for queues, scheduling, leaderboards, text editing, outlines, caches, command palettes, and recommender matrices |
 
 ## What Each Structure Demonstrates
@@ -136,6 +137,7 @@ The examples translate abstract structures into familiar product situations:
 - LRU-style cache order
 - adaptive command palettes
 - sparse recommendation matrices
+- a product-operations snapshot that combines multiple structures
 
 The examples are intentionally small. Their job is to make the structure easy
 to recognize, not to become a full application.

@@ -12,7 +12,11 @@ list. When a block is full, it splits into two linked blocks.
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce
-from typing import Any, Generic, TypeVar
+from operator import index as to_index
+from reprlib import recursive_repr
+from typing import Any, Generic, SupportsIndex, TypeVar
+
+from ._display import safe_repr_item, safe_str_item
 
 T = TypeVar("T")
 TUnrolledLinkedList = TypeVar(
@@ -59,14 +63,15 @@ class UnrolledLinkedList(Generic[T]):
         self,
         iterable: Iterable[Any] | None = None,
         *,
-        node_capacity: int = 8,
+        node_capacity: int | SupportsIndex = 8,
     ) -> None:
         """Initialize an empty unrolled list and optionally add values."""
-        if not isinstance(node_capacity, int) or isinstance(
-            node_capacity,
-            bool,
-        ):
+        if isinstance(node_capacity, bool):
             raise TypeError("node_capacity must be an integer")
+        try:
+            node_capacity = to_index(node_capacity)
+        except TypeError:
+            raise TypeError("node_capacity must be an integer") from None
         if node_capacity < 2:
             raise ValueError("node_capacity must be at least 2")
 
@@ -118,21 +123,21 @@ class UnrolledLinkedList(Generic[T]):
         """Return whether ``value`` appears in the sequence."""
         return any(item == value for item in self)
 
-    def __getitem__(self, index: int | slice) -> Any:
+    def __getitem__(self, index: int | SupportsIndex | slice) -> Any:
         """Return a value by index or a sliced unrolled list."""
-        if isinstance(index, int):
-            node, offset = self._locate(index)
-            return node.values[offset]
-
         if isinstance(index, slice):
             return self.__class__(
                 list(self)[index],
                 node_capacity=self.node_capacity,
             )
 
-        raise TypeError("Index must be int or slice")
+        try:
+            node, offset = self._locate(index)
+        except TypeError:
+            raise TypeError("Index must be int or slice") from None
+        return node.values[offset]
 
-    def __setitem__(self, index: int, value: Any) -> None:
+    def __setitem__(self, index: int | SupportsIndex, value: Any) -> None:
         """Replace one value without changing block links."""
         node, offset = self._locate(index)
         node.values[offset] = value
@@ -147,23 +152,28 @@ class UnrolledLinkedList(Generic[T]):
             left == right for left, right in zip(self, other, strict=False)
         )
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a debugging representation."""
+        values = ", ".join(safe_repr_item(self, value) for value in self)
         return (
             f"{self.__class__.__name__}("
-            f"{self.to_list()!r}, node_capacity={self.node_capacity})"
+            f"[{values}], node_capacity={self.node_capacity})"
         )
 
+    @recursive_repr()
     def __str__(self) -> str:
         """Return a readable arrow-separated representation."""
-        return " -> ".join(str(value) for value in self)
+        if self._size == 0:
+            return "[]"
+        return " -> ".join(safe_str_item(self, value) for value in self)
 
     @classmethod
     def from_iterable(
         cls: type[TUnrolledLinkedList],
         iterable: Iterable[Any],
         *,
-        node_capacity: int = 8,
+        node_capacity: int | SupportsIndex = 8,
     ) -> TUnrolledLinkedList:
         """Build an unrolled list from any iterable."""
         return cls(iterable, node_capacity=node_capacity)
@@ -211,7 +221,7 @@ class UnrolledLinkedList(Generic[T]):
             raise IndexError("Peek from empty unrolled linked list")
         return self.tail.values[-1]
 
-    def get(self, index: int, default: Any = None) -> Any:
+    def get(self, index: int | SupportsIndex, default: Any = None) -> Any:
         """Return a value by index, or ``default`` if out of range."""
         try:
             return self[index]
@@ -225,8 +235,8 @@ class UnrolledLinkedList(Generic[T]):
     def index(
         self,
         value: Any,
-        start: int = 0,
-        stop: int | None = None,
+        start: int | SupportsIndex = 0,
+        stop: int | SupportsIndex | None = None,
     ) -> int:
         """Return the first index of ``value`` within optional bounds."""
         values = list(self)
@@ -237,8 +247,8 @@ class UnrolledLinkedList(Generic[T]):
     def find(
         self,
         value: Any,
-        start: int = 0,
-        stop: int | None = None,
+        start: int | SupportsIndex = 0,
+        stop: int | SupportsIndex | None = None,
     ) -> int | None:
         """Return the first matching index, or ``None`` when missing."""
         try:
@@ -269,8 +279,9 @@ class UnrolledLinkedList(Generic[T]):
             self.head = new_node
         self._size += 1
 
-    def insert(self, index: int, value: Any) -> None:
+    def insert(self, index: int | SupportsIndex, value: Any) -> None:
         """Insert ``value`` before ``index`` using Python list bounds."""
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index > self._size:
@@ -321,7 +332,7 @@ class UnrolledLinkedList(Generic[T]):
         self._rebalance_after_remove(self.head)
         return value
 
-    def remove_at(self, index: int) -> Any:
+    def remove_at(self, index: int | SupportsIndex) -> Any:
         """Remove and return a value by index."""
         node, offset = self._locate(index)
         value = node.values.pop(offset)
@@ -359,9 +370,11 @@ class UnrolledLinkedList(Generic[T]):
         self,
         old_value: Any,
         new_value: Any,
-        count: int | None = None,
+        count: int | SupportsIndex | None = None,
     ) -> int:
         """Replace matching values and return how many changed."""
+        if count is not None:
+            count = to_index(count)
         if count is not None and count <= 0:
             return 0
 
@@ -416,8 +429,9 @@ class UnrolledLinkedList(Generic[T]):
         """Reverse the visible sequence."""
         self._rebuild_from_values(list(reversed(self.to_list())))
 
-    def rotate(self, steps: int = 1) -> None:
+    def rotate(self, steps: int | SupportsIndex = 1) -> None:
         """Rotate right for positive steps and left for negative steps."""
+        steps = to_index(steps)
         if self._size <= 1:
             return
         steps %= self._size
@@ -563,12 +577,16 @@ class UnrolledLinkedList(Generic[T]):
         if node.prev is not None and len(node.prev.values) > minimum:
             node.values.insert(0, node.prev.values.pop())
 
-    def _locate(self, index: int) -> tuple[_UnrolledNode, int]:
+    def _locate(
+        self,
+        index: int | SupportsIndex,
+    ) -> tuple[_UnrolledNode, int]:
         """Return the block and in-block offset for ``index``.
 
         The search starts from the closer end of the block chain. The returned
         offset is the normal Python-list index inside that block's values.
         """
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index >= self._size:

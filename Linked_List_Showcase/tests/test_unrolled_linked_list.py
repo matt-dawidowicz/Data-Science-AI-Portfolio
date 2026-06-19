@@ -74,7 +74,7 @@ class TestUnrolledLinkedList(unittest.TestCase):
             repr(unrolled),
             "UnrolledLinkedList([], node_capacity=3)",
         )
-        self.assertEqual(str(unrolled), "")
+        self.assertEqual(str(unrolled), "[]")
         self.assert_unrolled_integrity(unrolled, [])
 
         with self.assertRaises(IndexError):

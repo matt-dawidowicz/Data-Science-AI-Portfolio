@@ -30,11 +30,34 @@ class TestLinkedListUnit(unittest.TestCase):
         self.singly.append(5)
         self.assertEqual(len(self.singly), 6)
 
+    def test_constructor_accepts_iterable_and_type_plus_iterable(self) -> None:
+        from_values = LinkedList([1, 2, 3])
+        self.assertEqual(from_values.to_list(), [1, 2, 3])
+        self.assertEqual(from_values._list_type, "singly")
+
+        doubly = LinkedList("doubly", [1, 2, 3])
+        self.assertEqual(doubly.to_list(), [1, 2, 3])
+        self.assertEqual(doubly._list_type, "doubly")
+        self.assertIsNone(doubly.head.prev)
+        self.assertIsNone(doubly.tail.next)
+
+        circular = LinkedList("doubly_circular", [1, 2, 3])
+        self.assertEqual(circular.to_list(), [1, 2, 3])
+        self.assertIs(circular.head.prev, circular.tail)
+        self.assertIs(circular.tail.next, circular.head)
+
+        with self.assertRaises(TypeError):
+            LinkedList([1], [2])  # type: ignore[arg-type]
+        with self.assertRaises(TypeError):
+            LinkedList(42)  # type: ignore[arg-type]
+
     def test_truthiness_empty_check_and_peek(self) -> None:
         empty = LinkedList("singly")
 
         self.assertFalse(empty)
         self.assertTrue(empty.is_empty())
+        self.assertEqual(str(empty), "[]")
+        self.assertEqual(str(self.singly), "0 -> 1 -> 2 -> 3 -> 4")
         self.assertTrue(self.singly)
         self.assertFalse(self.singly.is_empty())
         self.assertEqual(self.singly.peek_front(), 0)

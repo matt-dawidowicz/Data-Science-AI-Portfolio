@@ -10,7 +10,12 @@ requested position. Slicing takes a finite snapshot first so Python's normal
 slice rules handle negative indexes and negative steps correctly.
 """
 
-from typing import Any
+from functools import partial
+from operator import index as to_index
+from reprlib import recursive_repr
+from typing import Any, SupportsIndex
+
+from linked_list._display import safe_repr_item, safe_str_item
 
 
 class Access:
@@ -24,23 +29,13 @@ class Access:
     mutation mixin instead.
     """
 
-    def __getitem__(self, index: int | slice) -> Any:
+    def __getitem__(self, index: int | SupportsIndex | slice) -> Any:
         """Return an item or sublist at the requested index or slice.
 
         Integer indexes return a single value. Slice indexes collect values
         into a new linked list of the same list type, preserving the public
         behavior of this container instead of returning a plain Python list.
         """
-        if isinstance(index, int):
-            if index < 0:
-                index += self._size
-            if index < 0 or index >= self._size:
-                raise IndexError("Index out of range")
-            current = self.head
-            for _ in range(index):
-                current = current.next
-            return current.data
-
         if isinstance(index, slice):
             # Python already handles every slice shape correctly, including
             # negative indexes and negative steps. Rebuilding from that result
@@ -48,13 +43,26 @@ class Access:
             result = list(self)[index]
             return self.__class__.from_list(result, self._list_type)
 
-        raise TypeError("Index must be int or slice")
+        try:
+            index = to_index(index)
+        except TypeError:
+            raise TypeError("Index must be int or slice") from None
 
-    def __setitem__(self, index: int, value: Any) -> None:
+        if index < 0:
+            index += self._size
+        if index < 0 or index >= self._size:
+            raise IndexError("Index out of range")
+        current = self.head
+        for _ in range(index):
+            current = current.next
+        return current.data
+
+    def __setitem__(self, index: int | SupportsIndex, value: Any) -> None:
         """Assign a new value at the requested list index.
 
         This changes node data only; it does not relink or replace the node.
         """
+        index = to_index(index)
         if index < 0:
             index = self._size + index
         if index < 0 or index >= self._size:
@@ -68,7 +76,7 @@ class Access:
         """Return whether the list contains the requested value."""
         return any(item == data for item in self)
 
-    def get(self, index: int, default: Any = None) -> Any:
+    def get(self, index: int | SupportsIndex, default: Any = None) -> Any:
         """Return an item by index, or ``default`` if it is out of range.
 
         Normal indexing is still strict and raises ``IndexError``. This helper
@@ -83,8 +91,8 @@ class Access:
     def index(
         self,
         data: Any,
-        start: int = 0,
-        stop: int | None = None,
+        start: int | SupportsIndex = 0,
+        stop: int | SupportsIndex | None = None,
     ) -> int:
         """Return the first index of ``data`` within the optional bounds.
 
@@ -100,8 +108,8 @@ class Access:
     def find(
         self,
         data: Any,
-        start: int = 0,
-        stop: int | None = None,
+        start: int | SupportsIndex = 0,
+        stop: int | SupportsIndex | None = None,
     ) -> int | None:
         """Return the first matching index or ``None`` if not found."""
         try:
@@ -135,27 +143,32 @@ class Access:
             return False
         return all(a == b for a, b in zip(self, other, strict=False))
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a debugging representation of the linked list.
 
         ``repr`` includes both values and list type because ``LinkedList`` can
         represent several pointer shapes with the same public class.
         """
-        return (
-            f"{self.__class__.__name__}([{', '.join(repr(x) for x in self)}], "
-            f"type={self._list_type})"
-        )
+        item_repr = partial(safe_repr_item, self)
+        values = ", ".join(item_repr(x) for x in self)
+        return f"{self.__class__.__name__}([{values}], type={self._list_type})"
 
+    @recursive_repr()
     def __str__(self) -> str:
         """Return a readable arrow-separated representation."""
-        return " -> ".join(str(x) for x in self)
+        if self._size == 0:
+            return "[]"
+        item_str = partial(safe_str_item, self)
+        return " -> ".join(item_str(x) for x in self)
 
-    def nth_from_end(self, n: int) -> Any:
+    def nth_from_end(self, n: int | SupportsIndex) -> Any:
         """Return the nth value from the end using one-based indexing.
 
         The method converts the request into a normal zero-based index using
         the tracked size, so it works for all list variants.
         """
+        n = to_index(n)
         if n <= 0 or n > self._size:
             raise IndexError("n is out of range")
         return self[self._size - n]

@@ -63,7 +63,7 @@ because linked lists do not have array-style random access.
 | `prepend(value)` | O(1) | O(1) | Uses `head`; doubly linked lists repair `prev`. |
 | `insert(index, value)` | O(n) | O(1) | Head/tail inserts are O(1), middle inserts require traversal. |
 | `remove(value)` | O(n) | O(1) | Removes the first match and repairs affected links. |
-| `remove_all(value)` | O(n * r) | O(1) | Repeatedly calls `remove`, so many duplicates can make this quadratic. |
+| `remove_all(value)` | O(n) | O(1) | Removes every match in one traversal and repairs links as it goes. |
 | `remove_at(index)` | O(n) | O(1) | Edge removals delegate to `pop_front` or `pop`. |
 | `replace(old, new)` | O(n) | O(1) | Updates node data only; links do not move. |
 | `pop_front()` | O(1) | O(1) | Moves `head` forward and repairs circular/doubly links. |
@@ -124,7 +124,7 @@ order.
 | `merge(other)` | O((n + m) log(n + m)) | O(n + m) | Copies values from `other`; `other` is unchanged. |
 | `sort()` | O(n log n) | O(n) | Rebuilds from a sorted value snapshot. |
 | `remove(value)` | O(n) | O(1) | Same first-match removal as `LinkedList`. |
-| `remove_all(value)` | O(n * r) | O(1) | Inherited repeated-removal strategy. |
+| `remove_all(value)` | O(n) | O(1) | Inherits the base single-pass removal strategy. |
 | `remove_at(index)` | O(n) | O(1) | Removing cannot break sorted order. |
 | `pop_front()` | O(1) | O(1) | Removes the smallest value. |
 | `pop()` | O(n) or O(1) | O(1) | Same list-shape behavior as `LinkedList.pop`. |
@@ -467,9 +467,9 @@ one sorted column chain.
 | `items()` / `values()` | O(z) | O(1) | Iterates stored cells in row-major order. |
 | `to_entries()` | O(z) | O(z) | Copies row-major triples. |
 | `to_dense()` | O(R * C + z) | O(R * C) | Fills a dense matrix with zero values, then writes stored cells. |
-| `row_sum(row)` | O(r_i) | O(1) | Sums stored values in one row. |
-| `column_sum(col)` | O(c_j) | O(1) | Sums stored values in one column. |
-| `trace()` | O(R + z) | O(1) | Looks up each diagonal cell in its row chain. |
+| `row_sum(row)` | O(r_i) | O(1) | Requires `zero=0`; sums stored values in one row. |
+| `column_sum(col)` | O(c_j) | O(1) | Requires `zero=0`; sums stored values in one column. |
+| `trace()` | O(R + z) | O(1) | Requires `zero=0`; looks up each diagonal cell in its row chain. |
 
 Here `r_i` is the number of stored cells in row `i`, and `c_j` is the number
 of stored cells in column `j`.
@@ -496,11 +496,11 @@ and column chain lengths for the cells being inserted, updated, or removed.
 | `copy()` | O(z * (r + c)) | O(z) | Rebuilds row and column chains. |
 | `deep_copy()` | O(z * (r + c) + d) | O(z + d) | Deep-copies stored values and zero. |
 | `transpose()` | O(z * (r + c)) | O(z) | Rebuilds with swapped row and column indexes. |
-| `add_matrix(other)` | O(z + z_other * (r + c)) | O(z + z_other) | Copies left, then adds right entries. |
-| `subtract_matrix(other)` | O(z + z_other * (r + c)) | O(z + z_other) | Copies left, then subtracts right entries. |
-| `scalar_multiply(scalar)` | O(z * (r + c)) | O(z) | Rebuilds and prunes products equal to zero. |
-| `multiply_vector(vector)` | O(z + C) | O(R + C) | Materializes the vector, then visits stored cells. |
-| `matmul(other)` | O(p + z_result * (r + c)) | O(z_result) | Multiplies only pairs where left column has right-row entries. |
+| `add_matrix(other)` | O(z + z_other * (r + c)) | O(z + z_other) | Requires `zero=0`; copies left, then adds right entries. |
+| `subtract_matrix(other)` | O(z + z_other * (r + c)) | O(z + z_other) | Requires `zero=0`; copies left, then subtracts right entries. |
+| `scalar_multiply(scalar)` | O(z * (r + c)) | O(z) | Requires `zero=0`; rebuilds and prunes products equal to zero. |
+| `multiply_vector(vector)` | O(z + C) | O(R + C) | Requires `zero=0`; materializes the vector, then visits stored cells. |
+| `matmul(other)` | O(p + z_result * (r + c)) | O(z_result) | Requires matching `zero=0`; multiplies only pairs where left column has right-row entries. |
 | `map_values(func)` | O(z * (r + c)) | O(z) | Rebuilds from transformed stored values. |
 
 ## Space Complexity of Nodes

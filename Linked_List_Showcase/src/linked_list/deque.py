@@ -16,8 +16,9 @@ the opposite end.
 """
 
 from collections.abc import Iterable, Iterator
+from operator import index as to_index
 from reprlib import recursive_repr
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, SupportsIndex, TypeVar
 
 from .nodes import DoublyLinkedNode
 
@@ -82,26 +83,26 @@ class LinkedDeque(Generic[T]):
             current = current.prev
             remaining -= 1
 
-    def __getitem__(self, index: int | slice) -> Any:
+    def __getitem__(self, index: int | SupportsIndex | slice) -> Any:
         """Return a value by index or a sliced ``LinkedDeque``.
 
         Integer indexes walk from the closer end. Slice indexes use Python's
         built-in slice semantics and return a new deque with the same concrete
         class.
         """
-        if isinstance(index, int):
-            return self._node_at(index).data
-
         if isinstance(index, slice):
             return self.__class__(list(self)[index])
 
-        raise TypeError("Index must be int or slice")
+        try:
+            return self._node_at(index).data
+        except TypeError:
+            raise TypeError("Index must be int or slice") from None
 
     def __contains__(self, data: Any) -> bool:
         """Return whether ``data`` appears in the deque."""
         return any(item == data for item in self)
 
-    def get(self, index: int, default: Any = None) -> Any:
+    def get(self, index: int | SupportsIndex, default: Any = None) -> Any:
         """Return a value by index, or ``default`` if out of range.
 
         This is a forgiving counterpart to ``deque[index]``. It still supports
@@ -136,6 +137,8 @@ class LinkedDeque(Generic[T]):
     @recursive_repr()
     def __str__(self) -> str:
         """Return a readable representation of the deque."""
+        if self._size == 0:
+            return "[]"
         return " <-> ".join(self._str_item(item) for item in self)
 
     def _repr_item(self, item: Any) -> str:
@@ -177,8 +180,8 @@ class LinkedDeque(Generic[T]):
     def index(
         self,
         data: Any,
-        start: int = 0,
-        stop: int | None = None,
+        start: int | SupportsIndex = 0,
+        stop: int | SupportsIndex | None = None,
     ) -> int:
         """Return the first index of ``data`` within the optional bounds."""
         start, stop, _ = slice(start, stop, 1).indices(self._size)
@@ -194,8 +197,8 @@ class LinkedDeque(Generic[T]):
     def find(
         self,
         data: Any,
-        start: int = 0,
-        stop: int | None = None,
+        start: int | SupportsIndex = 0,
+        stop: int | SupportsIndex | None = None,
     ) -> int | None:
         """Return the first matching index or ``None`` if not found."""
         try:
@@ -235,13 +238,14 @@ class LinkedDeque(Generic[T]):
 
         self._size += 1
 
-    def insert(self, index: int, data: Any) -> None:
+    def insert(self, index: int | SupportsIndex, data: Any) -> None:
         """Insert ``data`` before ``index`` using deque-style bounds.
 
         This mirrors ``collections.deque.insert`` for an unbounded deque:
         indexes at or below the far left prepend, indexes at or beyond the far
         right append, and negative indexes count from the right.
         """
+        index = to_index(index)
         if self._size == 0:
             self.append_left(data)
             return
@@ -368,13 +372,15 @@ class LinkedDeque(Generic[T]):
         self,
         old_data: Any,
         new_data: Any,
-        count: int | None = None,
+        count: int | SupportsIndex | None = None,
     ) -> int:
         """Replace matching values and return how many changed.
 
         Replacement updates node data only. The deque's shape and links stay
         unchanged, which makes this safe for head, tail, and middle values.
         """
+        if count is not None:
+            count = to_index(count)
         if count is not None and count <= 0:
             return 0
 
@@ -421,13 +427,14 @@ class LinkedDeque(Generic[T]):
 
         self.head, self.tail = self.tail, self.head
 
-    def rotate(self, steps: int = 1) -> None:
+    def rotate(self, steps: int | SupportsIndex = 1) -> None:
         """Rotate right for positive steps and left for negative steps.
 
         The modulo operation avoids unnecessary full cycles. For example,
         rotating a four-item deque by six steps is the same as rotating it by
         two steps.
         """
+        steps = to_index(steps)
         if self._size <= 1:
             return
 
@@ -438,8 +445,9 @@ class LinkedDeque(Generic[T]):
             for _ in range((-steps) % self._size):
                 self._move_head_to_tail()
 
-    def _node_at(self, index: int) -> DoublyLinkedNode:
+    def _node_at(self, index: int | SupportsIndex) -> DoublyLinkedNode:
         """Return the node at ``index``, walking from the closer end."""
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index >= self._size:

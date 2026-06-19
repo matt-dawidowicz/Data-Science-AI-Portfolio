@@ -12,7 +12,11 @@ possible to inspect the same data by column without rebuilding the matrix.
 
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
-from typing import Any, Generic, TypeVar
+from operator import index as to_index
+from reprlib import recursive_repr
+from typing import Any, Generic, SupportsIndex, TypeVar
+
+from ._display import safe_repr_item
 
 T = TypeVar("T")
 TSparseMatrixLinkedList = TypeVar(
@@ -41,11 +45,13 @@ class _SparseMatrixNode:
         self.right: _SparseMatrixNode | None = None
         self.down: _SparseMatrixNode | None = None
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a compact debugging representation."""
         return (
             "_SparseMatrixNode("
-            f"row={self.row}, col={self.col}, value={self.value!r})"
+            f"row={self.row}, col={self.col}, "
+            f"value={safe_repr_item(self, self.value)})"
         )
 
 
@@ -60,17 +66,16 @@ class SparseMatrixLinkedList(Generic[T]):
 
     def __init__(
         self,
-        rows: int,
-        cols: int,
-        entries: Iterable[tuple[int, int, Any]] | None = None,
+        rows: int | SupportsIndex,
+        cols: int | SupportsIndex,
+        entries: Iterable[tuple[int | SupportsIndex, int | SupportsIndex, Any]]
+        | None = None,
         *,
         zero: Any = 0,
     ) -> None:
         """Initialize an empty sparse matrix and optional entries."""
-        self._validate_dimension(rows, "rows")
-        self._validate_dimension(cols, "cols")
-        self.rows: int = rows
-        self.cols: int = cols
+        self.rows: int = self._validate_dimension(rows, "rows")
+        self.cols: int = self._validate_dimension(cols, "cols")
         self.zero: Any = zero
         self._row_heads: dict[int, _SparseMatrixNode] = {}
         self._col_heads: dict[int, _SparseMatrixNode] = {}
@@ -97,20 +102,25 @@ class SparseMatrixLinkedList(Generic[T]):
         if not isinstance(position, tuple) or len(position) != 2:
             return False
         row, col = position
-        if not isinstance(row, int) or not isinstance(col, int):
-            return False
-        if isinstance(row, bool) or isinstance(col, bool):
-            return False
-        if not self._in_bounds(row, col):
+        try:
+            row, col = self._validate_position(row, col)
+        except (TypeError, IndexError):
             return False
         return self._find_node(row, col) is not None
 
-    def __getitem__(self, key: tuple[int, int]) -> Any:
+    def __getitem__(
+        self,
+        key: tuple[int | SupportsIndex, int | SupportsIndex],
+    ) -> Any:
         """Return the value at ``(row, col)`` or the configured zero."""
         row, col = self._normalize_key(key)
         return self.get(row, col)
 
-    def __setitem__(self, key: tuple[int, int], value: Any) -> None:
+    def __setitem__(
+        self,
+        key: tuple[int | SupportsIndex, int | SupportsIndex],
+        value: Any,
+    ) -> None:
         """Set the value at ``(row, col)``."""
         row, col = self._normalize_key(key)
         self.set(row, col, value)
@@ -146,12 +156,17 @@ class SparseMatrixLinkedList(Generic[T]):
         """Return sparse matrix multiplication result."""
         return self.matmul(other)
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a debugging representation."""
+        entries = ", ".join(
+            f"({row}, {col}, {safe_repr_item(self, value)})"
+            for row, col, value in self.items()
+        )
         return (
             f"{self.__class__.__name__}("
             f"rows={self.rows}, cols={self.cols}, "
-            f"entries={self.to_entries()!r}, zero={self.zero!r})"
+            f"entries=[{entries}], zero={safe_repr_item(self, self.zero)})"
         )
 
     @property
@@ -162,9 +177,11 @@ class SparseMatrixLinkedList(Generic[T]):
     @classmethod
     def from_entries(
         cls: type[TSparseMatrixLinkedList],
-        rows: int,
-        cols: int,
-        entries: Iterable[tuple[int, int, Any]],
+        rows: int | SupportsIndex,
+        cols: int | SupportsIndex,
+        entries: Iterable[
+            tuple[int | SupportsIndex, int | SupportsIndex, Any]
+        ],
         *,
         zero: Any = 0,
     ) -> TSparseMatrixLinkedList:
@@ -204,22 +221,32 @@ class SparseMatrixLinkedList(Generic[T]):
             return 0.0
         return self._size / total_cells
 
-    def get(self, row: int, col: int, default: Any = _MISSING) -> Any:
+    def get(
+        self,
+        row: int | SupportsIndex,
+        col: int | SupportsIndex,
+        default: Any = _MISSING,
+    ) -> Any:
         """Return a cell value, or ``default``/zero when absent."""
-        self._validate_position(row, col)
+        row, col = self._validate_position(row, col)
         node = self._find_node(row, col)
         if node is None:
             return self.zero if default is _MISSING else default
         return node.value
 
-    def set(self, row: int, col: int, value: Any) -> None:
+    def set(
+        self,
+        row: int | SupportsIndex,
+        col: int | SupportsIndex,
+        value: Any,
+    ) -> None:
         """Set a cell value, removing entries equal to zero.
 
         Assigning the configured ``zero`` value removes the coordinate instead
         of storing it. That rule is what keeps the representation sparse after
         arbitrary updates.
         """
-        self._validate_position(row, col)
+        row, col = self._validate_position(row, col)
         node = self._find_node(row, col)
         if value == self.zero:
             if node is not None:
@@ -235,9 +262,13 @@ class SparseMatrixLinkedList(Generic[T]):
         self._insert_into_column(new_node)
         self._size += 1
 
-    def remove(self, row: int, col: int) -> bool:
+    def remove(
+        self,
+        row: int | SupportsIndex,
+        col: int | SupportsIndex,
+    ) -> bool:
         """Remove a stored cell and return whether it existed."""
-        self._validate_position(row, col)
+        row, col = self._validate_position(row, col)
         node = self._find_node(row, col)
         if node is None:
             return False
@@ -249,9 +280,14 @@ class SparseMatrixLinkedList(Generic[T]):
         self._size -= 1
         return True
 
-    def pop(self, row: int, col: int, default: Any = None) -> Any:
+    def pop(
+        self,
+        row: int | SupportsIndex,
+        col: int | SupportsIndex,
+        default: Any = None,
+    ) -> Any:
         """Remove and return a cell value, or ``default`` when absent."""
-        self._validate_position(row, col)
+        row, col = self._validate_position(row, col)
         node = self._find_node(row, col)
         if node is None:
             return default
@@ -281,9 +317,9 @@ class SparseMatrixLinkedList(Generic[T]):
         for _, _, value in self.items():
             yield value
 
-    def row_items(self, row: int) -> list[tuple[int, Any]]:
+    def row_items(self, row: int | SupportsIndex) -> list[tuple[int, Any]]:
         """Return ``(col, value)`` pairs for one row."""
-        self._validate_index(row, self.rows, "row")
+        row = self._validate_index(row, self.rows, "row")
         items = []
         current = self._row_heads.get(row)
         while current is not None:
@@ -291,9 +327,12 @@ class SparseMatrixLinkedList(Generic[T]):
             current = current.right
         return items
 
-    def column_items(self, col: int) -> list[tuple[int, Any]]:
+    def column_items(
+        self,
+        col: int | SupportsIndex,
+    ) -> list[tuple[int, Any]]:
         """Return ``(row, value)`` pairs for one column."""
-        self._validate_index(col, self.cols, "col")
+        col = self._validate_index(col, self.cols, "col")
         items = []
         current = self._col_heads.get(col)
         while current is not None:
@@ -342,20 +381,23 @@ class SparseMatrixLinkedList(Generic[T]):
             zero=self.zero,
         )
 
-    def row_sum(self, row: int) -> Any:
+    def row_sum(self, row: int | SupportsIndex) -> Any:
         """Return the sum of stored values in one row."""
-        self._validate_index(row, self.rows, "row")
+        row = self._validate_index(row, self.rows, "row")
+        self._validate_arithmetic_zero()
         return sum(value for _, value in self.row_items(row))
 
-    def column_sum(self, col: int) -> Any:
+    def column_sum(self, col: int | SupportsIndex) -> Any:
         """Return the sum of stored values in one column."""
-        self._validate_index(col, self.cols, "col")
+        col = self._validate_index(col, self.cols, "col")
+        self._validate_arithmetic_zero()
         return sum(value for _, value in self.column_items(col))
 
     def trace(self) -> Any:
         """Return the matrix trace for square matrices."""
         if self.rows != self.cols:
             raise ValueError("trace requires a square matrix")
+        self._validate_arithmetic_zero()
         return sum(self.get(index, index) for index in range(self.rows))
 
     def add_matrix(
@@ -363,7 +405,7 @@ class SparseMatrixLinkedList(Generic[T]):
         other: "SparseMatrixLinkedList",
     ) -> TSparseMatrixLinkedList:
         """Return the sum of two matrices with the same shape."""
-        self._validate_same_shape(other)
+        self._validate_elementwise_arithmetic(other)
         result = self.copy()
         for row, col, value in other.items():
             result.set(row, col, result.get(row, col) + value)
@@ -374,7 +416,7 @@ class SparseMatrixLinkedList(Generic[T]):
         other: "SparseMatrixLinkedList",
     ) -> TSparseMatrixLinkedList:
         """Return the difference of two matrices with the same shape."""
-        self._validate_same_shape(other)
+        self._validate_elementwise_arithmetic(other)
         result = self.copy()
         for row, col, value in other.items():
             result.set(row, col, result.get(row, col) - value)
@@ -385,6 +427,7 @@ class SparseMatrixLinkedList(Generic[T]):
         scalar: Any,
     ) -> TSparseMatrixLinkedList:
         """Return a matrix with every stored value multiplied by scalar."""
+        self._validate_arithmetic_zero()
         return self.__class__(
             self.rows,
             self.cols,
@@ -394,6 +437,7 @@ class SparseMatrixLinkedList(Generic[T]):
 
     def multiply_vector(self, vector: Iterable[Any]) -> list[Any]:
         """Return dense matrix-vector multiplication result."""
+        self._validate_arithmetic_zero()
         values = list(vector)
         if len(values) != self.cols:
             raise ValueError("Vector length must match matrix columns")
@@ -412,10 +456,7 @@ class SparseMatrixLinkedList(Generic[T]):
         in ``other`` row ``shared_col`` can contribute to the result. This
         skips dense zero work while still producing the same math.
         """
-        if not isinstance(other, SparseMatrixLinkedList):
-            raise TypeError("other must be a SparseMatrixLinkedList")
-        if self.cols != other.rows:
-            raise ValueError("Left columns must match right rows")
+        self._validate_matmul_arithmetic(other)
 
         result_entries: dict[tuple[int, int], Any] = {}
         for row, shared_col, left_value in self.items():
@@ -558,18 +599,26 @@ class SparseMatrixLinkedList(Generic[T]):
             previous = current
             current = current.down
 
-    def _normalize_key(self, key: tuple[int, int]) -> tuple[int, int]:
+    def _normalize_key(
+        self,
+        key: tuple[int | SupportsIndex, int | SupportsIndex],
+    ) -> tuple[int, int]:
         """Validate and return a matrix key."""
         if not isinstance(key, tuple) or len(key) != 2:
             raise TypeError("Matrix key must be a (row, col) tuple")
         row, col = key
-        self._validate_position(row, col)
-        return row, col
+        return self._validate_position(row, col)
 
-    def _validate_position(self, row: int, col: int) -> None:
+    def _validate_position(
+        self,
+        row: int | SupportsIndex,
+        col: int | SupportsIndex,
+    ) -> tuple[int, int]:
         """Validate a row and column position."""
-        self._validate_index(row, self.rows, "row")
-        self._validate_index(col, self.cols, "col")
+        return (
+            self._validate_index(row, self.rows, "row"),
+            self._validate_index(col, self.cols, "col"),
+        )
 
     def _validate_same_shape(self, other: "SparseMatrixLinkedList") -> None:
         """Raise when two matrices cannot be combined element-wise."""
@@ -578,22 +627,63 @@ class SparseMatrixLinkedList(Generic[T]):
         if self.shape != other.shape:
             raise ValueError("Matrix shapes must match")
 
-    def _in_bounds(self, row: int, col: int) -> bool:
-        """Return whether a row/column position is valid."""
-        return 0 <= row < self.rows and 0 <= col < self.cols
+    def _validate_elementwise_arithmetic(
+        self,
+        other: "SparseMatrixLinkedList",
+    ) -> None:
+        """Validate matrix addition/subtraction preconditions."""
+        self._validate_same_shape(other)
+        self._validate_same_zero(other)
+        self._validate_arithmetic_zero()
+
+    def _validate_matmul_arithmetic(
+        self,
+        other: "SparseMatrixLinkedList",
+    ) -> None:
+        """Validate matrix multiplication preconditions."""
+        if not isinstance(other, SparseMatrixLinkedList):
+            raise TypeError("other must be a SparseMatrixLinkedList")
+        if self.cols != other.rows:
+            raise ValueError("Left columns must match right rows")
+        self._validate_same_zero(other)
+        self._validate_arithmetic_zero()
+
+    def _validate_same_zero(self, other: "SparseMatrixLinkedList") -> None:
+        """Raise when two matrices use different sparse zero sentinels."""
+        if self.zero != other.zero:
+            raise ValueError("Matrix zero values must match for arithmetic")
+
+    def _validate_arithmetic_zero(self) -> None:
+        """Raise unless missing cells represent numeric additive zero."""
+        if self.zero != 0:
+            raise ValueError("Sparse arithmetic requires zero to equal 0")
 
     @staticmethod
-    def _validate_dimension(value: int, name: str) -> None:
-        """Validate a matrix dimension."""
-        if not isinstance(value, int) or isinstance(value, bool):
+    def _validate_dimension(value: int | SupportsIndex, name: str) -> int:
+        """Validate and return a matrix dimension."""
+        if isinstance(value, bool):
             raise TypeError(f"{name} must be an integer")
+        try:
+            value = to_index(value)
+        except TypeError:
+            raise TypeError(f"{name} must be an integer") from None
         if value < 0:
             raise ValueError(f"{name} must be non-negative")
+        return value
 
     @staticmethod
-    def _validate_index(index: int, limit: int, name: str) -> None:
-        """Validate one bounded index."""
-        if not isinstance(index, int) or isinstance(index, bool):
+    def _validate_index(
+        index: int | SupportsIndex,
+        limit: int,
+        name: str,
+    ) -> int:
+        """Validate and return one bounded index."""
+        if isinstance(index, bool):
             raise TypeError(f"{name} index must be an integer")
+        try:
+            index = to_index(index)
+        except TypeError:
+            raise TypeError(f"{name} index must be an integer") from None
         if index < 0 or index >= limit:
             raise IndexError(f"{name} index out of range")
+        return index

@@ -59,7 +59,7 @@ class TestMultilevelLinkedList(unittest.TestCase):
 
         self.assertFalse(multilevel)
         self.assertTrue(multilevel.is_empty())
-        self.assertEqual(str(multilevel), "")
+        self.assertEqual(str(multilevel), "[]")
         self.assertEqual(repr(multilevel), "MultilevelLinkedList([])")
         self.assertEqual(multilevel.get(0, "missing"), "missing")
         self.assert_multilevel_integrity(multilevel, [])

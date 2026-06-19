@@ -13,7 +13,11 @@ to find later.
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce
-from typing import Any, Generic, TypeVar
+from operator import index as to_index
+from reprlib import recursive_repr
+from typing import Any, Generic, SupportsIndex, TypeVar
+
+from ._display import safe_repr_item, safe_str_item
 
 T = TypeVar("T")
 TSelfOrganizingLinkedList = TypeVar(
@@ -36,11 +40,13 @@ class _SelfOrganizingNode:
         self.prev: _SelfOrganizingNode | None = None
         self.next: _SelfOrganizingNode | None = None
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a compact debugging representation."""
         return (
             "_SelfOrganizingNode("
-            f"data={self.data!r}, access_count={self.access_count})"
+            f"data={safe_repr_item(self, self.data)}, "
+            f"access_count={self.access_count})"
         )
 
 
@@ -105,18 +111,19 @@ class SelfOrganizingLinkedList(Generic[T]):
         """Return whether ``value`` appears without reorganizing."""
         return any(item == value for item in self)
 
-    def __getitem__(self, index: int | slice) -> Any:
+    def __getitem__(self, index: int | SupportsIndex | slice) -> Any:
         """Return a value or sliced self-organizing list without access."""
-        if isinstance(index, int):
-            return self._node_at(index).data
         if isinstance(index, slice):
             return self.__class__(
                 list(self)[index],
                 strategy=self.strategy,
             )
-        raise TypeError("Index must be int or slice")
+        try:
+            return self._node_at(index).data
+        except TypeError:
+            raise TypeError("Index must be int or slice") from None
 
-    def __setitem__(self, index: int, value: Any) -> None:
+    def __setitem__(self, index: int | SupportsIndex, value: Any) -> None:
         """Replace a value without reorganizing."""
         self._node_at(index).data = value
 
@@ -128,16 +135,21 @@ class SelfOrganizingLinkedList(Generic[T]):
             return False
         return self.to_access_counts() == other.to_access_counts()
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a debugging representation."""
+        values = ", ".join(safe_repr_item(self, value) for value in self)
         return (
             f"{self.__class__.__name__}("
-            f"{self.to_list()!r}, strategy={self.strategy!r})"
+            f"[{values}], strategy={self.strategy!r})"
         )
 
+    @recursive_repr()
     def __str__(self) -> str:
         """Return a readable arrow-separated representation."""
-        return " -> ".join(str(value) for value in self)
+        if self._size == 0:
+            return "[]"
+        return " -> ".join(safe_str_item(self, value) for value in self)
 
     @classmethod
     def from_iterable(
@@ -218,8 +230,13 @@ class SelfOrganizingLinkedList(Generic[T]):
         self._size += 1
         return node
 
-    def insert(self, index: int, value: Any) -> _SelfOrganizingNode:
+    def insert(
+        self,
+        index: int | SupportsIndex,
+        value: Any,
+    ) -> _SelfOrganizingNode:
         """Insert ``value`` before ``index``."""
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index > self._size:
@@ -248,7 +265,7 @@ class SelfOrganizingLinkedList(Generic[T]):
         """Append values from another iterable."""
         self.extend(iterable)
 
-    def access(self, index: int) -> Any:
+    def access(self, index: int | SupportsIndex) -> Any:
         """Read by index, increment count, and reorganize."""
         node = self._node_at(index)
         value = node.data
@@ -295,7 +312,7 @@ class SelfOrganizingLinkedList(Generic[T]):
             raise IndexError("Peek from empty self-organizing list")
         return self.tail.data
 
-    def get(self, index: int, default: Any = None) -> Any:
+    def get(self, index: int | SupportsIndex, default: Any = None) -> Any:
         """Return a value by index without reorganizing."""
         try:
             return self[index]
@@ -338,7 +355,7 @@ class SelfOrganizingLinkedList(Generic[T]):
             current = next_node
         return removed
 
-    def remove_at(self, index: int) -> Any:
+    def remove_at(self, index: int | SupportsIndex) -> Any:
         """Remove and return the value at ``index``."""
         return self._unlink_node(self._node_at(index))
 
@@ -358,9 +375,11 @@ class SelfOrganizingLinkedList(Generic[T]):
         self,
         old_value: Any,
         new_value: Any,
-        count: int | None = None,
+        count: int | SupportsIndex | None = None,
     ) -> int:
         """Replace matching values and return how many changed."""
+        if count is not None:
+            count = to_index(count)
         if count is not None and count <= 0:
             return 0
         replaced = 0
@@ -414,8 +433,9 @@ class SelfOrganizingLinkedList(Generic[T]):
             current = current.prev
         self.head, self.tail = self.tail, self.head
 
-    def rotate(self, steps: int = 1) -> None:
+    def rotate(self, steps: int | SupportsIndex = 1) -> None:
         """Rotate right for positive steps and left for negative steps."""
+        steps = to_index(steps)
         if self._size <= 1:
             return
         steps %= self._size
@@ -559,8 +579,12 @@ class SelfOrganizingLinkedList(Generic[T]):
             current = current.next
             remaining -= 1
 
-    def _node_at(self, index: int) -> _SelfOrganizingNode:
+    def _node_at(
+        self,
+        index: int | SupportsIndex,
+    ) -> _SelfOrganizingNode:
         """Return the node at ``index``."""
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index >= self._size:

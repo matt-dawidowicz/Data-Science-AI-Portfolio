@@ -55,7 +55,7 @@ class TestPositionalLinkedList(unittest.TestCase):
 
         self.assertFalse(linked_list)
         self.assertTrue(linked_list.is_empty())
-        self.assertEqual(str(linked_list), "")
+        self.assertEqual(str(linked_list), "[]")
         self.assertEqual(repr(linked_list), "PositionalLinkedList([])")
         self.assert_positional_integrity(linked_list, [])
 

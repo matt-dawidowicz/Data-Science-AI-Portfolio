@@ -1,6 +1,7 @@
 """Tests for generic public aliases and Mermaid visualization."""
 
 import unittest
+from itertools import count
 
 from linked_list import (
     LinkedDeque,
@@ -59,12 +60,49 @@ class TestTypingAndVisualization(unittest.TestCase):
         self.assertIn("... 3 more", diagram)
         self.assertIn("n1 --> more", diagram)
 
+        zero_visible = to_mermaid(range(5), max_items=0)
+        self.assertIn('more["... 5 more"]', zero_visible)
+        self.assertNotIn("n0", zero_visible)
+
+    def test_to_mermaid_bounds_unsized_iterators_when_limited(self) -> None:
+        """Limited diagrams should not exhaust an unsized iterator."""
+        diagram = to_mermaid(count(), max_items=2)
+
+        self.assertIn('n0["0: 0"]', diagram)
+        self.assertIn('n1["1: 1"]', diagram)
+        self.assertIn('more["... more"]', diagram)
+        self.assertNotIn("2: 2", diagram)
+
+    def test_to_mermaid_can_render_all_items_from_finite_generator(
+        self,
+    ) -> None:
+        """Passing max_items=None should keep the explicit render-all mode."""
+        diagram = to_mermaid((value for value in [1, 2]), max_items=None)
+
+        self.assertIn('n0["0: 1"]', diagram)
+        self.assertIn('n1["1: 2"]', diagram)
+        self.assertNotIn("more", diagram)
+
+    def test_to_mermaid_accepts_integer_like_max_items(self) -> None:
+        """Integer-like limits should follow normal Python index rules."""
+
+        class TwoItems:
+            def __index__(self) -> int:
+                return 2
+
+        diagram = to_mermaid(range(4), max_items=TwoItems())  # type: ignore[arg-type]
+
+        self.assertIn('n1["1: 1"]', diagram)
+        self.assertIn("... 2 more", diagram)
+
     def test_to_mermaid_validates_options(self) -> None:
         """Invalid rendering options should fail clearly."""
         with self.assertRaises(ValueError):
             to_mermaid([1], direction="SIDEWAYS")
         with self.assertRaises(ValueError):
             to_mermaid([1], max_items=-1)
+        with self.assertRaises(TypeError):
+            to_mermaid([1], max_items="bad")  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

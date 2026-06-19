@@ -59,7 +59,7 @@ class TestSelfOrganizingLinkedList(unittest.TestCase):
 
         self.assertFalse(linked_list)
         self.assertTrue(linked_list.is_empty())
-        self.assertEqual(str(linked_list), "")
+        self.assertEqual(str(linked_list), "[]")
         self.assertEqual(
             repr(linked_list),
             "SelfOrganizingLinkedList([], strategy='none')",

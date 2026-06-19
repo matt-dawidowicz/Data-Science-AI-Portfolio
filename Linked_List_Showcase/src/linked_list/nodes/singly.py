@@ -47,6 +47,12 @@ class SinglyCircularLinkedNode(BaseNode, NextMixin, CircularMixin):
         next_node: "SinglyCircularLinkedNode | None" = None,
     ) -> None:
         """Initialize a singly circular linked node."""
+        if next_node is not None and not isinstance(
+            next_node, SinglyCircularLinkedNode
+        ):
+            raise TypeError(
+                "next_node must be a SinglyCircularLinkedNode or None"
+            )
         BaseNode.__init__(self, data)
         NextMixin.__init__(self, next_node)
         CircularMixin.make_circular(self)

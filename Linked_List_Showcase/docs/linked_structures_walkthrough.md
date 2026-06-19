@@ -65,6 +65,12 @@ The core `LinkedList` supports four shapes:
 All four share the same public class. The selected `list_type` controls which
 node class is created and which links must be repaired.
 
+```python
+values = LinkedList([1, 2, 3])
+doubly = LinkedList("doubly", [1, 2, 3])
+circular = LinkedList("singly_circular", ["A", "B", "C"])
+```
+
 ### Singly Linked
 
 A singly linked node has a value and a `next` pointer:
@@ -389,7 +395,14 @@ must repair two chains:
 - `_insert_into_column` and `_remove_from_column`
 
 Assigning the configured `zero` value removes a cell instead of storing it.
-This is what keeps the matrix sparse after updates and arithmetic.
+This is what keeps the matrix sparse after updates and numeric-zero
+arithmetic.
+
+Row sums, column sums, trace, matrix arithmetic, scalar multiplication, and
+matrix-vector multiplication require `zero=0`. Custom zero sentinels are
+useful for storage lessons and dense round-tripping, but the arithmetic
+shortcuts intentionally require missing cells to behave like numeric additive
+zero.
 
 Use it to teach sparse storage and matrix operations without hiding the row and
 column links. For production numerical work, prefer NumPy arrays or SciPy

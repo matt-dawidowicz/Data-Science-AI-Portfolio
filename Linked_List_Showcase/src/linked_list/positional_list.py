@@ -13,7 +13,11 @@ remains in the same list, the handle stays meaningful even if the node moves.
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce
-from typing import Any, Generic, TypeVar
+from operator import index as to_index
+from reprlib import recursive_repr
+from typing import Any, Generic, SupportsIndex, TypeVar
+
+from ._display import safe_repr_item, safe_str_item
 
 T = TypeVar("T")
 TPositionalLinkedList = TypeVar(
@@ -40,9 +44,10 @@ class _PositionNode:
         self.prev: _PositionNode | None = None
         self.next: _PositionNode | None = None
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a compact node representation."""
-        return f"_PositionNode({self.data!r})"
+        return f"_PositionNode({safe_repr_item(self, self.data)})"
 
 
 class Position(Generic[T]):
@@ -83,14 +88,17 @@ class Position(Generic[T]):
         """Compare positions by node identity."""
         if not isinstance(other, Position):
             return False
+        if not self.is_valid() or not other.is_valid():
+            return self is other
         return self._node is other._node
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a debugging representation."""
         if not self.is_valid():
             return "Position(<invalid>)"
         assert self._node is not None
-        return f"Position({self._node.data!r})"
+        return f"Position({safe_repr_item(self, self._node.data)})"
 
 
 class PositionalLinkedList(Generic[T]):
@@ -141,15 +149,16 @@ class PositionalLinkedList(Generic[T]):
         """Return whether ``value`` appears in the list."""
         return any(item == value for item in self)
 
-    def __getitem__(self, index: int | slice) -> Any:
+    def __getitem__(self, index: int | SupportsIndex | slice) -> Any:
         """Return a value or sliced positional list."""
-        if isinstance(index, int):
-            return self._node_at(index).data
         if isinstance(index, slice):
             return self.__class__(list(self)[index])
-        raise TypeError("Index must be int or slice")
+        try:
+            return self._node_at(index).data
+        except TypeError:
+            raise TypeError("Index must be int or slice") from None
 
-    def __setitem__(self, index: int, value: Any) -> None:
+    def __setitem__(self, index: int | SupportsIndex, value: Any) -> None:
         """Replace a value by numeric index."""
         self._node_at(index).data = value
 
@@ -163,13 +172,18 @@ class PositionalLinkedList(Generic[T]):
             left == right for left, right in zip(self, other, strict=False)
         )
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a debugging representation."""
-        return f"{self.__class__.__name__}({self.to_list()!r})"
+        values = ", ".join(safe_repr_item(self, value) for value in self)
+        return f"{self.__class__.__name__}([{values}])"
 
+    @recursive_repr()
     def __str__(self) -> str:
         """Return a readable arrow-separated representation."""
-        return " <-> ".join(str(value) for value in self)
+        if self._size == 0:
+            return "[]"
+        return " <-> ".join(safe_str_item(self, value) for value in self)
 
     @classmethod
     def from_iterable(
@@ -208,7 +222,7 @@ class PositionalLinkedList(Generic[T]):
             return None
         return Position(self, self.tail)
 
-    def position_at(self, index: int) -> Position:
+    def position_at(self, index: int | SupportsIndex) -> Position:
         """Return the position at ``index``."""
         return Position(self, self._node_at(index))
 
@@ -278,8 +292,9 @@ class PositionalLinkedList(Generic[T]):
         """Prepend ``value`` and return its position."""
         return self.add_first(value)
 
-    def insert(self, index: int, value: Any) -> Position:
+    def insert(self, index: int | SupportsIndex, value: Any) -> Position:
         """Insert ``value`` before ``index``."""
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index > self._size:
@@ -320,9 +335,11 @@ class PositionalLinkedList(Generic[T]):
         self,
         old_value: Any,
         new_value: Any,
-        count: int | None = None,
+        count: int | SupportsIndex | None = None,
     ) -> int:
         """Replace matching values and return how many changed."""
+        if count is not None:
+            count = to_index(count)
         if count is not None and count <= 0:
             return 0
         replaced = 0
@@ -356,7 +373,7 @@ class PositionalLinkedList(Generic[T]):
             current = next_node
         return removed
 
-    def remove_at(self, index: int) -> Any:
+    def remove_at(self, index: int | SupportsIndex) -> Any:
         """Remove and return a value by index."""
         return self.delete(self.position_at(index))
 
@@ -384,7 +401,7 @@ class PositionalLinkedList(Generic[T]):
             raise IndexError("Peek from empty positional list")
         return self.tail.data
 
-    def get(self, index: int, default: Any = None) -> Any:
+    def get(self, index: int | SupportsIndex, default: Any = None) -> Any:
         """Return a value by index, or ``default`` if missing."""
         try:
             return self[index]
@@ -498,8 +515,9 @@ class PositionalLinkedList(Generic[T]):
             current = current.prev
         self.head, self.tail = self.tail, self.head
 
-    def rotate(self, steps: int = 1) -> None:
+    def rotate(self, steps: int | SupportsIndex = 1) -> None:
         """Rotate right for positive steps and left for negative steps."""
+        steps = to_index(steps)
         if self._size <= 1:
             return
         steps %= self._size
@@ -601,8 +619,9 @@ class PositionalLinkedList(Generic[T]):
             current = current.next
             remaining -= 1
 
-    def _node_at(self, index: int) -> _PositionNode:
+    def _node_at(self, index: int | SupportsIndex) -> _PositionNode:
         """Return the node at ``index``."""
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index >= self._size:

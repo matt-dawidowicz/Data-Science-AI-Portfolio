@@ -52,14 +52,12 @@ class Iteration:
 
     def _iter_reversed_circular(self) -> Iterator[Any]:
         """Yield a circular list in reverse without looping forever."""
-        if self.tail is None:
-            return
         current = self.tail
-        yield current.data
-        current = current.prev
-        while current != self.tail:
+        remaining = self._size
+        while current is not None and remaining > 0:
             yield current.data
             current = current.prev
+            remaining -= 1
 
     def _iter_reversed_linear(self) -> Iterator[Any]:
         """Yield a linear list in reverse."""

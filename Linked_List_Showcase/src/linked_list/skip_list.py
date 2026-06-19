@@ -11,9 +11,13 @@ reaches level zero, it has skipped much of the bottom chain in typical cases.
 """
 
 from collections.abc import Iterable, Iterator
+from operator import index as to_index
 from operator import lt
 from random import Random
-from typing import Any, Generic, TypeVar
+from reprlib import recursive_repr
+from typing import Any, Generic, SupportsIndex, TypeVar
+
+from ._display import safe_repr_item, safe_str_item
 
 T = TypeVar("T")
 TSkipList = TypeVar("TSkipList", bound="SkipList")
@@ -55,13 +59,17 @@ class SkipList(Generic[T]):
         self,
         iterable: Iterable[Any] | None = None,
         *,
-        max_level: int = 16,
+        max_level: int | SupportsIndex = 16,
         probability: int | float = 0.5,
         seed: int | None = None,
     ) -> None:
         """Initialize an empty skip list and optionally add initial values."""
-        if not isinstance(max_level, int) or isinstance(max_level, bool):
+        if isinstance(max_level, bool):
             raise TypeError("max_level must be an integer")
+        try:
+            max_level = to_index(max_level)
+        except TypeError:
+            raise TypeError("max_level must be an integer") from None
         if max_level < 1:
             raise ValueError("max_level must be at least 1")
         if not isinstance(probability, int | float) or isinstance(
@@ -141,20 +149,25 @@ class SkipList(Generic[T]):
             left == right for left, right in zip(self, other, strict=False)
         )
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a debugging representation."""
-        return f"{self.__class__.__name__}({self.to_list()!r})"
+        values = ", ".join(safe_repr_item(self, value) for value in self)
+        return f"{self.__class__.__name__}([{values}])"
 
+    @recursive_repr()
     def __str__(self) -> str:
         """Return a readable arrow-separated representation."""
-        return " -> ".join(str(value) for value in self)
+        if self._size == 0:
+            return "[]"
+        return " -> ".join(safe_str_item(self, value) for value in self)
 
     @classmethod
     def from_iterable(
         cls: type[TSkipList],
         iterable: Iterable[Any],
         *,
-        max_level: int = 16,
+        max_level: int | SupportsIndex = 16,
         probability: int | float = 0.5,
         seed: int | None = None,
     ) -> TSkipList:

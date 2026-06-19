@@ -76,7 +76,7 @@ class TestSkipList(unittest.TestCase):
 
         self.assertFalse(skip_list)
         self.assertTrue(skip_list.is_empty())
-        self.assertEqual(str(skip_list), "")
+        self.assertEqual(str(skip_list), "[]")
         self.assertEqual(repr(skip_list), "SkipList([])")
         self.assert_skip_list_integrity(skip_list, [])
 

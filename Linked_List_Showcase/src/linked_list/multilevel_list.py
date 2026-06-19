@@ -13,7 +13,11 @@ from collections import deque
 from collections.abc import Callable, Iterable, Iterator
 from copy import deepcopy
 from functools import reduce as functools_reduce
-from typing import Any, Generic, TypeVar
+from operator import index as to_index
+from reprlib import recursive_repr
+from typing import Any, Generic, SupportsIndex, TypeVar
+
+from ._display import safe_repr_item, safe_str_item
 
 T = TypeVar("T")
 TMultilevelLinkedList = TypeVar(
@@ -35,9 +39,10 @@ class _MultilevelNode:
         self.next: _MultilevelNode | None = None
         self.child: _MultilevelNode | None = None
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a compact debugging representation."""
-        return f"_MultilevelNode({self.data!r})"
+        return f"_MultilevelNode({safe_repr_item(self, self.data)})"
 
 
 class MultilevelLinkedList(Generic[T]):
@@ -82,17 +87,17 @@ class MultilevelLinkedList(Generic[T]):
         """Return whether ``value`` appears anywhere in the structure."""
         return any(item == value for item in self)
 
-    def __getitem__(self, index: int | slice) -> Any:
+    def __getitem__(self, index: int | SupportsIndex | slice) -> Any:
         """Return a depth-first value or a flat sliced multilevel list."""
-        if isinstance(index, int):
-            return self._node_at(index).data
-
         if isinstance(index, slice):
             return self.__class__(list(self)[index])
 
-        raise TypeError("Index must be int or slice")
+        try:
+            return self._node_at(index).data
+        except TypeError:
+            raise TypeError("Index must be int or slice") from None
 
-    def __setitem__(self, index: int, value: Any) -> None:
+    def __setitem__(self, index: int | SupportsIndex, value: Any) -> None:
         """Replace one node's value by depth-first index."""
         self._node_at(index).data = value
 
@@ -102,13 +107,19 @@ class MultilevelLinkedList(Generic[T]):
             return False
         return self.to_nested_list() == other.to_nested_list()
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a debugging representation."""
-        return f"{self.__class__.__name__}({self.to_nested_list()!r})"
+        return (
+            f"{self.__class__.__name__}({self._repr_nested_chain(self.head)})"
+        )
 
+    @recursive_repr()
     def __str__(self) -> str:
         """Return a readable depth-first representation."""
-        return " -> ".join(str(value) for value in self)
+        if self._size == 0:
+            return "[]"
+        return " -> ".join(safe_str_item(self, value) for value in self)
 
     @classmethod
     def from_iterable(
@@ -219,8 +230,13 @@ class MultilevelLinkedList(Generic[T]):
         """Append top-level values from another iterable."""
         self.extend(iterable)
 
-    def insert(self, index: int, value: Any) -> _MultilevelNode:
+    def insert(
+        self,
+        index: int | SupportsIndex,
+        value: Any,
+    ) -> _MultilevelNode:
         """Insert ``value`` before a depth-first index as a sibling."""
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index > self._size:
@@ -317,7 +333,7 @@ class MultilevelLinkedList(Generic[T]):
             raise IndexError("Peek from empty multilevel linked list")
         return self._node_at(self._size - 1).data
 
-    def get(self, index: int, default: Any = None) -> Any:
+    def get(self, index: int | SupportsIndex, default: Any = None) -> Any:
         """Return a depth-first value, or ``default`` if out of range."""
         try:
             return self[index]
@@ -357,9 +373,11 @@ class MultilevelLinkedList(Generic[T]):
         self,
         old_value: Any,
         new_value: Any,
-        count: int | None = None,
+        count: int | SupportsIndex | None = None,
     ) -> int:
         """Replace matching values and return how many changed."""
+        if count is not None:
+            count = to_index(count)
         if count is not None and count <= 0:
             return 0
 
@@ -409,7 +427,7 @@ class MultilevelLinkedList(Generic[T]):
 
     def remove_at(
         self,
-        index: int,
+        index: int | SupportsIndex,
         *,
         promote_children: bool = False,
     ) -> Any:
@@ -478,8 +496,9 @@ class MultilevelLinkedList(Generic[T]):
         """Reverse every sibling chain while preserving hierarchy."""
         self.head, self.tail = self._reverse_chain(self.head)
 
-    def rotate(self, steps: int = 1) -> None:
+    def rotate(self, steps: int | SupportsIndex = 1) -> None:
         """Flatten and rotate values right for positive steps."""
+        steps = to_index(steps)
         if self._size <= 1:
             return
         steps %= self._size
@@ -543,20 +562,21 @@ class MultilevelLinkedList(Generic[T]):
             return functools_reduce(func, self)
         return functools_reduce(func, self, initializer)
 
-    def _node_at(self, index: int) -> _MultilevelNode:
+    def _node_at(self, index: int | SupportsIndex) -> _MultilevelNode:
         """Return a node by depth-first index."""
         node, _, _ = self._reference_at(index)
         return node
 
     def _reference_at(
         self,
-        index: int,
+        index: int | SupportsIndex,
     ) -> tuple[
         _MultilevelNode,
         _MultilevelNode | None,
         _MultilevelNode | None,
     ]:
         """Return node, parent, and previous sibling by depth-first index."""
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index >= self._size:
@@ -814,6 +834,20 @@ class MultilevelLinkedList(Generic[T]):
                 )
             current = current.next
         return nested
+
+    def _repr_nested_chain(self, node: _MultilevelNode | None) -> str:
+        """Return a recursion-safe nested-list representation."""
+        parts = []
+        current = node
+        while current is not None:
+            value_repr = safe_repr_item(self, current.data)
+            if current.child is None:
+                parts.append(value_repr)
+            else:
+                children_repr = self._repr_nested_chain(current.child)
+                parts.append(f"({value_repr}, {children_repr})")
+            current = current.next
+        return f"[{', '.join(parts)}]"
 
     def _path_from_chain(
         self,

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/matt-dawidowicz/Data-Science-AI-Portfolio/actions/workflows/ci.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
-[![Coverage 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](Linked_List_Showcase/README.md#testing-strategy)
+[![Coverage 100%](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](Linked_List_Showcase/README.md#testing)
 
 This repository is organized as a portfolio workspace. Each major top-level
 folder is intended to stand on its own as a project with its own README,

@@ -12,7 +12,8 @@ because arbitrary insertion, reversal, or rotation would make the name
 """
 
 from collections.abc import Callable, Iterable
-from typing import Any, Generic, TypeVar
+from operator import index as to_index
+from typing import Any, Generic, SupportsIndex, TypeVar
 
 from .list_functions.linked_list import LinkedList
 from .list_functions.mutation import Mutation
@@ -53,6 +54,8 @@ class SortedLinkedList(LinkedList[T], Generic[T]):
                 raise TypeError(
                     "Pass either an iterable or list_type plus iterable"
                 )
+            if not isinstance(list_type, Iterable):
+                raise TypeError("list_type must be a string or iterable")
             iterable = list_type
             list_type = "singly"
 
@@ -107,7 +110,7 @@ class SortedLinkedList(LinkedList[T], Generic[T]):
             )
         self.add(data)
 
-    def insert(self, index: int, data: Any) -> None:
+    def insert(self, index: int | SupportsIndex, data: Any) -> None:
         """Insert ``data`` at ``index`` only if order stays valid.
 
         This method keeps compatibility with the normal linked-list API while
@@ -115,6 +118,7 @@ class SortedLinkedList(LinkedList[T], Generic[T]):
         the value before a larger previous value or after a smaller next value,
         the method raises ``ValueError`` without changing the list.
         """
+        index = to_index(index)
         if index < 0 or index > self._size:
             raise IndexError("Index out of range")
 
@@ -130,8 +134,9 @@ class SortedLinkedList(LinkedList[T], Generic[T]):
         else:
             Mutation.insert(self, index, data)
 
-    def __setitem__(self, index: int, value: Any) -> None:
+    def __setitem__(self, index: int | SupportsIndex, value: Any) -> None:
         """Replace one value only if the sorted order remains valid."""
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index >= self._size:
@@ -163,7 +168,7 @@ class SortedLinkedList(LinkedList[T], Generic[T]):
         self,
         old_data: Any,
         new_data: Any,
-        count: int | None = None,
+        count: int | SupportsIndex | None = None,
     ) -> int:
         """Replace matching values and re-sort the result.
 
@@ -171,6 +176,8 @@ class SortedLinkedList(LinkedList[T], Generic[T]):
         method therefore computes the full updated sequence first, verifies it
         can be sorted, and only then rebuilds the linked structure.
         """
+        if count is not None:
+            count = to_index(count)
         if count is not None and count <= 0:
             return 0
 
@@ -227,26 +234,27 @@ class SortedLinkedList(LinkedList[T], Generic[T]):
             if "doubly" in self._list_type and self.head:
                 self.head.prev = None
 
-        current = self.head
-        while current is not None and current.next is not None:
-            duplicate = current.next
-            if current.data == duplicate.data:
-                current.next = duplicate.next
-                if "doubly" in self._list_type and duplicate.next:
-                    duplicate.next.prev = current
-                if duplicate is self.tail:
-                    self.tail = current
-                duplicate.next = None
-                if hasattr(duplicate, "prev"):
-                    duplicate.prev = None
-                self._size -= 1
-            else:
-                current = current.next
-
-        if self._is_circular and self.head and self.tail:
-            self.tail.next = self.head
-            if "doubly" in self._list_type:
-                self.head.prev = self.tail
+        try:
+            current = self.head
+            while current is not None and current.next is not None:
+                duplicate = current.next
+                if current.data == duplicate.data:
+                    current.next = duplicate.next
+                    if "doubly" in self._list_type and duplicate.next:
+                        duplicate.next.prev = current
+                    if duplicate is self.tail:
+                        self.tail = current
+                    duplicate.next = None
+                    if hasattr(duplicate, "prev"):
+                        duplicate.prev = None
+                    self._size -= 1
+                else:
+                    current = current.next
+        finally:
+            if self._is_circular and self.head and self.tail:
+                self.tail.next = self.head
+                if "doubly" in self._list_type:
+                    self.head.prev = self.tail
 
     def sort(
         self,
@@ -265,8 +273,9 @@ class SortedLinkedList(LinkedList[T], Generic[T]):
             return
         raise ValueError("Reverse would break sorted order")
 
-    def rotate(self, k: int) -> None:
+    def rotate(self, k: int | SupportsIndex) -> None:
         """Reject non-trivial rotation because it would break sorted order."""
+        k = to_index(k)
         if self._size <= 1 or k % self._size == 0:
             return
         raise ValueError("Rotate would break sorted order")

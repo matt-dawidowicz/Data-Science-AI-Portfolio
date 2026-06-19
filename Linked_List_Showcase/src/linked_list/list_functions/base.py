@@ -34,8 +34,11 @@ class BaseLinkedList:
     the other mixins a consistent foundation to read from and write to.
     """
 
-    def __init__(self, list_type: str = "singly") -> None:
-        """Initialize an empty linked list of the requested type.
+    def __init__(
+        self,
+        list_type: str = "singly",
+    ) -> None:
+        """Initialize linked-list metadata for the requested type.
 
         ``list_type`` is normalized once here so later methods can compare a
         predictable internal value. Invalid names fail before any node state is
@@ -47,6 +50,9 @@ class BaseLinkedList:
             "singly_circular",
             "doubly_circular",
         )
+        if not isinstance(list_type, str):
+            raise TypeError("list_type must be a string")
+
         normalized_type = list_type.strip().lower()
         if normalized_type not in valid_types:
             raise ValueError(f"Invalid list_type: {list_type}")

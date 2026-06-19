@@ -16,8 +16,9 @@ When reading this file, keep three invariants in mind:
 """
 
 from collections.abc import Callable, Iterable
+from operator import index as to_index
 from operator import lt
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, SupportsIndex
 
 if TYPE_CHECKING:
     from .linked_list import LinkedList
@@ -90,7 +91,7 @@ class Mutation:
                     self.head.prev = self.tail  # type: ignore
         self._size += 1
 
-    def insert(self, index: int, data: Any) -> None:
+    def insert(self, index: int | SupportsIndex, data: Any) -> None:
         """Insert ``data`` at ``index``.
 
         Boundary inserts delegate to ``prepend`` and ``append`` because those
@@ -98,6 +99,7 @@ class Mutation:
         inserts locate the node before the target position and splice the new
         node between two existing nodes.
         """
+        index = to_index(index)
         if index < 0 or index > self._size:
             raise IndexError("Index out of range")
         if index == 0:
@@ -173,15 +175,59 @@ class Mutation:
     def remove_all(self, data: Any) -> int:
         """Remove every matching value and return the removal count.
 
-        This builds on ``remove`` so each individual deletion goes through the
-        same link-repair path as normal single-value removal.
+        The traversal is single-pass. It temporarily opens circular lists so
+        all variants can use the same linear link-repair logic, then restores
+        circular end links before returning.
         """
         removed = 0
-        while self.remove(data):
-            removed += 1
+
+        if (
+            self._is_circular
+            and self.head is not None
+            and self.tail is not None
+        ):
+            self.tail.next = None
+            if "doubly" in self._list_type:
+                self.head.prev = None  # type: ignore
+
+        try:
+            current = self.head
+            previous = None
+            while current is not None:
+                next_node = current.next
+                if current.data == data:
+                    if previous is None:
+                        self.head = next_node
+                    else:
+                        previous.next = next_node
+
+                    if current == self.tail:
+                        self.tail = previous
+
+                    if "doubly" in self._list_type and next_node:
+                        next_node.prev = previous  # type: ignore
+
+                    current.next = None
+                    if hasattr(current, "prev"):
+                        current.prev = None
+                    self._size -= 1
+                    removed += 1
+                else:
+                    previous = current
+                current = next_node
+        finally:
+            if self.head is None:
+                self.tail = None
+            elif self._is_circular and self.tail is not None:
+                self.tail.next = self.head
+                if "doubly" in self._list_type:
+                    self.head.prev = self.tail  # type: ignore
+            elif "doubly" in self._list_type:
+                self.head.prev = None  # type: ignore
+
         return removed
 
-    def remove_at(self, index: int) -> Any:
+    def remove_at(self, index: int | SupportsIndex) -> Any:
         """Remove and return the value at ``index``.
 
         Positive and negative indexes follow the same rules as ``__getitem__``.
@@ -189,6 +235,7 @@ class Mutation:
         updates stay centralized. Middle removals splice one node out and then
         repair circular and doubly linked invariants.
         """
+        index = to_index(index)
         if index < 0:
             index += self._size
         if index < 0 or index >= self._size:
@@ -225,7 +272,7 @@ class Mutation:
         self,
         old_data: Any,
         new_data: Any,
-        count: int | None = None,
+        count: int | SupportsIndex | None = None,
     ) -> int:
         """Replace matching values and return how many changed.
 
@@ -233,6 +280,8 @@ class Mutation:
         ``count`` limits the number of replacements from left to right. A
         non-positive count performs no replacements.
         """
+        if count is not None:
+            count = to_index(count)
         if count is not None and count <= 0:
             return 0
 
@@ -402,13 +451,14 @@ class Mutation:
 
         self._size += 1
 
-    def rotate(self, k: int) -> None:
+    def rotate(self, k: int | SupportsIndex) -> None:
         """Rotate the linked list by k positions.
 
         A positive ``k`` rotates the list to the right, while a negative
         ``k`` rotates to the left. Circular lists only adjust head and tail
         pointers; linear lists rearrange links.
         """
+        k = to_index(k)
         if self._size == 0 or k % self._size == 0:
             return
 
@@ -495,6 +545,10 @@ class Mutation:
         cannot accidentally chase circular links forever or relink nodes from
         ``other`` into this list.
         """
+        from .linked_list import LinkedList
+
+        if not isinstance(other, LinkedList):
+            raise TypeError("Can only merge another LinkedList")
         if self._list_type != other._list_type:
             raise TypeError("Cannot merge lists of different types")
 

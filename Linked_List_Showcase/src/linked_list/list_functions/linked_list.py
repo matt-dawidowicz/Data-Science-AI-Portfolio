@@ -8,7 +8,8 @@ For someone reading the code for the first time, this file is the table of
 contents. The real behavior lives in the inherited mixins listed below.
 """
 
-from typing import Generic, TypeVar
+from collections.abc import Iterable
+from typing import Any, Generic, TypeVar
 
 from .access import Access
 from .base import BaseLinkedList
@@ -44,4 +45,28 @@ class LinkedList(
     - ``"doubly_circular"``: both end links wrap around.
     """
 
-    pass
+    def __init__(
+        self,
+        list_type: str | Iterable[Any] = "singly",
+        iterable: Iterable[Any] | None = None,
+    ) -> None:
+        """Initialize a linked list and optionally populate initial values.
+
+        Passing an iterable as the first argument builds a normal singly
+        linked list from those values. Passing a string first selects a
+        specific node shape and can be paired with an iterable of initial
+        values.
+        """
+        if not isinstance(list_type, str):
+            if iterable is not None:
+                raise TypeError(
+                    "Pass either an iterable or list_type plus iterable"
+                )
+            if not isinstance(list_type, Iterable):
+                raise TypeError("list_type must be a string or iterable")
+            iterable = list_type
+            list_type = "singly"
+
+        super().__init__(list_type)
+        if iterable is not None:
+            self.extend(iterable)

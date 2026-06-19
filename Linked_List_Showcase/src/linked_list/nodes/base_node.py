@@ -10,7 +10,10 @@ first understand ``BaseNode.data``, then layer on forward links, backward
 links, and circular self-links one idea at a time.
 """
 
+from reprlib import recursive_repr
 from typing import Any
+
+from .._display import safe_repr_item
 
 
 class BaseNode:
@@ -25,6 +28,7 @@ class BaseNode:
         """Initialize the node with its payload."""
         self.data: Any = data
 
+    @recursive_repr()
     def __repr__(self) -> str:
         """Return a debugging representation for the node."""
-        return f"{self.__class__.__name__}({self.data!r})"
+        return f"{self.__class__.__name__}({safe_repr_item(self, self.data)})"

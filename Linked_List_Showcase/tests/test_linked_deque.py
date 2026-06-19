@@ -76,7 +76,7 @@ class TestLinkedDeque(unittest.TestCase):
         self.assertTrue(linked_deque.is_empty())
         self.assertEqual(len(linked_deque), 0)
         self.assertEqual(linked_deque.to_list(), [])
-        self.assertEqual(str(linked_deque), "")
+        self.assertEqual(str(linked_deque), "[]")
         self.assertEqual(repr(linked_deque), "LinkedDeque([])")
         self.assert_deque_integrity(linked_deque, [])
 

@@ -217,6 +217,52 @@ class TestSparseMatrixLinkedList(unittest.TestCase):
         self.assertNotIn([0, 1], matrix)
         self.assertNotIn((True, 1), matrix)
 
+    def test_arithmetic_requires_numeric_zero_sentinel(self) -> None:
+        default_zero = SparseMatrixLinkedList.from_dense([[0, 1]])
+        custom_zero = SparseMatrixLinkedList.from_dense([[-1, 2]], zero=-1)
+        custom_left = SparseMatrixLinkedList.from_dense([[-1, 3]], zero=-1)
+        custom_right = SparseMatrixLinkedList.from_dense([[-1, 4]], zero=-1)
+        custom_square = SparseMatrixLinkedList.from_dense(
+            [
+                [-1, 2],
+                [3, -1],
+            ],
+            zero=-1,
+        )
+        custom_multiplier = SparseMatrixLinkedList.from_dense(
+            [[-1], [5]],
+            zero=-1,
+        )
+
+        with self.assertRaises(ValueError):
+            _ = default_zero + custom_zero
+        with self.assertRaises(ValueError):
+            _ = default_zero - custom_zero
+        with self.assertRaises(ValueError):
+            _ = custom_left + custom_right
+        with self.assertRaises(ValueError):
+            custom_left.scalar_multiply(2)
+        with self.assertRaises(ValueError):
+            custom_square.row_sum(0)
+        with self.assertRaises(ValueError):
+            custom_square.column_sum(0)
+        with self.assertRaises(ValueError):
+            custom_square.trace()
+        with self.assertRaises(ValueError):
+            custom_left.multiply_vector([3])
+        with self.assertRaises(ValueError):
+            _ = default_zero @ custom_multiplier
+        with self.assertRaises(ValueError):
+            _ = custom_left @ custom_multiplier
+
+        with self.assertRaisesRegex(IndexError, "row index out of range"):
+            custom_square.row_sum(2)
+        with self.assertRaisesRegex(IndexError, "col index out of range"):
+            custom_square.column_sum(2)
+        nonsquare_custom = SparseMatrixLinkedList(1, 2, zero=-1)
+        with self.assertRaisesRegex(ValueError, "trace requires a square"):
+            nonsquare_custom.trace()
+
     def test_copy_deep_copy_equality_and_transpose(self) -> None:
         matrix = SparseMatrixLinkedList(2, 3)
         matrix.set(0, 1, [1])

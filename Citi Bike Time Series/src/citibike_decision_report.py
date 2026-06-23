@@ -1,0 +1,381 @@
+from __future__ import annotations
+
+import html
+import json
+from pathlib import Path
+
+import pandas as pd
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PROFILE_DIR = ROOT / "outputs"
+CHART_DIR = PROFILE_DIR / "charts"
+REPORT_PATH = PROFILE_DIR / "decision_report.html"
+SOURCE_NOTES_PATH = PROFILE_DIR / "decision_report_source_notes.md"
+
+
+def fmt_int(value: float | int) -> str:
+    return f"{int(round(float(value))):,}"
+
+
+def fmt_k(value: float | int) -> str:
+    value = float(value)
+    if abs(value) >= 1_000_000:
+        return f"{value / 1_000_000:.2f}M"
+    if abs(value) >= 1_000:
+        return f"{value / 1_000:.1f}k"
+    return fmt_int(value)
+
+
+def fmt_pct(value: float, digits: int = 1) -> str:
+    return f"{value * 100:.{digits}f}%"
+
+
+def fmt_num(value: float, digits: int = 1) -> str:
+    return f"{value:,.{digits}f}"
+
+
+def load_inputs() -> dict:
+    with (PROFILE_DIR / "profile_summary.json").open("r", encoding="utf-8") as handle:
+        profile = json.load(handle)
+    return {
+        "profile": profile,
+        "summary": profile["summary"],
+        "forecast": pd.read_csv(PROFILE_DIR / "forecast_backtest_metrics.csv"),
+        "top_stations": pd.read_csv(PROFILE_DIR / "top_stations.csv"),
+        "anomalies": pd.read_csv(PROFILE_DIR / "anomaly_hours.csv"),
+        "member_mix": pd.read_csv(PROFILE_DIR / "member_mix.csv"),
+        "bike_mix": pd.read_csv(PROFILE_DIR / "bike_mix.csv"),
+    }
+
+
+def table_html(frame: pd.DataFrame, columns: list[str], headers: list[str]) -> str:
+    rows = []
+    for _, row in frame.iterrows():
+        cells = "".join(f"<td>{html.escape(str(row[column]))}</td>" for column in columns)
+        rows.append(f"<tr>{cells}</tr>")
+    header_html = "".join(f"<th>{html.escape(header)}</th>" for header in headers)
+    return f"<table><thead><tr>{header_html}</tr></thead><tbody>{''.join(rows)}</tbody></table>"
+
+
+def build_report() -> None:
+    inputs = load_inputs()
+    profile = inputs["profile"]
+    summary = inputs["summary"]
+    forecast = inputs["forecast"].copy()
+    top_stations = inputs["top_stations"].copy()
+    anomalies = inputs["anomalies"].copy()
+
+    best = forecast.sort_values("mae").iloc[0]
+    prev_day = forecast.loc[forecast["model"] == "previous_day"].iloc[0]
+    prev_week = forecast.loc[forecast["model"] == "previous_week"].iloc[0]
+    mae_improvement_day = (prev_day["mae"] - best["mae"]) / prev_day["mae"]
+    mae_improvement_week = (prev_week["mae"] - best["mae"]) / prev_week["mae"]
+    top10_share = float(top_stations.head(10)["share_of_valid_trips"].sum())
+    top_station = top_stations.iloc[0]
+    top_anomaly = anomalies.iloc[0]
+
+    forecast_table = forecast.assign(
+        mae=lambda frame: frame["mae"].map(lambda value: fmt_int(value)),
+        rmse=lambda frame: frame["rmse"].map(lambda value: fmt_int(value)),
+        mape=lambda frame: frame["mape"].map(lambda value: fmt_pct(value, 1)),
+        mean_actual=lambda frame: frame["mean_actual"].map(lambda value: fmt_int(value)),
+    )[["model", "mae", "rmse", "mape", "mean_actual"]]
+
+    source_stamp = "Generated from Citi Bike January 2024 public trip history and Open-Meteo weather context."
+    title = "Citi Bike Forecast Showcase: Build Around Commuter Seasonality"
+
+    css = """
+    :root {
+      --surface: #fcfcfd;
+      --panel: #ffffff;
+      --ink: #1f2430;
+      --muted: #626a7c;
+      --line: #dfe3ee;
+      --soft: #eef4ff;
+      --blue: #5477c4;
+      --gold: #b8a037;
+      --orange: #cc6f47;
+      --olive: #71b436;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: Aptos, Inter, "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 44px 22px 72px;
+    }
+    header, section { margin-bottom: 34px; }
+    h1 {
+      margin: 0;
+      max-width: 820px;
+      font-size: 34px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 21px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+    p, li {
+      font-size: 15px;
+      line-height: 1.58;
+    }
+    p { margin: 0 0 14px; }
+    ul, ol { margin: 0; padding-left: 22px; }
+    li + li { margin-top: 8px; }
+    strong { font-weight: 700; }
+    .scope {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 740px;
+    }
+    .executive-summary-box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px 22px;
+      box-shadow: 0 12px 28px rgba(31, 36, 48, 0.06);
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .kpi strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .kpi span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    figure {
+      margin: 20px 0 6px;
+      padding: 0;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    figcaption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .two-up {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .callout {
+      border-left: 4px solid var(--orange);
+      background: #fff8f3;
+      padding: 14px 16px;
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 18px;
+      font-size: 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      background: var(--soft);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    tr:last-child td { border-bottom: 0; }
+    .source-note {
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+    @media (max-width: 760px) {
+      main { padding: 32px 16px 56px; }
+      h1 { font-size: 29px; }
+      .kpis, .two-up { grid-template-columns: 1fr; }
+    }
+    """
+
+    html_text = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{html.escape(title)}</title>
+  <style>{css}</style>
+</head>
+<body>
+  <main data-report-audience="product stakeholders">
+    <header data-contract-section="title">
+      <h1>{html.escape(title)}</h1>
+      <p class="scope">{html.escape(source_stamp)} The report is decision-ready for the portfolio roadmap, not a production operating forecast.</p>
+    </header>
+
+    <section class="executive-summary-box" data-contract-section="executive-summary">
+      <h2>Executive Summary</h2>
+      <ul>
+        <li><strong>Make the next iteration a multi-month, station-aware forecasting story.</strong> The current profile already proves a strong hourly demand rhythm: {fmt_k(summary["total_rides"])} January starts across {fmt_int(summary["hourly_points"])} hours, with rush-hour volume {fmt_num(profile["rush_vs_off_hour_ratio"], 2)}x off-hour volume and weekend hourly demand at {fmt_num(profile["weekend_vs_weekday_ratio"], 2)}x weekdays.</li>
+        <li><strong>Use the calendar profile as the benchmark, not the finish line.</strong> The simple weekday/hour baseline beat the previous-day baseline by {fmt_pct(mae_improvement_day, 1)} on MAE and the previous-week baseline by {fmt_pct(mae_improvement_week, 1)} on MAE over the Jan. 25-31 holdout, but one winter month is too narrow for a production claim.</li>
+        <li><strong>Turn the portfolio hook from aggregate demand into an operations question.</strong> The top station, {html.escape(str(top_station["station"]))}, had {fmt_int(top_station["rides"])} starts, and the top 10 stations represented {fmt_pct(top10_share, 1)} of valid trips. That is enough texture to motivate station clusters, rebalancing, and anomaly alerting as the next showcase layer.</li>
+      </ul>
+    </section>
+
+    <section data-contract-section="key-findings">
+      <h2>The demand pattern is strong enough to justify forecasting</h2>
+      <p><strong>The core signal is calendar structure.</strong> January 2024 demand averaged {fmt_int(summary["average_daily_rides"])} starts per day and {fmt_int(summary["average_hourly_rides"])} starts per hour, with the peak hour reaching {fmt_int(summary["peak_hour_rides"])} starts on {html.escape(str(summary["peak_hour"]))}. The weekday/hour profile gives the project a clean analytical spine: it explains why a naive average is not enough, while keeping the first model interpretable.</p>
+      <figure>
+        <img src="charts/daily_demand.png" alt="Daily Citi Bike trip starts in January 2024">
+        <figcaption>Daily starts show the month has enough movement for trend context, while the fixed 744-hour panel preserves the grain needed for forecasting.</figcaption>
+      </figure>
+      <figure>
+        <img src="charts/seasonality_heatmap.png" alt="Average hourly starts by weekday and hour">
+        <figcaption>The weekday/hour heatmap is the most important feature view: it separates commute structure from overnight and weekend behavior.</figcaption>
+      </figure>
+    </section>
+
+    <section data-contract-section="key-findings">
+      <h2>The baseline gives the next model a useful target</h2>
+      <p><strong>The best first benchmark is the calendar profile.</strong> It forecasts each holdout hour from the training-period average for the same weekday and hour. That is simple enough to explain in a portfolio review, and it gives richer models a clear bar to beat before adding weather, holidays, lag features, station clusters, or gradient boosting.</p>
+      {table_html(forecast_table, ["model", "mae", "rmse", "mape", "mean_actual"], ["Model", "MAE", "RMSE", "MAPE", "Mean actual"])}
+      <figure>
+        <img src="charts/forecast_backtest.png" alt="Actual hourly starts versus the best baseline forecast on the holdout period">
+        <figcaption>Holdout period: Jan. 25-31, 2024. The residual band is a reference band from previous-week residuals, not calibrated production uncertainty.</figcaption>
+      </figure>
+      <p><strong>So what:</strong> the project should add one stronger model only after expanding the history. A SARIMAX or gradient-boosted lag-feature model is a good next step, but the story will be more credible after 12-24 months and rolling holdouts.</p>
+    </section>
+
+    <section data-contract-section="key-findings">
+      <h2>Operational texture is the strongest extension path</h2>
+      <p><strong>Station and anomaly views turn this from a generic forecast into an applied decision story.</strong> The current output already identifies top start stations and abnormal hours. The largest flagged gap was {fmt_int(top_anomaly["absolute_gap"])} rides at {html.escape(str(top_anomaly["hour"]))}, but it should be treated as a descriptive anomaly until weather, event, station-status, or operations context is checked.</p>
+      <figure>
+        <img src="charts/top_stations.png" alt="Top Citi Bike start stations by January 2024 starts">
+        <figcaption>Station starts are currently keyed by station name, which is good for a first showcase but should be replaced or supplemented with stable station IDs before longitudinal station modeling.</figcaption>
+      </figure>
+      <div class="callout">
+        <p><strong>Recommendation:</strong> frame the next project decision around rebalancing or anomaly alerting. Those decisions naturally use the evidence already present: hour-level demand, commute peaks, station-level starts, simple forecasts, and explicit anomaly rows.</p>
+      </div>
+    </section>
+
+    <section data-contract-section="recommended-next-steps">
+      <h2>Recommended Next Steps</h2>
+      <ol>
+        <li><strong>Extend the dataset to 12-24 months.</strong> This is the highest-confidence next move because it unlocks yearly seasonality, weather sensitivity, event effects, and rolling validation.</li>
+        <li><strong>Add station IDs and station metadata before station-level forecasts.</strong> Station names are not stable enough for longitudinal modeling by themselves.</li>
+        <li><strong>Build a station-cluster or neighborhood forecast after the aggregate benchmark.</strong> Keep the calendar profile as the benchmark and compare one stronger model against it across rolling holdouts.</li>
+        <li><strong>Make anomalies explainable, not just detectable.</strong> Join severe weather, holidays, service status, and local event context before describing anomalies as operational causes.</li>
+      </ol>
+    </section>
+
+    <section data-contract-section="further-questions">
+      <h2>Further Questions</h2>
+      <ul>
+        <li>Which business decision should the forecast serve: staffing, rebalancing, rider communications, station planning, or anomaly alerting?</li>
+        <li>What time convention should be treated as canonical for Citi Bike timestamps when joining weather and events?</li>
+        <li>Which station metadata source should supply stable station identifiers and active-station periods?</li>
+      </ul>
+    </section>
+
+    <section data-contract-section="caveats-and-assumptions">
+      <h2>Caveats and Assumptions</h2>
+      <div class="callout">
+        <p>This report uses the local January 2024 Citi Bike profile artifacts as the authoritative computation source. It is source-backed for the portfolio showcase and directional for modeling strategy, but it should not be used as a production forecast without more months, rolling backtests, stable station IDs, and event or operations context.</p>
+      </div>
+      <p class="source-note">Primary sources: Citi Bike public trip-history archive, Open-Meteo historical weather, the local analysis script, generated CSV outputs, generated chart PNGs, and the Citi Bike time-series semantic layer.</p>
+    </section>
+  </main>
+</body>
+</html>
+"""
+
+    REPORT_PATH.write_text(html_text, encoding="utf-8")
+    SOURCE_NOTES_PATH.write_text(build_source_notes(best, prev_day, prev_week, top10_share), encoding="utf-8")
+
+
+def build_source_notes(best: pd.Series, prev_day: pd.Series, prev_week: pd.Series, top10_share: float) -> str:
+    return f"""# Citi Bike Decision Report Source Notes
+
+## Report Contract
+
+- Audience: product stakeholders.
+- Delivery mode: portable static HTML.
+- Required structure mapping:
+  - Title: `decision_report.html` header.
+  - Executive summary: visible `Executive Summary` section.
+  - Key findings with visual evidence: demand pattern, baseline, and operational texture sections.
+  - Recommended next steps: visible ordered list.
+  - Further questions: visible questions section.
+  - Caveats and assumptions: visible caveat callout.
+
+## Context Note
+
+The decision is how to evolve the Citi Bike time-series showcase. The best-supported recommendation is to extend the project into a multi-month, station-aware forecasting and anomaly workflow. The current evidence is strong for a portfolio profile because it has public raw data, reproducible transformation code, hourly outputs, forecast backtest outputs, and chart assets. It is limited for live operational decisions because it covers one winter month and lacks official station metadata, internal operations context, and rolling validation.
+
+## Chart Map
+
+| Report Segment | Visual | Chart Family | Supports | Source |
+| --- | --- | --- | --- | --- |
+| Demand pattern | `charts/daily_demand.png` | Trend | January demand has enough temporal movement for time-series profiling | `hourly_profile.csv` |
+| Demand pattern | `charts/seasonality_heatmap.png` | Heatmap | Weekday/hour structure is the core modeling signal | `seasonality_profile.csv` |
+| Baseline | `charts/forecast_backtest.png` | Trend with benchmark | Calendar profile creates the first forecast benchmark | `forecast_backtest_scored.csv` |
+| Operational texture | `charts/top_stations.png` | Ranked horizontal bars | Station starts create a practical extension path | `top_stations.csv` |
+
+## Key Validation Checks
+
+- Valid-trip filter came from `citibike_time_series_profile.py`: parseable start/end timestamps and duration from 1 to 240 minutes.
+- Best baseline by MAE: `{best["model"]}` with MAE {best["mae"]:.1f}.
+- Previous-day MAE: {prev_day["mae"]:.1f}; previous-week MAE: {prev_week["mae"]:.1f}.
+- Top 10 station share of valid trips: {top10_share:.4f}.
+- Weather correlations were treated as descriptive only.
+
+## Omitted Or Deferred Evidence
+
+- No live warehouse, dashboard, or team-communication source was used because the current project is based on public data and local artifacts.
+- No new model was fit in this report; the recommendation is to extend the evidence base before adding a stronger model.
+- No station-level longitudinal conclusion is made because current station outputs use names rather than stable station IDs.
+"""
+
+
+if __name__ == "__main__":
+    build_report()

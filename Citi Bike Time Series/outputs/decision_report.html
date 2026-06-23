@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Citi Bike Forecast Showcase: Build Around Commuter Seasonality</title>
+  <style>
+    :root {
+      --surface: #fcfcfd;
+      --panel: #ffffff;
+      --ink: #1f2430;
+      --muted: #626a7c;
+      --line: #dfe3ee;
+      --soft: #eef4ff;
+      --blue: #5477c4;
+      --gold: #b8a037;
+      --orange: #cc6f47;
+      --olive: #71b436;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: Aptos, Inter, "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 44px 22px 72px;
+    }
+    header, section { margin-bottom: 34px; }
+    h1 {
+      margin: 0;
+      max-width: 820px;
+      font-size: 34px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 21px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+    p, li {
+      font-size: 15px;
+      line-height: 1.58;
+    }
+    p { margin: 0 0 14px; }
+    ul, ol { margin: 0; padding-left: 22px; }
+    li + li { margin-top: 8px; }
+    strong { font-weight: 700; }
+    .scope {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 740px;
+    }
+    .executive-summary-box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px 22px;
+      box-shadow: 0 12px 28px rgba(31, 36, 48, 0.06);
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .kpi strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .kpi span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    figure {
+      margin: 20px 0 6px;
+      padding: 0;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    figcaption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .two-up {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .callout {
+      border-left: 4px solid var(--orange);
+      background: #fff8f3;
+      padding: 14px 16px;
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 18px;
+      font-size: 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      background: var(--soft);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    tr:last-child td { border-bottom: 0; }
+    .source-note {
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+    @media (max-width: 760px) {
+      main { padding: 32px 16px 56px; }
+      h1 { font-size: 29px; }
+      .kpis, .two-up { grid-template-columns: 1fr; }
+    }
+    </style>
+</head>
+<body>
+  <main data-report-audience="product stakeholders">
+    <header data-contract-section="title">
+      <h1>Citi Bike Forecast Showcase: Build Around Commuter Seasonality</h1>
+      <p class="scope">Generated from Citi Bike January 2024 public trip history and Open-Meteo weather context. The report is decision-ready for the portfolio roadmap, not a production operating forecast.</p>
+    </header>
+
+    <section class="executive-summary-box" data-contract-section="executive-summary">
+      <h2>Executive Summary</h2>
+      <ul>
+        <li><strong>Make the next iteration a multi-month, station-aware forecasting story.</strong> The current profile already proves a strong hourly demand rhythm: 1.89M January starts across 744 hours, with rush-hour volume 2.23x off-hour volume and weekend hourly demand at 0.71x weekdays.</li>
+        <li><strong>Use the calendar profile as the benchmark, not the finish line.</strong> The simple weekday/hour baseline beat the previous-day baseline by 20.5% on MAE and the previous-week baseline by 8.7% on MAE over the Jan. 25-31 holdout, but one winter month is too narrow for a production claim.</li>
+        <li><strong>Turn the portfolio hook from aggregate demand into an operations question.</strong> The top station, W 21 St &amp; 6 Ave, had 8,325 starts, and the top 10 stations represented 3.3% of valid trips. That is enough texture to motivate station clusters, rebalancing, and anomaly alerting as the next showcase layer.</li>
+      </ul>
+    </section>
+
+    <section data-contract-section="key-findings">
+      <h2>The demand pattern is strong enough to justify forecasting</h2>
+      <p><strong>The core signal is calendar structure.</strong> January 2024 demand averaged 60,831 starts per day and 2,535 starts per hour, with the peak hour reaching 8,635 starts on 2024-01-11 17:00:00. The weekday/hour profile gives the project a clean analytical spine: it explains why a naive average is not enough, while keeping the first model interpretable.</p>
+      <figure>
+        <img src="charts/daily_demand.png" alt="Daily Citi Bike trip starts in January 2024">
+        <figcaption>Daily starts show the month has enough movement for trend context, while the fixed 744-hour panel preserves the grain needed for forecasting.</figcaption>
+      </figure>
+      <figure>
+        <img src="charts/seasonality_heatmap.png" alt="Average hourly starts by weekday and hour">
+        <figcaption>The weekday/hour heatmap is the most important feature view: it separates commute structure from overnight and weekend behavior.</figcaption>
+      </figure>
+    </section>
+
+    <section data-contract-section="key-findings">
+      <h2>The baseline gives the next model a useful target</h2>
+      <p><strong>The best first benchmark is the calendar profile.</strong> It forecasts each holdout hour from the training-period average for the same weekday and hour. That is simple enough to explain in a portfolio review, and it gives richer models a clear bar to beat before adding weather, holidays, lag features, station clusters, or gradient boosting.</p>
+      <table><thead><tr><th>Model</th><th>MAE</th><th>RMSE</th><th>MAPE</th><th>Mean actual</th></tr></thead><tbody><tr><td>calendar_profile</td><td>796</td><td>1,075</td><td>36.2%</td><td>2,908</td></tr><tr><td>previous_week</td><td>872</td><td>1,277</td><td>29.7%</td><td>2,908</td></tr><tr><td>previous_day</td><td>1,001</td><td>1,581</td><td>56.3%</td><td>2,908</td></tr></tbody></table>
+      <figure>
+        <img src="charts/forecast_backtest.png" alt="Actual hourly starts versus the best baseline forecast on the holdout period">
+        <figcaption>Holdout period: Jan. 25-31, 2024. The residual band is a reference band from previous-week residuals, not calibrated production uncertainty.</figcaption>
+      </figure>
+      <p><strong>So what:</strong> the project should add one stronger model only after expanding the history. A SARIMAX or gradient-boosted lag-feature model is a good next step, but the story will be more credible after 12-24 months and rolling holdouts.</p>
+    </section>
+
+    <section data-contract-section="key-findings">
+      <h2>Operational texture is the strongest extension path</h2>
+      <p><strong>Station and anomaly views turn this from a generic forecast into an applied decision story.</strong> The current output already identifies top start stations and abnormal hours. The largest flagged gap was -1,430 rides at 2024-01-18 12:00:00, but it should be treated as a descriptive anomaly until weather, event, station-status, or operations context is checked.</p>
+      <figure>
+        <img src="charts/top_stations.png" alt="Top Citi Bike start stations by January 2024 starts">
+        <figcaption>Station starts are currently keyed by station name, which is good for a first showcase but should be replaced or supplemented with stable station IDs before longitudinal station modeling.</figcaption>
+      </figure>
+      <div class="callout">
+        <p><strong>Recommendation:</strong> frame the next project decision around rebalancing or anomaly alerting. Those decisions naturally use the evidence already present: hour-level demand, commute peaks, station-level starts, simple forecasts, and explicit anomaly rows.</p>
+      </div>
+    </section>
+
+    <section data-contract-section="recommended-next-steps">
+      <h2>Recommended Next Steps</h2>
+      <ol>
+        <li><strong>Extend the dataset to 12-24 months.</strong> This is the highest-confidence next move because it unlocks yearly seasonality, weather sensitivity, event effects, and rolling validation.</li>
+        <li><strong>Add station IDs and station metadata before station-level forecasts.</strong> Station names are not stable enough for longitudinal modeling by themselves.</li>
+        <li><strong>Build a station-cluster or neighborhood forecast after the aggregate benchmark.</strong> Keep the calendar profile as the benchmark and compare one stronger model against it across rolling holdouts.</li>
+        <li><strong>Make anomalies explainable, not just detectable.</strong> Join severe weather, holidays, service status, and local event context before describing anomalies as operational causes.</li>
+      </ol>
+    </section>
+
+    <section data-contract-section="further-questions">
+      <h2>Further Questions</h2>
+      <ul>
+        <li>Which business decision should the forecast serve: staffing, rebalancing, rider communications, station planning, or anomaly alerting?</li>
+        <li>What time convention should be treated as canonical for Citi Bike timestamps when joining weather and events?</li>
+        <li>Which station metadata source should supply stable station identifiers and active-station periods?</li>
+      </ul>
+    </section>
+
+    <section data-contract-section="caveats-and-assumptions">
+      <h2>Caveats and Assumptions</h2>
+      <div class="callout">
+        <p>This report uses the local January 2024 Citi Bike profile artifacts as the authoritative computation source. It is source-backed for the portfolio showcase and directional for modeling strategy, but it should not be used as a production forecast without more months, rolling backtests, stable station IDs, and event or operations context.</p>
+      </div>
+      <p class="source-note">Primary sources: Citi Bike public trip-history archive, Open-Meteo historical weather, the local analysis script, generated CSV outputs, generated chart PNGs, and the Citi Bike time-series semantic layer.</p>
+    </section>
+  </main>
+</body>
+</html>

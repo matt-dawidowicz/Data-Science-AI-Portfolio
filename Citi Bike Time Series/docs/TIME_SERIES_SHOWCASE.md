@@ -17,6 +17,18 @@ The strongest message is not that a complex model was forced onto one month of
 data. The stronger message is that the project builds the full analytical
 foundation a responsible forecast needs before model complexity.
 
+## Reviewer Promise
+
+This project should be judged on analytical discipline:
+
+- the target is defined before modeling
+- the time index is checked before lag features are used
+- simple baselines are established before stronger models are recommended
+- rolling validation is separated from a single holdout
+- limitations are visible instead of hidden
+
+That is the proof this version is meant to provide.
+
 ## What The Project Demonstrates
 
 | Area | Current Artifact | Status | What It Shows |
@@ -117,6 +129,13 @@ train on history before each origin -> forecast next 24 hours -> score errors
 The current project still has only one winter month, but rolling origins make
 the evaluation logic more portfolio-worthy.
 
+Why the rolling result can differ from the Jan. 25-31 holdout:
+
+- the rolling test uses multiple 24-hour windows
+- the original holdout uses one 168-hour block
+- each split contains a different mix of weekdays, weather, and demand levels
+- the right interpretation is benchmark sensitivity, not model contradiction
+
 ### 5. Decomposition And Residual Thinking
 
 The decomposition output is intentionally labeled as a proxy. It separates:
@@ -142,6 +161,28 @@ of method and judgment. Important limits:
 - anomaly candidates lack event, outage, and operations context
 - residual bands are not calibrated prediction intervals
 
+## Short Interview Defense
+
+If asked why this project is useful before adding a machine-learning model:
+
+```text
+I wanted to show the forecast foundation first. The project proves the hourly
+target is well defined, the panel is regular, the series has daily and weekly
+structure, and transparent baselines can be evaluated without leakage. A
+stronger model is only meaningful after it beats those baselines across more
+history.
+```
+
+If asked what you would do next:
+
+```text
+I would extend the archive pull to 12-24 months, add station IDs, run monthly
+rolling-origin validation, and compare a lag-feature model against the current
+baselines. I would judge the model by error stability across seasons and by
+whether it improves a concrete decision such as rebalancing or peak-hour
+planning.
+```
+
 ## Best Next Portfolio Upgrade
 
 The next major version should extend the public archive pull to 12-24 months,
@@ -152,4 +193,3 @@ then rerun the same showcase pattern at a larger scale:
 3. Station IDs and station metadata
 4. Station-cluster panel forecasts
 5. One stronger model compared against the transparent baselines
-

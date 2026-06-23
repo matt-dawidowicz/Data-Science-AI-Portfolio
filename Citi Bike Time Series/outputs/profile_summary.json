@@ -1,0 +1,244 @@
+{
+  "title": "Citi Bike Time Series Profile",
+  "summary": {
+    "dataset_month": "2024-01",
+    "source_url": "https://s3.amazonaws.com/tripdata/202401-citibike-tripdata.zip",
+    "rows_total": 1888085,
+    "rows_valid": 1886109,
+    "valid_rate": 0.9989534369480187,
+    "first_started_at": "2023-12-31 21:40:09.191000",
+    "last_started_at": "2024-01-31 23:58:30.270000",
+    "hourly_points": 744,
+    "total_rides": 1885763,
+    "average_hourly_rides": 2534.6276881720432,
+    "median_hourly_rides": 2175.0,
+    "peak_hour": "2024-01-11 17:00:00",
+    "peak_hour_rides": 8635,
+    "average_daily_rides": 60831.06451612903,
+    "duration_median_minutes": 7.734783333333334,
+    "duration_p90_minutes": 21.005906666666665,
+    "duration_p99_minutes": 49.436959999999964
+  },
+  "top_days": [
+    {
+      "date": "2024-01-11",
+      "rides": 89095
+    },
+    {
+      "date": "2024-01-12",
+      "rides": 85982
+    },
+    {
+      "date": "2024-01-31",
+      "rides": 82605
+    }
+  ],
+  "weekday_avg_hourly": 2737.0815217391305,
+  "weekend_avg_hourly": 1952.5729166666667,
+  "weekend_vs_weekday_ratio": 0.7133776985297865,
+  "rush_hour_avg": 4327.795698924731,
+  "off_hour_avg": 1936.905017921147,
+  "rush_vs_off_hour_ratio": 2.234387158318013,
+  "best_model": "calendar_profile",
+  "forecast_results": [
+    {
+      "model": "calendar_profile",
+      "n": 168,
+      "mae": 796.0654761904761,
+      "rmse": 1075.3791968405167,
+      "mape": 0.3623200928084008,
+      "mean_actual": 2908.3690476190477
+    },
+    {
+      "model": "previous_week",
+      "n": 168,
+      "mae": 871.6309523809524,
+      "rmse": 1276.9662289974626,
+      "mape": 0.2966203151753645,
+      "mean_actual": 2908.3690476190477
+    },
+    {
+      "model": "previous_day",
+      "n": 168,
+      "mae": 1001.0,
+      "rmse": 1580.6906755924012,
+      "mape": 0.5634448316627574,
+      "mean_actual": 2908.3690476190477
+    }
+  ],
+  "top_stations": [
+    {
+      "station": "W 21 St & 6 Ave",
+      "rides": 8325,
+      "share_of_valid_trips": 0.004413848828461134
+    },
+    {
+      "station": "1 Ave & E 68 St",
+      "rides": 6568,
+      "share_of_valid_trips": 0.003482301394033961
+    },
+    {
+      "station": "8 Ave & W 31 St",
+      "rides": 6343,
+      "share_of_valid_trips": 0.0033630081824539302
+    },
+    {
+      "station": "W 31 St & 7 Ave",
+      "rides": 6027,
+      "share_of_valid_trips": 0.003195467494190421
+    },
+    {
+      "station": "E 33 St & 1 Ave",
+      "rides": 5903,
+      "share_of_valid_trips": 0.003129723679808537
+    },
+    {
+      "station": "Ave A & E 14 St",
+      "rides": 5881,
+      "share_of_valid_trips": 0.0031180594546762674
+    },
+    {
+      "station": "Broadway & W 25 St",
+      "rides": 5815,
+      "share_of_valid_trips": 0.0030830667792794584
+    },
+    {
+      "station": "Lafayette St & E 8 St",
+      "rides": 5697,
+      "share_of_valid_trips": 0.0030205041172063755
+    },
+    {
+      "station": "W 41 St & 8 Ave",
+      "rides": 5450,
+      "share_of_valid_trips": 0.0028895466804940754
+    },
+    {
+      "station": "Broadway & W 58 St",
+      "rides": 5312,
+      "share_of_valid_trips": 0.0028163801773916568
+    }
+  ],
+  "member_mix": [
+    {
+      "rider_type": "member",
+      "rides": 1678509,
+      "share": 0.8899321301154918
+    },
+    {
+      "rider_type": "casual",
+      "rides": 207600,
+      "share": 0.11006786988450827
+    }
+  ],
+  "bike_mix": [
+    {
+      "bike_type": "electric_bike",
+      "rides": 1214077,
+      "share": 0.6436939752686616
+    },
+    {
+      "bike_type": "classic_bike",
+      "rides": 672032,
+      "share": 0.35630602473133843
+    }
+  ],
+  "anomalies": [
+    {
+      "hour": "2024-01-18 12:00:00",
+      "rides": 2248,
+      "expected_profile_rides": 3678.5,
+      "absolute_gap": -1430.5,
+      "robust_z": -42.88321111111111,
+      "day_name": "Thursday",
+      "hour_of_day": 12
+    },
+    {
+      "hour": "2024-01-14 03:00:00",
+      "rides": 393,
+      "expected_profile_rides": 187.5,
+      "absolute_gap": 205.5,
+      "robust_z": 27.72195,
+      "day_name": "Sunday",
+      "hour_of_day": 3
+    },
+    {
+      "hour": "2024-01-01 02:00:00",
+      "rides": 1929,
+      "expected_profile_rides": 169.0,
+      "absolute_gap": 1760.0,
+      "robust_z": 25.806956521739128,
+      "day_name": "Monday",
+      "hour_of_day": 2
+    },
+    {
+      "hour": "2024-01-12 02:00:00",
+      "rides": 326,
+      "expected_profile_rides": 211.5,
+      "absolute_gap": 114.5,
+      "robust_z": 25.743416666666665,
+      "day_name": "Friday",
+      "hour_of_day": 2
+    },
+    {
+      "hour": "2024-01-01 04:00:00",
+      "rides": 649,
+      "expected_profile_rides": 162.0,
+      "absolute_gap": 487.0,
+      "robust_z": 23.462964285714285,
+      "day_name": "Monday",
+      "hour_of_day": 4
+    },
+    {
+      "hour": "2024-01-01 01:00:00",
+      "rides": 2326,
+      "expected_profile_rides": 253.0,
+      "absolute_gap": 2073.0,
+      "robust_z": 19.419979166666664,
+      "day_name": "Monday",
+      "hour_of_day": 1
+    },
+    {
+      "hour": "2024-01-01 03:00:00",
+      "rides": 1095,
+      "expected_profile_rides": 135.0,
+      "absolute_gap": 960.0,
+      "robust_z": 17.50054054054054,
+      "day_name": "Monday",
+      "hour_of_day": 3
+    },
+    {
+      "hour": "2024-01-09 23:00:00",
+      "rides": 152,
+      "expected_profile_rides": 952.0,
+      "absolute_gap": -800.0,
+      "robust_z": -10.580392156862745,
+      "day_name": "Tuesday",
+      "hour_of_day": 23
+    },
+    {
+      "hour": "2024-01-17 23:00:00",
+      "rides": 680,
+      "expected_profile_rides": 1200.0,
+      "absolute_gap": -520.0,
+      "robust_z": -9.47945945945946,
+      "day_name": "Wednesday",
+      "hour_of_day": 23
+    },
+    {
+      "hour": "2024-01-18 13:00:00",
+      "rides": 2345,
+      "expected_profile_rides": 3838.0,
+      "absolute_gap": -1493.0,
+      "robust_z": -9.455666666666668,
+      "day_name": "Thursday",
+      "hour_of_day": 13
+    }
+  ],
+  "weather_loaded": true,
+  "weather_correlations": {
+    "temperature_c": 0.3509876107220531,
+    "precipitation_mm": -0.1963289721547298,
+    "snowfall_cm": -0.11285976295469573,
+    "wind_speed_kmh": -0.10039128227771972
+  }
+}

@@ -9,10 +9,18 @@ Use this before adding the project to the portfolio repository.
 - `.gitignore`
 - `src/citibike_time_series_profile.py`
 - `src/citibike_decision_report.py`
+- `src/citibike_time_series_showcase.py`
 - `outputs/report.html`
 - `outputs/decision_report.html`
+- `outputs/time_series_showcase.html`
 - `outputs/profile_summary.json`
 - `outputs/forecast_backtest_metrics.csv`
+- `outputs/rolling_backtest_metrics.csv`
+- `outputs/autocorrelation_profile.csv`
+- `outputs/lag_feature_correlations.csv`
+- `outputs/decomposition_components.csv`
+- `outputs/time_series_showcase_metrics.csv`
+- `outputs/time_series_showcase_coverage.csv`
 - `outputs/anomaly_hours.csv`
 - `outputs/top_stations.csv`
 - `outputs/member_mix.csv`
@@ -38,13 +46,16 @@ Run these from the project folder:
 ```bash
 python -m py_compile src/citibike_time_series_profile.py
 python -m py_compile src/citibike_decision_report.py
+python -m py_compile src/citibike_time_series_showcase.py
 python src/citibike_decision_report.py
+python src/citibike_time_series_showcase.py
 ```
 
 Then manually open:
 
 - `outputs/report.html`
 - `outputs/decision_report.html`
+- `outputs/time_series_showcase.html`
 
 Check:
 
@@ -53,6 +64,9 @@ Check:
 - Measure values match `docs/MEASURES.md`.
 - The caveats are not hidden.
 - No raw local absolute paths appear in the visible report body.
+- The showcase report labels decomposition as descriptive/proxy analysis.
+- Rolling-origin metrics are described as validation practice, not production
+  performance.
 
 ## Suggested Portfolio Repository Placement
 

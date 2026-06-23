@@ -10,8 +10,9 @@ Citi Bike Demand Forecasting: Time-Series Profile and Baseline Forecasts
 ## One-Line Summary
 
 Built a reproducible time-series analysis of 1.89M public Citi Bike trips,
-showing commute-driven demand seasonality, baseline forecast performance, and
-the roadmap for station-aware forecasting.
+showing commute-driven demand seasonality, autocorrelation and lag diagnostics,
+rolling-origin baseline validation, residual analysis, and the roadmap for
+station-aware forecasting.
 
 ## Portfolio Category
 
@@ -32,11 +33,18 @@ turns the results into a decision-ready report.
 - An hourly demand profile with calendar, holiday, weekend, and weather
   features.
 - A weekday/hour seasonality profile that explains the commute pattern.
+- Autocorrelation and lag-feature screens to identify candidate forecasting
+  signal.
 - Baseline forecasts using previous-day, previous-week, and weekday/hour
   calendar-profile models.
+- Daily rolling-origin 24-hour backtests for stronger validation practice.
+- A decomposition-style output that separates rolling trend, seasonal expected
+  demand, and residual movement.
 - Anomaly candidates based on deviations from the weekday/hour profile.
-- Static report visuals and two HTML reports: a profile report and a
-  recommendation report.
+- Static report visuals and three HTML reports: profile, recommendation, and
+  time-series showcase reports.
+- An expanded time-series showcase report that maps each time-series concept to
+  a concrete artifact.
 - Documentation for measures, methodology, outputs, model behavior, caveats,
   and publishing readiness.
 
@@ -66,9 +74,15 @@ operations rather than immediately jumping to a heavier model.
 - Python data processing with pandas and NumPy
 - Chunked CSV processing from a large public ZIP archive
 - Time-series feature engineering
+- Regular time-index validation
+- Autocorrelation analysis
+- Lag feature screening
+- Rolling-window smoothing
 - Calendar and holiday feature creation
 - Weather enrichment from a public API
 - Baseline forecasting and holdout scoring
+- Rolling-origin backtesting
+- Residual analysis and anomaly framing
 - Anomaly scoring with seasonal expected values
 - Seaborn/Matplotlib charting
 - HTML report generation
@@ -82,9 +96,11 @@ operations rather than immediately jumping to a heavier model.
    commuter seasonality, weather joins, and operational decisions.
 3. I separated valid raw rows from fixed-window hourly rides because a few
    valid starts can fall outside the fixed January panel.
-4. I treated anomalies as candidates, not causes, because root-cause claims
+4. I added rolling-origin backtests because repeated forecast starts are more
+   convincing than one lucky or unlucky holdout split.
+5. I treated anomalies as candidates, not causes, because root-cause claims
    need external event or operations context.
-5. I would improve this project next by adding 12-24 months, rolling holdouts,
+6. I would improve this project next by adding 12-24 months, yearly seasonality,
    station metadata, and station-cluster forecasts.
 
 ## Resume Bullets
@@ -95,6 +111,9 @@ operations rather than immediately jumping to a heavier model.
 - Evaluated previous-day, previous-week, and weekday/hour calendar baselines on
   a 168-hour holdout; the calendar profile achieved the best MAE at 796 rides
   per hour.
+- Added autocorrelation, lag-feature, decomposition-style residual, and
+  rolling-origin diagnostics to demonstrate end-to-end time-series workflow
+  design.
 - Documented data quality rules, metric definitions, model caveats, and a
   roadmap for extending the project to multi-month station-aware forecasting.
 
@@ -103,10 +122,12 @@ operations rather than immediately jumping to a heavier model.
 **Citi Bike Demand Forecasting**
 
 Analyzed 1.89M public Citi Bike trips to build an hourly demand profile,
-evaluate baseline forecasts, detect anomaly candidates, and identify the next
+evaluate baseline forecasts, inspect autocorrelation and lag structure, run
+rolling-origin validation, detect anomaly candidates, and identify the next
 modeling path for station-aware urban mobility forecasting.
 
 **Tools:** Python, pandas, NumPy, Seaborn, Matplotlib, HTML reporting
 
-**Methods:** Time-series profiling, calendar features, holdout evaluation,
-baseline forecasting, anomaly detection, data documentation
+**Methods:** Time-series profiling, calendar features, autocorrelation, lag
+features, rolling-origin backtesting, baseline forecasting, residual analysis,
+anomaly detection, data documentation

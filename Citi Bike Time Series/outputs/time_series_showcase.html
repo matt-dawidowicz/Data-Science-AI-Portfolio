@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Citi Bike Time-Series Showcase</title>
+  <style>
+    :root {
+      --surface: #FCFCFD;
+      --panel: #FFFFFF;
+      --ink: #1F2430;
+      --muted: #6F768A;
+      --grid: #E6E8F0;
+      --blue: #A3BEFA;
+      --gold: #FFE15B;
+      --orange: #F0986E;
+    }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: Aptos, Inter, "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 20px 72px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(30px, 5vw, 48px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 36px 0 12px;
+      font-size: 24px;
+    }
+    p, li {
+      font-size: 16px;
+      line-height: 1.62;
+      color: var(--muted);
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 24px 0 30px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .kpi strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .kpi span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    figure {
+      margin: 24px 0;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    .data-table th, .data-table td {
+      border-bottom: 1px solid var(--grid);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .data-table th {
+      background: #F4F5F7;
+      color: var(--ink);
+    }
+    .data-table tr:last-child td {
+      border-bottom: 0;
+    }
+    .callout {
+      border-left: 4px solid var(--orange);
+      background: #FFEDDE;
+      padding: 14px 16px;
+      border-radius: 6px;
+      color: var(--ink);
+    }
+    @media (max-width: 760px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px) {
+      .kpis { grid-template-columns: 1fr; }
+      .data-table { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Citi Bike Time-Series Showcase</h1>
+    <p>
+      This companion report turns the January 2024 demand profile into an
+      explicit time-series portfolio checklist: regular time indexing,
+      seasonality, autocorrelation, lag features, rolling validation,
+      decomposition-style residuals, and forecast governance.
+    </p>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi">
+      <strong>744</strong>
+      <span>hourly observations</span>
+    </div>
+    <div class="kpi">
+      <strong>0</strong>
+      <span>missing hours in fixed panel</span>
+    </div>
+    <div class="kpi">
+      <strong>previous_day</strong>
+      <span>best rolling-origin baseline</span>
+    </div>
+    <div class="kpi">
+      <strong>773.56</strong>
+      <span>best rolling MAE, rides/hour</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why This Is A Time-Series Showcase</h2>
+    <p class="callout">
+      The project now demonstrates the core workflow a reviewer expects:
+      construct a regular time index, expose seasonality and autocorrelation,
+      screen lag features, benchmark transparent forecasts, validate across
+      rolling origins, inspect residuals, and document the limits before
+      recommending heavier models.
+    </p>
+  </section>
+
+  <section>
+    <h2>Showcase Charts</h2>
+    
+        <figure>
+          <img src="charts/autocorrelation_profile.png" alt="autocorrelation profile">
+        </figure>
+        
+
+        <figure>
+          <img src="charts/lag_feature_correlations.png" alt="lag feature correlations">
+        </figure>
+        
+
+        <figure>
+          <img src="charts/rolling_backtest_mae.png" alt="rolling backtest mae">
+        </figure>
+        
+
+        <figure>
+          <img src="charts/decomposition_proxy.png" alt="decomposition proxy">
+        </figure>
+        
+
+        <figure>
+          <img src="charts/seasonal_residual_distribution.png" alt="seasonal residual distribution">
+        </figure>
+        
+  </section>
+
+  <section>
+    <h2>Rolling Backtest Summary</h2>
+    <table border="1" class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>model</th>
+      <th>origins</th>
+      <th>holdout_hours</th>
+      <th>mean_actual</th>
+      <th>n</th>
+      <th>mae</th>
+      <th>rmse</th>
+      <th>mape</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>previous_day</td>
+      <td>17</td>
+      <td>408</td>
+      <td>2389.034314</td>
+      <td>408</td>
+      <td>773.558824</td>
+      <td>1241.575764</td>
+      <td>0.477443</td>
+    </tr>
+    <tr>
+      <td>hour_of_day_profile</td>
+      <td>17</td>
+      <td>408</td>
+      <td>2389.034314</td>
+      <td>408</td>
+      <td>851.332402</td>
+      <td>1215.810193</td>
+      <td>0.624370</td>
+    </tr>
+    <tr>
+      <td>weekday_hour_profile</td>
+      <td>17</td>
+      <td>408</td>
+      <td>2389.034314</td>
+      <td>408</td>
+      <td>860.690768</td>
+      <td>1209.371088</td>
+      <td>0.514042</td>
+    </tr>
+    <tr>
+      <td>previous_week</td>
+      <td>17</td>
+      <td>408</td>
+      <td>2389.034314</td>
+      <td>408</td>
+      <td>1107.196078</td>
+      <td>1568.033039</td>
+      <td>0.535399</td>
+    </tr>
+  </tbody>
+</table>
+  </section>
+
+  <section>
+    <h2>Time-Series Coverage Map</h2>
+    <table border="1" class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>time_series_area</th>
+      <th>artifact</th>
+      <th>status</th>
+      <th>reviewer_value</th>
+      <th>caveat</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Regular time index</td>
+      <td>hourly_profile.csv</td>
+      <td>Implemented</td>
+      <td>Shows hourly grain, complete panel, duplicate/missing-hour checks.</td>
+      <td>Timestamps are parsed as timezone-naive in this version.</td>
+    </tr>
+    <tr>
+      <td>Resampling and aggregation</td>
+      <td>citibike_time_series_profile.py</td>
+      <td>Implemented</td>
+      <td>Raw trips are transformed into hourly and daily demand measures.</td>
+      <td>Only trip starts are modeled, not inventory or completions.</td>
+    </tr>
+    <tr>
+      <td>Calendar features</td>
+      <td>hourly_profile.csv</td>
+      <td>Implemented</td>
+      <td>Weekday, weekend, hour-of-day, and holiday flags support interpretable seasonality.</td>
+      <td>Holiday list is hand-scoped to January 2024.</td>
+    </tr>
+    <tr>
+      <td>Seasonality</td>
+      <td>seasonality_profile.csv</td>
+      <td>Implemented</td>
+      <td>Weekday/hour profile demonstrates commute and weekend patterns.</td>
+      <td>One winter month cannot prove stable annual seasonality.</td>
+    </tr>
+    <tr>
+      <td>Smoothing and trend</td>
+      <td>decomposition_components.csv</td>
+      <td>Implemented</td>
+      <td>Rolling trend columns separate level from hourly volatility.</td>
+      <td>This is a descriptive proxy, not formal STL decomposition.</td>
+    </tr>
+    <tr>
+      <td>Autocorrelation</td>
+      <td>autocorrelation_profile.csv</td>
+      <td>Implemented</td>
+      <td>Lag correlations expose short-memory, daily, and weekly repetition.</td>
+      <td>ACF is descriptive and should be retested on more months.</td>
+    </tr>
+    <tr>
+      <td>Lag features</td>
+      <td>lag_feature_correlations.csv</td>
+      <td>Implemented</td>
+      <td>Candidate lags and rolling means are ranked before heavier modeling.</td>
+      <td>Correlation does not imply out-of-sample lift.</td>
+    </tr>
+    <tr>
+      <td>Exogenous variables</td>
+      <td>hourly_profile.csv</td>
+      <td>Implemented</td>
+      <td>Weather fields are joined at hourly grain and evaluated descriptively.</td>
+      <td>Weather is one NYC coordinate, not station-level microclimate.</td>
+    </tr>
+    <tr>
+      <td>Baseline forecasting</td>
+      <td>forecast_backtest_metrics.csv</td>
+      <td>Implemented</td>
+      <td>Previous-day, previous-week, and calendar-profile baselines establish benchmarks.</td>
+      <td>Current main report uses a single Jan. 25-31 holdout.</td>
+    </tr>
+    <tr>
+      <td>Rolling-origin validation</td>
+      <td>rolling_backtest_metrics.csv</td>
+      <td>Implemented</td>
+      <td>Daily rolling 24-hour origins demonstrate stronger forecast evaluation practice.</td>
+      <td>Still limited to one month of winter behavior.</td>
+    </tr>
+    <tr>
+      <td>Forecast error metrics</td>
+      <td>forecast_backtest_metrics.csv</td>
+      <td>Implemented</td>
+      <td>MAE, RMSE, MAPE, and mean actuals are reported for transparent model comparison.</td>
+      <td>MAPE can overemphasize low-volume overnight hours.</td>
+    </tr>
+    <tr>
+      <td>Residual and anomaly analysis</td>
+      <td>anomaly_hours.csv</td>
+      <td>Implemented</td>
+      <td>Seasonal residuals identify hours worth investigating.</td>
+      <td>External events, outages, and operations context are needed for root cause.</td>
+    </tr>
+    <tr>
+      <td>Hierarchy and panels</td>
+      <td>top_stations.csv</td>
+      <td>Documented extension</td>
+      <td>Station rankings show how to evolve from aggregate demand to station-cluster panels.</td>
+      <td>Station IDs and metadata are required before longitudinal station forecasts.</td>
+    </tr>
+    <tr>
+      <td>Model governance</td>
+      <td>MODEL_CARD.md</td>
+      <td>Implemented</td>
+      <td>Model card, caveats, and publishing checklist make limitations visible.</td>
+      <td>Production claims require more history and stronger validation.</td>
+    </tr>
+  </tbody>
+</table>
+  </section>
+
+  <section>
+    <h2>Important Limit</h2>
+    <p>
+      This is still a one-month winter showcase. The strongest next version
+      would extend to 12-24 months, add station IDs and metadata, evaluate
+      rolling holdouts across seasons, and compare these transparent baselines
+      against one stronger model.
+    </p>
+  </section>
+</main>
+</body>
+</html>

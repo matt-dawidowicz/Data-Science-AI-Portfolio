@@ -1,0 +1,14 @@
+category,measure,value,interpretation
+time_index,hourly_observations,744,Complete hourly panel size used by the time-series artifacts.
+time_index,missing_hours,0,Zero is ideal because the model sees a regular hourly series.
+time_index,duplicate_hours,0,Zero is ideal because each hour should have exactly one demand value.
+seasonality,lag_24h_autocorrelation,0.7533,Daily repetition signal in hourly ride starts.
+seasonality,lag_168h_autocorrelation,0.7099,Weekly repetition signal in hourly ride starts.
+lag_features,top_abs_correlation_feature,lag_1h,"Highest absolute correlation among lag, rolling, and weather candidates."
+lag_features,top_abs_correlation_value,0.8937,Correlation of the strongest candidate feature with hourly rides.
+rolling_validation,best_rolling_backtest_model,previous_day,Best average MAE across daily rolling 24-hour origins.
+rolling_validation,best_rolling_backtest_mae,773.56,Mean absolute error in rides per hour across rolling origins.
+decomposition,seasonal_residual_std,907.92,Residual spread after subtracting the weekday/hour seasonal profile.
+decomposition,largest_positive_residual_hour,2024-01-30 17:00:00,Hour where actual rides most exceeded the weekday/hour expected value.
+decomposition,largest_negative_residual_hour,2024-01-16 08:00:00,Hour where actual rides most missed the weekday/hour expected value.
+volume,mean_hourly_rides,2534.63,Average hourly demand level for scale.

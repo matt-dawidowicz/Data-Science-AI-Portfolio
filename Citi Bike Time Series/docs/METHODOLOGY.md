@@ -94,6 +94,77 @@ It supports:
 This is a one-month descriptive profile. It should not be treated as a stable
 annual seasonal model until more months are added.
 
+## Expanded Time-Series Diagnostics
+
+The showcase script adds diagnostics that make the project read as a broader
+time-series case study.
+
+Run:
+
+```text
+python src/citibike_time_series_showcase.py
+```
+
+The script reads `outputs/hourly_profile.csv` and creates additional outputs.
+It does not redownload the raw trip archive.
+
+### Regular Index Checks
+
+The showcase validates the generated hourly panel by checking:
+
+- first hour
+- last hour
+- observed hourly rows
+- expected hourly rows
+- missing hours
+- duplicate hours
+
+This is the first time-series quality gate. Forecasting logic assumes a regular
+time index with one value per hour.
+
+### Autocorrelation
+
+`outputs/autocorrelation_profile.csv` reports correlations between hourly rides
+and lagged hourly rides from lag 1 through lag 168. It is used to inspect:
+
+- short-memory lags
+- daily repetition
+- weekly repetition
+
+Autocorrelation is descriptive. It identifies candidate signal but does not
+prove forecast lift by itself.
+
+### Lag Feature Screening
+
+`outputs/lag_feature_correlations.csv` ranks candidate lag, rolling, and weather
+features by correlation with hourly rides.
+
+Included candidates:
+
+- 1, 2, 3, 6, 12, 24, 48, 72, and 168 hour lags
+- rolling 3, 6, 12, 24, and 168 hour means
+- temperature, precipitation, snowfall, and wind speed
+
+These correlations are feature-screening inputs, not final feature-selection
+proof. A candidate should still be tested in rolling validation before being
+presented as useful in a model.
+
+### Decomposition Proxy
+
+`outputs/decomposition_components.csv` creates a descriptive decomposition-style
+table:
+
+- actual hourly rides
+- centered 24-hour rolling trend
+- centered 168-hour rolling trend
+- weekday/hour expected demand
+- seasonal residual
+- robust residual z-score
+
+This is intentionally called a proxy because one month of data is too short for
+a full annual decomposition. It is still useful because it demonstrates the
+reasoning pattern behind trend, seasonality, and anomaly analysis.
+
 ## Forecast Backtest
 
 The holdout starts at:
@@ -116,6 +187,30 @@ Three simple baselines are evaluated:
 The project reports MAE, RMSE, MAPE, and mean actual holdout volume. MAE is the
 primary comparison because it is easy to explain as rides per hour and is less
 distorted by low-volume overnight percentage errors than MAPE.
+
+## Rolling-Origin Backtest
+
+The expanded showcase adds daily rolling 24-hour forecast origins from the
+second half of the month. For each origin:
+
+1. Train only on history before the origin.
+2. Forecast the next 24 hours.
+3. Score MAE, RMSE, and MAPE.
+4. Aggregate performance across origins.
+
+Models included:
+
+| Model | Definition |
+| --- | --- |
+| Previous day | Forecast equals the value from 24 hours earlier |
+| Previous week | Forecast equals the value from 168 hours earlier |
+| Hour-of-day profile | Forecast equals the expanding training average for the same hour of day |
+| Weekday/hour profile | Forecast equals the expanding training average for the same weekday and hour |
+
+Rolling-origin validation is more robust than a single split because it asks
+whether a baseline works across repeated forecast starts. The current version is
+still limited by one month of data, so it should be presented as validation
+practice rather than production evidence.
 
 ## Forecast Reference Band
 
@@ -155,6 +250,9 @@ Current validation checks include:
 - Fixed hourly panel has 744 rows.
 - Forecast backtest produces metrics for all three baselines.
 - Generated report references chart files that exist.
+- Showcase diagnostics check for missing and duplicate hourly periods.
+- Rolling-origin outputs are regenerated from the existing hourly profile.
+- Static showcase charts are exported as PNG files for portable HTML review.
 
 ## Limitations
 

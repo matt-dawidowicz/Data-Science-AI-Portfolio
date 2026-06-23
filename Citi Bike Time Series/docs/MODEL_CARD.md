@@ -15,6 +15,8 @@ operations model.
 - Grain: hour
 - Forecast period: Jan. 25-31, 2024
 - Training period: Jan. 1-24, 2024
+- Expanded validation: daily rolling 24-hour origins in the second half of
+  January
 - Unit: rides per hour
 
 ## Baselines
@@ -24,6 +26,10 @@ operations model.
 | Previous day | Uses the value from 24 hours earlier | Simple and reactive | Weak when weekday pattern changes |
 | Previous week | Uses the value from 168 hours earlier | Captures weekly rhythm | Needs enough prior history |
 | Calendar profile | Uses average training volume for same weekday and hour | Captures commute shape | Smooths event spikes and unusual weather |
+
+The expanded showcase script also evaluates an `hour_of_day_profile` baseline
+across rolling origins. That baseline uses the expanding training average for
+the same hour of day, without separating weekdays from weekends.
 
 ## Evaluation Metrics
 
@@ -44,6 +50,19 @@ operations model.
 
 The calendar profile is the best baseline by MAE and RMSE. Previous week has a
 lower MAPE, which should be noted when explaining the model choice.
+
+## Rolling-Origin Validation
+
+The expanded showcase adds rolling 24-hour forecast origins. These outputs are:
+
+- `outputs/rolling_backtest_metrics.csv`
+- `outputs/rolling_backtest_origin_metrics.csv`
+- `outputs/rolling_backtest_scored.csv`
+
+This shows stronger time-series evaluation practice than a single holdout
+alone. It is still constrained by the one-month source window, so the results
+should be presented as portfolio validation evidence rather than production
+performance.
 
 ## Intended Use
 
@@ -71,6 +90,8 @@ Do not use this baseline as:
 - Overnight low-volume hours can distort percentage error.
 - Events, outages, and severe weather are not explicitly modeled.
 - Station-level modeling needs stable station identifiers.
+- The decomposition output is a descriptive proxy, not formal STL or annual
+  decomposition.
 
 ## Recommended Next Model Step
 
@@ -79,6 +100,8 @@ The next modeling step should be:
 1. Extend to 12-24 months.
 2. Add rolling holdout windows.
 3. Keep the calendar profile as the benchmark.
-4. Add one stronger model, such as SARIMAX or a gradient-boosted lag-feature
+4. Use autocorrelation and lag-feature screening to choose candidate model
+   inputs.
+5. Add one stronger model, such as SARIMAX or a gradient-boosted lag-feature
    model.
-5. Compare aggregate and station-cluster performance separately.
+6. Compare aggregate and station-cluster performance separately.

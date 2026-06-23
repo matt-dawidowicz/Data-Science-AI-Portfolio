@@ -12,7 +12,11 @@ final local review. It already includes:
 - Data quality filtering
 - Hourly demand table
 - Seasonality profile
+- Autocorrelation profile
+- Lag feature screening
+- Decomposition-style trend, seasonal expected value, and residual table
 - Baseline forecast backtest
+- Rolling-origin baseline validation
 - Anomaly candidate table
 - Charts
 - HTML reports
@@ -38,6 +42,8 @@ Measures to add:
 - Seasonal decomposition
 - Rolling forecast MAE and RMSE
 - Error by month and hour
+- Error by season
+- Holiday and event lift
 
 ### 2. Add Station Metadata
 
@@ -55,6 +61,8 @@ Measures to add:
 - Active station days
 - Starts per station-day
 - Station-cluster demand
+- Station-cluster forecast error
+- Cross-station spatial lag features
 
 ### 3. Build Station-Cluster Forecasts
 
@@ -78,6 +86,8 @@ Candidate models:
 - SARIMAX with calendar and weather features
 - Gradient-boosted lag-feature model
 - Regularized regression with lag, calendar, and weather features
+- Prophet-style additive baseline if the goal is explainable trend and
+  seasonality comparison
 
 Measures to add:
 
@@ -87,6 +97,8 @@ Measures to add:
 - Error by weekday
 - Error by weather condition
 - Baseline improvement percentage
+- Prediction interval coverage
+- Error stability across seasons
 
 ### 5. Make Anomalies Explainable
 
@@ -111,6 +123,27 @@ Measures to add:
 - Robust z-score
 - Context category
 - Follow-up status
+
+## Time-Series Concepts To Keep Visible
+
+As the project grows, keep these concepts visible in the repository rather than
+burying them inside code:
+
+- Time index regularity
+- Resampling and aggregation
+- Missing-period handling
+- Calendar features
+- Trend and smoothing
+- Daily, weekly, and yearly seasonality
+- Autocorrelation and partial autocorrelation
+- Lag feature selection
+- Exogenous regressors
+- Rolling-origin validation
+- Baseline comparison
+- Residual analysis
+- Prediction intervals
+- Hierarchical or grouped time series
+- Model cards and caveats
 
 ## Long-Term Version
 

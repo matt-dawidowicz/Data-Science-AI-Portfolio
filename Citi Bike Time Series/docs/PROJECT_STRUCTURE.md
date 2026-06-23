@@ -16,6 +16,7 @@ This document explains how the packaged project is organized.
 | --- | --- |
 | `citibike_time_series_profile.py` | Main data pipeline, chart generation, and first-pass report |
 | `citibike_decision_report.py` | Builds the decision-ready portfolio report from generated outputs |
+| `citibike_time_series_showcase.py` | Builds expanded time-series diagnostics, charts, and showcase report from the hourly profile |
 
 ## `outputs/`
 
@@ -26,10 +27,19 @@ Important files:
 
 - `report.html`
 - `decision_report.html`
+- `time_series_showcase.html`
 - `profile_summary.json`
 - `hourly_profile.csv`
 - `forecast_backtest_metrics.csv`
 - `forecast_backtest_scored.csv`
+- `rolling_backtest_metrics.csv`
+- `rolling_backtest_origin_metrics.csv`
+- `rolling_backtest_scored.csv`
+- `autocorrelation_profile.csv`
+- `lag_feature_correlations.csv`
+- `decomposition_components.csv`
+- `time_series_showcase_metrics.csv`
+- `time_series_showcase_coverage.csv`
 - `anomaly_hours.csv`
 - `seasonality_profile.csv`
 - `top_stations.csv`
@@ -44,6 +54,11 @@ Static PNG charts used by the HTML reports:
 - `seasonality_heatmap.png`
 - `forecast_backtest.png`
 - `top_stations.png`
+- `autocorrelation_profile.png`
+- `lag_feature_correlations.png`
+- `rolling_backtest_mae.png`
+- `decomposition_proxy.png`
+- `seasonal_residual_distribution.png`
 
 ## `data/sample_outputs/`
 
@@ -57,6 +72,8 @@ Documentation for reviewers:
 | File | Purpose |
 | --- | --- |
 | `MEASURES.md` | Metric definitions and current values |
+| `TIME_SERIES_SHOWCASE.md` | Time-series concept map, interview framing, and extension path |
+| `CHART_MAP.md` | Visual purpose, chart family, and quality checks for each chart |
 | `METHODOLOGY.md` | Data processing, modeling, validation, and limitations |
 | `DATA_DICTIONARY.md` | Output column definitions |
 | `MODEL_CARD.md` | Forecast baseline purpose, scope, results, and risks |

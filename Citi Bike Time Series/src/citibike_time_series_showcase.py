@@ -1,3 +1,11 @@
+"""Build the reviewer-facing time-series showcase from generated hourly outputs.
+
+This companion script intentionally works from `outputs/hourly_profile.csv`
+instead of the raw Citi Bike archive. The raw-data pipeline owns extraction and
+aggregation; this script owns the portfolio proof layer: lag structure,
+rolling-origin validation, residual diagnostics, and a polished HTML handoff.
+"""
+
 from __future__ import annotations
 
 import html
@@ -21,6 +29,31 @@ OUT_DIR = ROOT / "outputs"
 CHART_DIR = OUT_DIR / "charts"
 
 HOURLY_CSV = OUT_DIR / "hourly_profile.csv"
+
+MODEL_LABELS = {
+    "previous_day": "Previous day",
+    "previous_week": "Previous week",
+    "hour_of_day_profile": "Hour-of-day profile",
+    "weekday_hour_profile": "Weekday/hour profile",
+}
+
+CHART_CAPTIONS = {
+    "autocorrelation_profile.png": (
+        "Daily and weekly peaks make the lag structure visible before any model is trained."
+    ),
+    "lag_feature_correlations.png": (
+        "Lagged demand and rolling means screen as stronger candidates than raw weather fields."
+    ),
+    "rolling_backtest_mae.png": (
+        "Repeated forecast origins make the benchmark harder to hand-wave than a single split."
+    ),
+    "decomposition_proxy.png": (
+        "The trend and weekday/hour expected line separate level, seasonality, and residual movement."
+    ),
+    "seasonal_residual_distribution.png": (
+        "Residual spread frames anomaly candidates without pretending to explain root cause."
+    ),
+}
 
 FONT_FAMILY = ["Aptos", "Inter", "Segoe UI", "DejaVu Sans", "Arial", "sans-serif"]
 MONO_FONT_FAMILY = ["Consolas", "DejaVu Sans Mono", "monospace"]
@@ -166,6 +199,27 @@ def save_chart(fig: plt.Figure, filename: str) -> Path:
     return path
 
 
+def label_model(model: object) -> str:
+    """Return a reader-friendly model label while preserving unknown names."""
+    return MODEL_LABELS.get(str(model), str(model).replace("_", " ").title())
+
+
+def fmt_number(value: object, *, digits: int = 0) -> str:
+    """Format report numbers without leaking raw floating-point noise."""
+    if pd.isna(value):
+        return "n/a"
+    number = float(value)
+    if digits == 0:
+        return f"{number:,.0f}"
+    return f"{number:,.{digits}f}"
+
+
+def fmt_percent(value: object, *, digits: int = 1) -> str:
+    if pd.isna(value):
+        return "n/a"
+    return f"{float(value) * 100:.{digits}f}%"
+
+
 def load_hourly_profile() -> pd.DataFrame:
     if not HOURLY_CSV.exists():
         raise FileNotFoundError(
@@ -264,6 +318,8 @@ def build_lag_feature_correlations(hourly: pd.DataFrame) -> pd.DataFrame:
         "lag_48h": ("daily seasonal lag", rides.shift(48)),
         "lag_72h": ("daily seasonal lag", rides.shift(72)),
         "lag_168h": ("weekly seasonal lag", rides.shift(168)),
+        # Shift before rolling so the feature uses only values known before the
+        # current hour. That keeps the screening table aligned with forecast use.
         "rolling_3h_mean": ("rolling feature", rides.shift(1).rolling(3).mean()),
         "rolling_6h_mean": ("rolling feature", rides.shift(1).rolling(6).mean()),
         "rolling_12h_mean": ("rolling feature", rides.shift(1).rolling(12).mean()),
@@ -290,6 +346,7 @@ def build_lag_feature_correlations(hourly: pd.DataFrame) -> pd.DataFrame:
 
 
 def forecast_from_previous(hourly_by_hour: pd.Series, hours: pd.Series, lag: int) -> pd.Series:
+    """Forecast each test hour from a previous observed hour."""
     return pd.Series(
         [hourly_by_hour.get(hour - pd.Timedelta(hours=lag), np.nan) for hour in hours],
         index=hours.index,
@@ -298,12 +355,14 @@ def forecast_from_previous(hourly_by_hour: pd.Series, hours: pd.Series, lag: int
 
 
 def forecast_from_hour_profile(train: pd.DataFrame, test: pd.DataFrame) -> pd.Series:
+    """Use the expanding training average for the same hour of day."""
     hour_profile = train.groupby("hour_of_day")["rides"].mean()
     global_mean = float(train["rides"].mean())
     return test["hour_of_day"].map(hour_profile).fillna(global_mean).astype(float)
 
 
 def forecast_from_calendar_profile(train: pd.DataFrame, test: pd.DataFrame) -> pd.Series:
+    """Use the expanding training average for the same weekday and hour."""
     calendar_profile = train.groupby(["day_of_week", "hour_of_day"])["rides"].mean()
     hour_profile = train.groupby("hour_of_day")["rides"].mean()
     global_mean = float(train["rides"].mean())
@@ -317,6 +376,7 @@ def forecast_from_calendar_profile(train: pd.DataFrame, test: pd.DataFrame) -> p
 
 
 def build_rolling_backtests(hourly: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Run leakage-safe daily 24-hour rolling-origin baseline backtests."""
     hourly_by_hour = hourly.set_index("hour")["rides"]
     first_origin = hourly["hour"].min() + pd.Timedelta(days=14)
     last_origin = hourly["hour"].max() - pd.Timedelta(hours=23)
@@ -325,6 +385,8 @@ def build_rolling_backtests(hourly: pd.DataFrame) -> tuple[pd.DataFrame, pd.Data
     origin_rows = []
 
     for origin in origins:
+        # This line is the leakage boundary: no forecast may use rows at or
+        # after the origin, even when calculating calendar averages.
         train = hourly[hourly["hour"] < origin]
         test = hourly[(hourly["hour"] >= origin) & (hourly["hour"] < origin + pd.Timedelta(hours=24))]
         if len(train) < 24 * 7 or len(test) != 24:
@@ -376,6 +438,12 @@ def build_rolling_backtests(hourly: pd.DataFrame) -> tuple[pd.DataFrame, pd.Data
 
 
 def build_decomposition_components(hourly: pd.DataFrame) -> pd.DataFrame:
+    """Create descriptive trend, seasonality, and residual columns.
+
+    One month is too short for a serious annual STL decomposition, so this table
+    is deliberately labeled as a proxy. It still helps reviewers see the
+    time-series reasoning pattern behind trend and anomaly work.
+    """
     components = hourly[
         ["hour", "rides", "day_of_week", "hour_of_day", "day_name", "is_weekend"]
     ].copy()
@@ -659,13 +727,14 @@ def plot_lag_feature_correlations(lag_corr: pd.DataFrame) -> Path:
 
 
 def plot_rolling_backtest(rolling_metrics: pd.DataFrame) -> Path:
-    plot_df = rolling_metrics.sort_values("mae", ascending=True)
+    plot_df = rolling_metrics.sort_values("mae", ascending=True).copy()
+    plot_df["model_label"] = plot_df["model"].map(label_model)
     family = COLOR_FAMILIES["gold"]
     fig, ax = plt.subplots(figsize=(9.5, 5.0))
     sns.barplot(
         data=plot_df,
         x="mae",
-        y="model",
+        y="model_label",
         ax=ax,
         color=family["base"],
         edgecolor=family["dark"],
@@ -767,9 +836,35 @@ def plot_residual_distribution(components: pd.DataFrame) -> Path:
     return save_chart(fig, "seasonal_residual_distribution.png")
 
 
-def table_html(df: pd.DataFrame, max_rows: int | None = None) -> str:
+def table_html(
+    df: pd.DataFrame,
+    *,
+    max_rows: int | None = None,
+    columns: list[str] | None = None,
+    rename: dict[str, str] | None = None,
+    formatters: dict[str, object] | None = None,
+) -> str:
     display = df if max_rows is None else df.head(max_rows)
-    return display.to_html(index=False, escape=True, classes="data-table")
+    if columns is not None:
+        display = display.loc[:, columns]
+    if rename:
+        display = display.rename(columns=rename)
+        if formatters:
+            formatters = {rename.get(key, key): value for key, value in formatters.items()}
+
+    return display.to_html(
+        index=False,
+        escape=True,
+        classes="data-table",
+        border=0,
+        formatters=formatters,
+    )
+
+
+def rolling_metrics_for_report(rolling_metrics: pd.DataFrame) -> pd.DataFrame:
+    display = rolling_metrics.copy()
+    display["model"] = display["model"].map(label_model)
+    return display
 
 
 def generate_showcase_report(
@@ -783,12 +878,14 @@ def generate_showcase_report(
         f"""
         <figure>
           <img src="charts/{html.escape(path.name)}" alt="{html.escape(path.stem.replace('_', ' '))}">
+          <figcaption>{html.escape(CHART_CAPTIONS.get(path.name, path.stem.replace('_', ' ').title()))}</figcaption>
         </figure>
         """
         for path in chart_paths
     )
-    best_model = metric_lookup.get("best_rolling_backtest_model", "not available")
-    best_mae = metric_lookup.get("best_rolling_backtest_mae", "not available")
+    best_model = label_model(metric_lookup.get("best_rolling_backtest_model", "not available"))
+    best_mae = fmt_number(metric_lookup.get("best_rolling_backtest_mae", np.nan))
+    rolling_report = rolling_metrics_for_report(rolling_metrics)
 
     html_doc = f"""<!doctype html>
 <html lang="en">
@@ -833,6 +930,7 @@ def generate_showcase_report(
       line-height: 1.62;
       color: var(--muted);
     }}
+    a {{ color: #2E4780; }}
     .kpis {{
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -866,6 +964,12 @@ def generate_showcase_report(
       border-radius: 8px;
       background: var(--panel);
     }}
+    figcaption {{
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }}
     .data-table {{
       width: 100%;
       border-collapse: collapse;
@@ -895,8 +999,29 @@ def generate_showcase_report(
       border-radius: 6px;
       color: var(--ink);
     }}
+    .split {{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: 18px 0;
+    }}
+    .note {{
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      padding: 16px;
+    }}
+    .note h3 {{
+      margin: 0 0 8px;
+      font-size: 17px;
+    }}
+    .note ul {{
+      margin: 0;
+      padding-left: 20px;
+    }}
     @media (max-width: 760px) {{
       .kpis {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+      .split {{ grid-template-columns: 1fr; }}
     }}
     @media (max-width: 520px) {{
       .kpis {{ grid-template-columns: 1fr; }}
@@ -909,10 +1034,10 @@ def generate_showcase_report(
   <header>
     <h1>Citi Bike Time-Series Showcase</h1>
     <p>
-      This companion report turns the January 2024 demand profile into an
-      explicit time-series portfolio checklist: regular time indexing,
-      seasonality, autocorrelation, lag features, rolling validation,
-      decomposition-style residuals, and forecast governance.
+      This companion report turns the January 2024 Citi Bike demand profile
+      into a reviewer-ready time-series case study. It shows how the hourly
+      target is built, which temporal signals appear, how transparent baselines
+      are tested, and where the current one-month scope still limits the claim.
     </p>
   </header>
 
@@ -930,20 +1055,39 @@ def generate_showcase_report(
       <span>best rolling-origin baseline</span>
     </div>
     <div class="kpi">
-      <strong>{html.escape(str(best_mae))}</strong>
+      <strong>{html.escape(best_mae)}</strong>
       <span>best rolling MAE, rides/hour</span>
     </div>
   </section>
 
   <section>
-    <h2>Why This Is A Time-Series Showcase</h2>
+    <h2>Review Path</h2>
     <p class="callout">
-      The project now demonstrates the core workflow a reviewer expects:
-      construct a regular time index, expose seasonality and autocorrelation,
-      screen lag features, benchmark transparent forecasts, validate across
-      rolling origins, inspect residuals, and document the limits before
-      recommending heavier models.
+      Read this report as the methods layer. It proves the project is not just
+      a chart export: it builds a regular hourly index, checks seasonality and
+      autocorrelation, screens lag features, scores leakage-safe rolling
+      baselines, inspects residuals, and documents what remains unproven.
     </p>
+    <div class="split">
+      <div class="note">
+        <h3>What this proves</h3>
+        <ul>
+          <li>The target grain is explicit: valid trip starts per hour.</li>
+          <li>The hourly panel is regular, with no missing or duplicate hours.</li>
+          <li>Daily and weekly lag structure is visible before modeling.</li>
+          <li>Baselines are scored from history available before each origin.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>What it does not prove yet</h3>
+        <ul>
+          <li>Annual seasonality or production forecast stability.</li>
+          <li>Causal weather effects or event root causes.</li>
+          <li>Station-level performance with stable station identifiers.</li>
+          <li>Calibrated prediction intervals.</li>
+        </ul>
+      </div>
+    </div>
   </section>
 
   <section>
@@ -953,12 +1097,39 @@ def generate_showcase_report(
 
   <section>
     <h2>Rolling Backtest Summary</h2>
-    {table_html(rolling_metrics)}
+    {table_html(
+        rolling_report,
+        columns=["model", "origins", "holdout_hours", "mean_actual", "mae", "rmse", "mape"],
+        rename={
+            "model": "Model",
+            "origins": "Origins",
+            "holdout_hours": "Holdout Hours",
+            "mean_actual": "Mean Actual",
+            "mae": "MAE",
+            "rmse": "RMSE",
+            "mape": "MAPE",
+        },
+        formatters={
+            "mean_actual": lambda value: fmt_number(value),
+            "mae": lambda value: fmt_number(value),
+            "rmse": lambda value: fmt_number(value),
+            "mape": lambda value: fmt_percent(value),
+        },
+    )}
   </section>
 
   <section>
     <h2>Time-Series Coverage Map</h2>
-    {table_html(coverage)}
+    {table_html(
+        coverage,
+        rename={
+            "time_series_area": "Area",
+            "artifact": "Artifact",
+            "status": "Status",
+            "reviewer_value": "Reviewer Value",
+            "caveat": "Caveat",
+        },
+    )}
   </section>
 
   <section>

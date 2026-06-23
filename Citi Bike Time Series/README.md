@@ -67,6 +67,19 @@ specific decision such as rebalancing or station planning.
 
 For the full metric dictionary, see [docs/MEASURES.md](docs/MEASURES.md).
 
+## Reviewer Path
+
+If you are reviewing this as a portfolio project, start here:
+
+1. Open [outputs/time_series_showcase.html](outputs/time_series_showcase.html)
+   to see the time-series methods proof: regular index, autocorrelation, lag
+   features, rolling validation, and residual diagnostics.
+2. Open [outputs/decision_report.html](outputs/decision_report.html) to see the
+   business-facing interpretation and recommendation.
+3. Read [docs/TIME_SERIES_SHOWCASE.md](docs/TIME_SERIES_SHOWCASE.md) for the
+   interview narrative: what the project proves, what it does not prove, and
+   how it should be extended.
+
 ## Reports
 
 - [outputs/report.html](outputs/report.html): first-pass time-series profile

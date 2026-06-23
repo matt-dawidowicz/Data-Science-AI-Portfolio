@@ -41,6 +41,7 @@
       line-height: 1.62;
       color: var(--muted);
     }
+    a { color: #2E4780; }
     .kpis {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -74,6 +75,12 @@
       border-radius: 8px;
       background: var(--panel);
     }
+    figcaption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
     .data-table {
       width: 100%;
       border-collapse: collapse;
@@ -103,8 +110,29 @@
       border-radius: 6px;
       color: var(--ink);
     }
+    .split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: 18px 0;
+    }
+    .note {
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .note h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+    .note ul {
+      margin: 0;
+      padding-left: 20px;
+    }
     @media (max-width: 760px) {
       .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .split { grid-template-columns: 1fr; }
     }
     @media (max-width: 520px) {
       .kpis { grid-template-columns: 1fr; }
@@ -117,10 +145,10 @@
   <header>
     <h1>Citi Bike Time-Series Showcase</h1>
     <p>
-      This companion report turns the January 2024 demand profile into an
-      explicit time-series portfolio checklist: regular time indexing,
-      seasonality, autocorrelation, lag features, rolling validation,
-      decomposition-style residuals, and forecast governance.
+      This companion report turns the January 2024 Citi Bike demand profile
+      into a reviewer-ready time-series case study. It shows how the hourly
+      target is built, which temporal signals appear, how transparent baselines
+      are tested, and where the current one-month scope still limits the claim.
     </p>
   </header>
 
@@ -134,24 +162,43 @@
       <span>missing hours in fixed panel</span>
     </div>
     <div class="kpi">
-      <strong>previous_day</strong>
+      <strong>Previous day</strong>
       <span>best rolling-origin baseline</span>
     </div>
     <div class="kpi">
-      <strong>773.56</strong>
+      <strong>774</strong>
       <span>best rolling MAE, rides/hour</span>
     </div>
   </section>
 
   <section>
-    <h2>Why This Is A Time-Series Showcase</h2>
+    <h2>Review Path</h2>
     <p class="callout">
-      The project now demonstrates the core workflow a reviewer expects:
-      construct a regular time index, expose seasonality and autocorrelation,
-      screen lag features, benchmark transparent forecasts, validate across
-      rolling origins, inspect residuals, and document the limits before
-      recommending heavier models.
+      Read this report as the methods layer. It proves the project is not just
+      a chart export: it builds a regular hourly index, checks seasonality and
+      autocorrelation, screens lag features, scores leakage-safe rolling
+      baselines, inspects residuals, and documents what remains unproven.
     </p>
+    <div class="split">
+      <div class="note">
+        <h3>What this proves</h3>
+        <ul>
+          <li>The target grain is explicit: valid trip starts per hour.</li>
+          <li>The hourly panel is regular, with no missing or duplicate hours.</li>
+          <li>Daily and weekly lag structure is visible before modeling.</li>
+          <li>Baselines are scored from history available before each origin.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>What it does not prove yet</h3>
+        <ul>
+          <li>Annual seasonality or production forecast stability.</li>
+          <li>Causal weather effects or event root causes.</li>
+          <li>Station-level performance with stable station identifiers.</li>
+          <li>Calibrated prediction intervals.</li>
+        </ul>
+      </div>
+    </div>
   </section>
 
   <section>
@@ -159,85 +206,85 @@
     
         <figure>
           <img src="charts/autocorrelation_profile.png" alt="autocorrelation profile">
+          <figcaption>Daily and weekly peaks make the lag structure visible before any model is trained.</figcaption>
         </figure>
         
 
         <figure>
           <img src="charts/lag_feature_correlations.png" alt="lag feature correlations">
+          <figcaption>Lagged demand and rolling means screen as stronger candidates than raw weather fields.</figcaption>
         </figure>
         
 
         <figure>
           <img src="charts/rolling_backtest_mae.png" alt="rolling backtest mae">
+          <figcaption>Repeated forecast origins make the benchmark harder to hand-wave than a single split.</figcaption>
         </figure>
         
 
         <figure>
           <img src="charts/decomposition_proxy.png" alt="decomposition proxy">
+          <figcaption>The trend and weekday/hour expected line separate level, seasonality, and residual movement.</figcaption>
         </figure>
         
 
         <figure>
           <img src="charts/seasonal_residual_distribution.png" alt="seasonal residual distribution">
+          <figcaption>Residual spread frames anomaly candidates without pretending to explain root cause.</figcaption>
         </figure>
         
   </section>
 
   <section>
     <h2>Rolling Backtest Summary</h2>
-    <table border="1" class="dataframe data-table">
+    <table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
-      <th>model</th>
-      <th>origins</th>
-      <th>holdout_hours</th>
-      <th>mean_actual</th>
-      <th>n</th>
-      <th>mae</th>
-      <th>rmse</th>
-      <th>mape</th>
+      <th>Model</th>
+      <th>Origins</th>
+      <th>Holdout Hours</th>
+      <th>Mean Actual</th>
+      <th>MAE</th>
+      <th>RMSE</th>
+      <th>MAPE</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>previous_day</td>
+      <td>Previous day</td>
       <td>17</td>
       <td>408</td>
-      <td>2389.034314</td>
-      <td>408</td>
-      <td>773.558824</td>
-      <td>1241.575764</td>
-      <td>0.477443</td>
+      <td>2,389</td>
+      <td>774</td>
+      <td>1,242</td>
+      <td>47.7%</td>
     </tr>
     <tr>
-      <td>hour_of_day_profile</td>
+      <td>Hour-of-day profile</td>
       <td>17</td>
       <td>408</td>
-      <td>2389.034314</td>
-      <td>408</td>
-      <td>851.332402</td>
-      <td>1215.810193</td>
-      <td>0.624370</td>
+      <td>2,389</td>
+      <td>851</td>
+      <td>1,216</td>
+      <td>62.4%</td>
     </tr>
     <tr>
-      <td>weekday_hour_profile</td>
+      <td>Weekday/hour profile</td>
       <td>17</td>
       <td>408</td>
-      <td>2389.034314</td>
-      <td>408</td>
-      <td>860.690768</td>
-      <td>1209.371088</td>
-      <td>0.514042</td>
+      <td>2,389</td>
+      <td>861</td>
+      <td>1,209</td>
+      <td>51.4%</td>
     </tr>
     <tr>
-      <td>previous_week</td>
+      <td>Previous week</td>
       <td>17</td>
       <td>408</td>
-      <td>2389.034314</td>
-      <td>408</td>
-      <td>1107.196078</td>
-      <td>1568.033039</td>
-      <td>0.535399</td>
+      <td>2,389</td>
+      <td>1,107</td>
+      <td>1,568</td>
+      <td>53.5%</td>
     </tr>
   </tbody>
 </table>
@@ -245,14 +292,14 @@
 
   <section>
     <h2>Time-Series Coverage Map</h2>
-    <table border="1" class="dataframe data-table">
+    <table class="dataframe data-table">
   <thead>
     <tr style="text-align: right;">
-      <th>time_series_area</th>
-      <th>artifact</th>
-      <th>status</th>
-      <th>reviewer_value</th>
-      <th>caveat</th>
+      <th>Area</th>
+      <th>Artifact</th>
+      <th>Status</th>
+      <th>Reviewer Value</th>
+      <th>Caveat</th>
     </tr>
   </thead>
   <tbody>

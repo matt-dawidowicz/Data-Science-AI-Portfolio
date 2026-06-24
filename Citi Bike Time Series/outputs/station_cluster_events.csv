@@ -1,0 +1,46 @@
+date,event_name,event_type,event_window,event_intensity,is_federal_holiday,is_major_event
+2023-12-31,New Year's Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-01-01,New Year's Day,federal_holiday,event_day,0.75,True,False
+2024-01-02,New Year's Day,federal_holiday,lag_day,0.1875,True,False
+2024-01-14,Martin Luther King Jr. Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-01-15,Martin Luther King Jr. Day,federal_holiday,event_day,0.75,True,False
+2024-01-16,Martin Luther King Jr. Day,federal_holiday,lag_day,0.1875,True,False
+2024-02-18,Presidents' Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-02-19,Presidents' Day,federal_holiday,event_day,0.75,True,False
+2024-02-20,Presidents' Day,federal_holiday,lag_day,0.1875,True,False
+2024-05-26,Memorial Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-05-27,Memorial Day,federal_holiday,event_day,0.75,True,False
+2024-05-28,Memorial Day,federal_holiday,lag_day,0.1875,True,False
+2024-06-18,Juneteenth,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-06-19,Juneteenth,federal_holiday,event_day,0.75,True,False
+2024-06-20,Juneteenth,federal_holiday,lag_day,0.1875,True,False
+2024-06-29,NYC Pride March,major_parade,lead_day,0.35,False,True
+2024-06-30,NYC Pride March,major_parade,event_day,1.0,False,True
+2024-07-01,NYC Pride March,major_parade,lag_day,0.25,False,True
+2024-07-03,Independence Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-07-04,Independence Day,federal_holiday,event_day,0.75,True,False
+2024-07-05,Independence Day,federal_holiday,lag_day,0.1875,True,False
+2024-09-01,Labor Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-09-02,Labor Day,federal_holiday,event_day,0.75,True,False
+2024-09-03,Labor Day,federal_holiday,lag_day,0.1875,True,False
+2024-10-13,Indigenous Peoples' Day / Columbus Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-10-14,Indigenous Peoples' Day / Columbus Day,federal_holiday,event_day,0.75,True,False
+2024-10-15,Indigenous Peoples' Day / Columbus Day,federal_holiday,lag_day,0.1875,True,False
+2024-11-02,TCS New York City Marathon,major_race,lead_day,0.35,False,True
+2024-11-03,TCS New York City Marathon,major_race,event_day,1.0,False,True
+2024-11-04,TCS New York City Marathon,major_race,lag_day,0.25,False,True
+2024-11-10,Veterans Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-11-11,Veterans Day,federal_holiday,event_day,0.75,True,False
+2024-11-12,Veterans Day,federal_holiday,lag_day,0.1875,True,False
+2024-11-27,Macy's Thanksgiving Day Parade,major_parade,lead_day,0.315,True,True
+2024-11-27,Thanksgiving Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-11-28,Macy's Thanksgiving Day Parade,major_parade,event_day,0.9,True,True
+2024-11-28,Thanksgiving Day,federal_holiday,event_day,0.75,True,False
+2024-11-29,Macy's Thanksgiving Day Parade,major_parade,lag_day,0.225,True,True
+2024-11-29,Thanksgiving Day,federal_holiday,lag_day,0.1875,True,False
+2024-12-24,Christmas Day,federal_holiday,lead_day,0.26249999999999996,True,False
+2024-12-25,Christmas Day,federal_holiday,event_day,0.75,True,False
+2024-12-26,Christmas Day,federal_holiday,lag_day,0.1875,True,False
+2024-12-30,New Year's Eve,civic_event,lead_day,0.27999999999999997,False,True
+2024-12-31,New Year's Eve,civic_event,event_day,0.8,False,True
+2025-01-01,New Year's Eve,civic_event,lag_day,0.2,False,True

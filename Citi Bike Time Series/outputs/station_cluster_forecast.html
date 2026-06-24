@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Citi Bike Station-Cluster Forecasting</title>
+  <style>
+    :root {
+      --surface: #FCFCFD;
+      --panel: #FFFFFF;
+      --ink: #1F2430;
+      --muted: #6F768A;
+      --grid: #E6E8F0;
+      --accent: #5477C4;
+      --warm: #F0986E;
+      --good: #71B436;
+    }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: Aptos, Inter, "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 20px 72px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(32px, 5vw, 50px);
+      line-height: 1.03;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 36px 0 12px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+    h3 {
+      margin: 24px 0 8px;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+    p, li {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.62;
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 24px 0 32px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .kpi strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .kpi span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .summary {
+      border-left: 4px solid var(--accent);
+      background: #EAF1FE;
+      border-radius: 6px;
+      padding: 16px 18px;
+    }
+    .summary li {
+      margin: 8px 0;
+      color: var(--ink);
+    }
+    .callout {
+      border-left: 4px solid var(--warm);
+      background: #FFEDDE;
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+    figure {
+      margin: 24px 0;
+    }
+    figure img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    figcaption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+      margin: 14px 0 24px;
+    }
+    .data-table th, .data-table td {
+      border-bottom: 1px solid var(--grid);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .data-table th {
+      background: #F4F5F7;
+      color: var(--ink);
+    }
+    .data-table tr:last-child td {
+      border-bottom: 0;
+    }
+    @media (max-width: 760px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+    @media (max-width: 520px) {
+      .kpis { grid-template-columns: 1fr; }
+      .data-table { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Citi Bike Station-Cluster Forecasting</h1>
+  </header>
+
+  <section>
+    <h2>Executive Summary</h2>
+    <ul class="summary">
+      <li><strong>The upgrade changes the target from a citywide hourly total to operational demand pools.</strong> It models the system total plus 6 station clusters built from stable station IDs, observed station names, and observed coordinates.</li>
+      <li><strong>The richer model is evaluated, not assumed better.</strong> The weather/event ridge beat previous-week MAE in 6 of 6 station clusters and beat the simpler calendar-lag ridge in 6 of 6 clusters.</li>
+      <li><strong>The decision fit is rebalancing and capacity planning.</strong> The highest-priority planning cluster in this run is Cluster 01 - W 21 St &amp; 6 Ave area because it combines scale, forecast error, and operating relevance.</li>
+      <li><strong>Recommended use:</strong> Use weather/event cluster forecasts as a rebalancing planning layer, with the calendar-lag ridge retained as the control benchmark.</li>
+    </ul>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi"><strong>44,241,607</strong><span>system trip starts modeled</span></div>
+    <div class="kpi"><strong>6</strong><span>station clusters</span></div>
+    <div class="kpi"><strong>44</strong><span>rolling origins per segment</span></div>
+    <div class="kpi"><strong>99.9%</strong><span>valid rides with station ID</span></div>
+  </section>
+
+  <section>
+    <h2>Station clusters make the forecast operational</h2>
+    <p>
+      The prior proof showed that aggregate hourly demand can be forecast from
+      calendar and lag structure. This layer asks the more useful operating
+      question: where should a rebalancing or capacity-planning review look
+      first? Clusters are built from station IDs and observed coordinates, then
+      scored as their own hourly targets.
+    </p>
+    <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Cluster</th>
+      <th>Stations</th>
+      <th>Annual Starts</th>
+      <th>System Share</th>
+      <th>Highest-Volume Station</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Cluster 01 - W 21 St &amp; 6 Ave area</td>
+      <td>42</td>
+      <td>3,971,209</td>
+      <td>9.0%</td>
+      <td>W 21 St &amp; 6 Ave</td>
+    </tr>
+    <tr>
+      <td>Cluster 02 - 11 Ave &amp; W 41 St area</td>
+      <td>28</td>
+      <td>2,436,861</td>
+      <td>5.5%</td>
+      <td>11 Ave &amp; W 41 St</td>
+    </tr>
+    <tr>
+      <td>Cluster 03 - West St &amp; Chambers St area</td>
+      <td>27</td>
+      <td>2,368,925</td>
+      <td>5.4%</td>
+      <td>West St &amp; Chambers St</td>
+    </tr>
+    <tr>
+      <td>Cluster 04 - Ave A &amp; E 14 St area</td>
+      <td>14</td>
+      <td>1,105,087</td>
+      <td>2.5%</td>
+      <td>Ave A &amp; E 14 St</td>
+    </tr>
+    <tr>
+      <td>Cluster 05 - E 72 St &amp; York Ave area</td>
+      <td>8</td>
+      <td>618,213</td>
+      <td>1.4%</td>
+      <td>E 72 St &amp; York Ave</td>
+    </tr>
+    <tr>
+      <td>Cluster 06 - Hanson Pl &amp; Ashland Pl area</td>
+      <td>1</td>
+      <td>78,467</td>
+      <td>0.2%</td>
+      <td>Hanson Pl &amp; Ashland Pl</td>
+    </tr>
+  </tbody>
+</table>
+  </section>
+
+  <section>
+    <h2>Weather and event features must earn their place</h2>
+    <p>
+      The richer model receives the same calendar and prior-demand features as
+      the baseline ridge model, plus hourly weather, federal holiday windows,
+      and selected major NYC event windows. The table below shows whether that
+      extra context reduces out-of-sample MAE in rolling 24-hour validation.
+    </p>
+    <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Segment</th>
+      <th>Previous Week MAE</th>
+      <th>Calendar-Lag MAE</th>
+      <th>Weather/Event MAE</th>
+      <th>Lift vs Previous Week</th>
+      <th>Lift vs Calendar-Lag</th>
+      <th>Best Model</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Cluster 01 - W 21 St &amp; 6 Ave area</td>
+      <td>91</td>
+      <td>75</td>
+      <td>72</td>
+      <td>+21.1%</td>
+      <td>+4.1%</td>
+      <td>Weather/event ridge</td>
+    </tr>
+    <tr>
+      <td>Cluster 02 - 11 Ave &amp; W 41 St area</td>
+      <td>56</td>
+      <td>47</td>
+      <td>46</td>
+      <td>+17.9%</td>
+      <td>+3.8%</td>
+      <td>Weather/event ridge</td>
+    </tr>
+    <tr>
+      <td>Cluster 03 - West St &amp; Chambers St area</td>
+      <td>61</td>
+      <td>49</td>
+      <td>46</td>
+      <td>+25.0%</td>
+      <td>+6.2%</td>
+      <td>Weather/event ridge</td>
+    </tr>
+    <tr>
+      <td>Cluster 04 - Ave A &amp; E 14 St area</td>
+      <td>28</td>
+      <td>24</td>
+      <td>22</td>
+      <td>+19.8%</td>
+      <td>+4.7%</td>
+      <td>Weather/event ridge</td>
+    </tr>
+    <tr>
+      <td>Cluster 05 - E 72 St &amp; York Ave area</td>
+      <td>18</td>
+      <td>15</td>
+      <td>15</td>
+      <td>+20.0%</td>
+      <td>+4.2%</td>
+      <td>Weather/event ridge</td>
+    </tr>
+    <tr>
+      <td>Cluster 06 - Hanson Pl &amp; Ashland Pl area</td>
+      <td>4</td>
+      <td>3</td>
+      <td>3</td>
+      <td>+20.6%</td>
+      <td>+1.0%</td>
+      <td>Weather/event ridge</td>
+    </tr>
+    <tr>
+      <td>System total</td>
+      <td>919</td>
+      <td>750</td>
+      <td>711</td>
+      <td>+22.7%</td>
+      <td>+5.2%</td>
+      <td>Weather/event ridge</td>
+    </tr>
+  </tbody>
+</table>
+  </section>
+
+  <section>
+    <h2>Visual evidence</h2>
+
+        <figure>
+          <img src="charts/station_cluster_map.png" alt="station cluster map">
+          <figcaption>Station clusters are built from stable station IDs and observed coordinates.</figcaption>
+        </figure>
+
+
+        <figure>
+          <img src="charts/station_cluster_volume.png" alt="station cluster volume">
+          <figcaption>Annual starts by station cluster, giving the operating scale of each segment.</figcaption>
+        </figure>
+
+
+        <figure>
+          <img src="charts/station_cluster_model_lift.png" alt="station cluster model lift">
+          <figcaption>Weather/event ridge MAE improvement versus the previous-week baseline by segment.</figcaption>
+        </figure>
+
+
+        <figure>
+          <img src="charts/station_cluster_segment_mae.png" alt="station cluster segment mae">
+          <figcaption>MAE comparison for previous-week, calendar-lag ridge, and weather/event ridge models.</figcaption>
+        </figure>
+
+
+        <figure>
+          <img src="charts/station_cluster_forecast_example.png" alt="station cluster forecast example">
+          <figcaption>Final 24-hour forecast trace for the top planning-priority station cluster.</figcaption>
+        </figure>
+
+  </section>
+
+  <section>
+    <h2>Planning recommendation</h2>
+    <p class="callout">
+      Tie this model to <strong>Rebalancing and station-capacity planning</strong>.
+      Use cluster-level forecast misses and event/weather pressure as a watchlist
+      for where to review bike availability, dock availability, and field-crew
+      coverage. Do not treat trip-start demand as a direct inventory measure.
+    </p>
+    <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Cluster</th>
+      <th>Annual Starts</th>
+      <th>Weather/Event MAE</th>
+      <th>Weather/Event WAPE</th>
+      <th>Lift vs Previous Week</th>
+      <th>Planning Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Cluster 01 - W 21 St &amp; 6 Ave area</td>
+      <td>3,971,209</td>
+      <td>72</td>
+      <td>14.3%</td>
+      <td>+21.1%</td>
+      <td>Use as a rebalancing watchlist signal when event or weather pressure is high.</td>
+    </tr>
+    <tr>
+      <td>Cluster 02 - 11 Ave &amp; W 41 St area</td>
+      <td>2,436,861</td>
+      <td>46</td>
+      <td>15.0%</td>
+      <td>+17.9%</td>
+      <td>Use as a rebalancing watchlist signal when event or weather pressure is high.</td>
+    </tr>
+    <tr>
+      <td>Cluster 03 - West St &amp; Chambers St area</td>
+      <td>2,368,925</td>
+      <td>46</td>
+      <td>15.3%</td>
+      <td>+25.0%</td>
+      <td>Use as a rebalancing watchlist signal when event or weather pressure is high.</td>
+    </tr>
+    <tr>
+      <td>Cluster 04 - Ave A &amp; E 14 St area</td>
+      <td>1,105,087</td>
+      <td>22</td>
+      <td>15.6%</td>
+      <td>+19.8%</td>
+      <td>Use as a rebalancing watchlist signal when event or weather pressure is high.</td>
+    </tr>
+  </tbody>
+</table>
+  </section>
+
+  <section>
+    <h2>Further questions</h2>
+    <ul>
+      <li>Would the same cluster ranking hold with dock capacity, bike availability, and rebalancing truck logs?</li>
+      <li>Should the cluster map be rebuilt quarterly as stations open, close, or shift coordinates?</li>
+      <li>Would weather forecasts available at the origin perform differently from the observed weather used in this historical proof?</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Caveats and assumptions</h2>
+    <ul>
+      <li>The target is trip starts, not unmet demand, empty docks, bike stockouts, or truck moves.</li>
+      <li>Weather inputs use historical Open-Meteo reanalysis as a stand-in for weather forecasts that would be available before an operating day.</li>
+      <li>The event calendar is a compact public-calendar feature set, not a complete New York City events database.</li>
+      <li>Station metadata is derived from observed trip-history station IDs, names, and coordinates, not an official capacity or station-status feed.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

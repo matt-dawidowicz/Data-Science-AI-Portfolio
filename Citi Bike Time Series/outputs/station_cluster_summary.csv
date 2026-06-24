@@ -1,0 +1,7 @@
+cluster_id,cluster_label,annual_starts,station_count,center_latitude,center_longitude,top_station,share_of_system_starts,rank,segment_id,segment_label,segment_type
+cluster_01,Cluster 01 - W 21 St & 6 Ave area,3971209,42,40.74450303661837,-73.99233610550611,W 21 St & 6 Ave,0.08976186149838544,1,cluster_01,Cluster 01 - W 21 St & 6 Ave area,station_cluster
+cluster_02,Cluster 02 - 11 Ave & W 41 St area,2436861,28,40.7654760170714,-73.9854963293668,11 Ave & W 41 St,0.055080752378637604,2,cluster_02,Cluster 02 - 11 Ave & W 41 St area,station_cluster
+cluster_03,Cluster 03 - West St & Chambers St area,2368925,27,40.723417824599224,-73.99879266026399,West St & Chambers St,0.05354518428772264,3,cluster_03,Cluster 03 - West St & Chambers St area,station_cluster
+cluster_04,Cluster 04 - Ave A & E 14 St area,1105087,14,40.72497130995038,-73.97785788637866,Ave A & E 14 St,0.024978455235588528,4,cluster_04,Cluster 04 - Ave A & E 14 St area,station_cluster
+cluster_05,Cluster 05 - E 72 St & York Ave area,618213,8,40.77068516566384,-73.95896023953263,E 72 St & York Ave,0.013973565652802802,5,cluster_05,Cluster 05 - E 72 St & York Ave area,station_cluster
+cluster_06,Cluster 06 - Hanson Pl & Ashland Pl area,78467,1,40.68506807308177,-73.97790759801863,Hanson Pl & Ashland Pl,0.0017736019399114504,6,cluster_06,Cluster 06 - Hanson Pl & Ashland Pl area,station_cluster

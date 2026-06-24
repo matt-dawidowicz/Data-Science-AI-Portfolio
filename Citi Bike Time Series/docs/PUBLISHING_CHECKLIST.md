@@ -7,14 +7,17 @@ Use this before adding the project to the portfolio repository.
 - `README.md`
 - `requirements.txt`
 - `.gitignore`
+- `.coveragerc`
 - `src/citibike_time_series_profile.py`
 - `src/citibike_decision_report.py`
 - `src/citibike_time_series_showcase.py`
 - `src/citibike_multi_month_proof.py`
+- `src/citibike_station_cluster_forecast.py`
 - `outputs/report.html`
 - `outputs/decision_report.html`
 - `outputs/time_series_showcase.html`
 - `outputs/multi_month_proof.html`
+- `outputs/station_cluster_forecast.html`
 - `outputs/profile_summary.json`
 - `outputs/forecast_backtest_metrics.csv`
 - `outputs/rolling_backtest_metrics.csv`
@@ -31,6 +34,19 @@ Use this before adding the project to the portfolio repository.
 - `outputs/multi_month_origin_metrics.csv`
 - `outputs/multi_month_backtest_scored.csv`
 - `outputs/multi_month_top_stations.csv`
+- `outputs/station_cluster_forecast_summary.json`
+- `outputs/station_cluster_source_inventory.csv`
+- `outputs/station_cluster_station_metadata.csv`
+- `outputs/station_cluster_assignments.csv`
+- `outputs/station_cluster_summary.csv`
+- `outputs/station_cluster_hourly_profile.csv`
+- `outputs/station_cluster_weather_hourly.csv`
+- `outputs/station_cluster_events.csv`
+- `outputs/station_cluster_model_metrics.csv`
+- `outputs/station_cluster_model_lift.csv`
+- `outputs/station_cluster_capacity_priorities.csv`
+- `outputs/station_cluster_origin_metrics.csv`
+- `outputs/station_cluster_backtest_scored.csv`
 - `outputs/anomaly_hours.csv`
 - `outputs/top_stations.csv`
 - `outputs/member_mix.csv`
@@ -39,6 +55,7 @@ Use this before adding the project to the portfolio repository.
 - `data/sample_outputs/*.csv`
 - `data/sample_outputs/profile_summary.json`
 - `docs/*.md`
+- `tests/*.py`
 
 ## Files To Exclude
 
@@ -46,6 +63,8 @@ Use this before adding the project to the portfolio repository.
 - Downloaded raw Citi Bike ZIP files
 - Downloaded weather cache files
 - `__pycache__/`
+- `.coverage`
+- `htmlcov/`
 - Local notebook checkpoints
 - Any temporary rendering screenshots
 
@@ -54,13 +73,20 @@ Use this before adding the project to the portfolio repository.
 Run these from the project folder:
 
 ```bash
+python -m ruff format src
+python -m ruff check src
+python -m pydocstyle src
+python -m coverage run -m pytest
+python -m coverage report
 python -m py_compile src/citibike_time_series_profile.py
 python -m py_compile src/citibike_decision_report.py
 python -m py_compile src/citibike_time_series_showcase.py
 python -m py_compile src/citibike_multi_month_proof.py
+python -m py_compile src/citibike_station_cluster_forecast.py
 python src/citibike_decision_report.py
 python src/citibike_time_series_showcase.py
 python src/citibike_multi_month_proof.py --start-month 2024-01 --end-month 2024-12 --skip-download
+python src/citibike_station_cluster_forecast.py --start-month 2024-01 --end-month 2024-12 --skip-download --skip-weather-download
 ```
 
 Then manually open:
@@ -69,6 +95,7 @@ Then manually open:
 - `outputs/decision_report.html`
 - `outputs/time_series_showcase.html`
 - `outputs/multi_month_proof.html`
+- `outputs/station_cluster_forecast.html`
 
 Check:
 
@@ -82,6 +109,13 @@ Check:
   performance.
 - The multi-month proof clearly says it is a stronger benchmark, not a
   production operations model.
+- The station-cluster report says trip-start forecasts are not bike inventory,
+  station capacity, or dock availability.
+- Weather/event lift is shown against both previous-week and calendar-lag ridge
+  baselines.
+- `docs/CODE_QUALITY.md` reflects the exact style checks that passed locally.
+- Coverage reports 100% for the configured deterministic unit-test layer, and
+  the `.coveragerc` exclusions are limited to integration/reporting paths.
 
 ## Suggested Portfolio Repository Placement
 
@@ -104,11 +138,13 @@ time-series section.
 Time-series profiling and forecasting project built from public Citi Bike
 trip-history data. The analysis starts with a January methods layer, then adds
 a full-2024 proof with 44.25M valid rows, 8,784 hourly observations, 44 rolling
-forecast origins, transparent baselines, and a calendar-lag ridge benchmark.
+forecast origins, transparent baselines, a calendar-lag ridge benchmark, and a
+station-cluster layer for rebalancing/capacity planning.
 
-- Skills: pandas, time-series features, baseline forecasting, anomaly
-  detection, Seaborn/Matplotlib, report generation
-- Main report: `Citi Bike Time Series/outputs/multi_month_proof.html`
+- Skills: pandas, time-series features, baseline forecasting, grouped time
+  series, weather/event features, anomaly framing, Seaborn/Matplotlib, report
+  generation
+- Main report: `Citi Bike Time Series/outputs/station_cluster_forecast.html`
 - Documentation: `Citi Bike Time Series/docs/`
 ```
 
@@ -117,8 +153,8 @@ forecast origins, transparent baselines, and a calendar-lag ridge benchmark.
 The current project is publishable as a stronger portfolio case study. To make
 it more operational:
 
-1. Add station IDs and station metadata.
-2. Build station-cluster forecasts.
-3. Add weather and event features to the rolling validation loop.
-4. Compare aggregate and station-cluster error separately.
-5. Add event and outage context for anomaly interpretation.
+1. Add station capacity and live availability snapshots.
+2. Evaluate stockout or full-dock risk after forecasted demand pressure.
+3. Add calibrated alert thresholds for rebalancing review.
+4. Compare performance by commute peak, weather pressure, and event windows.
+5. Add outage and station-status context for anomaly interpretation.

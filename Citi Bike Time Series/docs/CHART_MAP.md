@@ -33,6 +33,16 @@ turning into decoration.
 | Multi-month origin MAE | `outputs/charts/multi_month_origin_mae.png` | Multi-series trend | Is model performance stable across forecast origins? | Origin-level error shows whether a model only wins on average or survives difficult weeks. |
 | Multi-month forecast example | `outputs/charts/multi_month_forecast_example.png` | Two-series trend | What does the best model look like on the final scored origin? | A concrete 24-hour trace makes the validation less abstract. |
 
+## Station-Cluster Forecast Charts
+
+| Chart | File | Chart Family | Question | Supported Takeaway |
+| --- | --- | --- | --- | --- |
+| Station cluster map | `outputs/charts/station_cluster_map.png` | Scatter | Where are the clustered top station IDs? | Station IDs and observed coordinates create stable demand pools for planning. |
+| Station cluster volume | `outputs/charts/station_cluster_volume.png` | Ranked horizontal bar | Which clusters carry the most starts? | Cluster 01 is the highest-scale rebalancing/capacity-planning target. |
+| Station cluster model lift | `outputs/charts/station_cluster_model_lift.png` | Diverging horizontal bar | Does the weather/event ridge beat previous week by segment? | The richer model improves MAE for the system total and all clusters. |
+| Station cluster segment MAE | `outputs/charts/station_cluster_segment_mae.png` | Grouped horizontal bar | How do previous-week, calendar-lag ridge, and weather/event ridge compare by target? | The richer model beats both baselines without hiding the aggregate/cluster scale difference. |
+| Station cluster forecast example | `outputs/charts/station_cluster_forecast_example.png` | Multi-series trend | What does the top planning-priority cluster forecast look like on the final origin? | Cluster forecasts can be reviewed as concrete 24-hour operating traces. |
+
 ## Palette And Encoding Notes
 
 - Trend and lag structure use blue as the primary analytical color.
@@ -40,6 +50,8 @@ turning into decoration.
 - Signed or residual-oriented views use orange, olive, or pink with explicit
   zero/reference lines.
 - Static HTML reports use PNG images so the project remains portable on GitHub.
+- Station-cluster colors use a restrained multi-category palette because
+  cluster identity is the point of the map and volume chart.
 
 ## Quality Checks
 
@@ -52,4 +64,6 @@ Before publishing:
 - Confirm January-only limitations are visible near the January chart narrative.
 - Confirm full-year charts describe 2024 validation without claiming production
   readiness.
+- Confirm station-cluster charts describe trip-start demand, not inventory,
+  capacity, or stockout risk.
 

@@ -19,6 +19,10 @@ final local review. It already includes:
 - Rolling-origin baseline validation
 - Full-2024 rolling-origin forecast proof
 - Calendar + lag ridge benchmark against transparent baselines
+- Station ID metadata and deterministic station-cluster grouping
+- Station-cluster forecasts for system total plus top demand clusters
+- Weather, holiday, and event features tested in rolling validation
+- Rebalancing/capacity-planning priority table
 - Anomaly candidate table
 - Charts
 - HTML reports
@@ -41,43 +45,63 @@ The project now includes the first high-value upgrade:
 This does not make the project production-ready, but it makes the portfolio
 claim much stronger than the original one-month profile.
 
+## Completed Upgrade: Station-Cluster Forecasting
+
+The project now includes the next high-value upgrade:
+
+- 120 top station IDs clustered from observed station metadata
+- 6 station clusters plus the system total as modeled targets
+- 99.93% station ID coverage across fixed-window modeled starts
+- 8,784 hourly weather observations joined to the model panel
+- holiday windows and selected public event windows
+- previous-week, calendar-lag ridge, and weather/event ridge comparison
+- weather/event ridge wins for the system total and all 6 station clusters
+- rebalancing/capacity-planning recommendation and priority table
+
+This still does not make the project an inventory-control model. It forecasts
+trip-start demand by cluster, which is a useful planning signal but not the same
+as live bike availability, dock availability, or truck routing.
+
 ## High-Value Next Work
 
-### 1. Add Station Metadata
+### 1. Add Capacity And Availability Context
 
 Why it matters:
 
-- Station names can change.
-- Station IDs are needed for longitudinal analysis.
-- Capacity and location make forecasts more operational.
+- Rebalancing decisions depend on available bikes and docks, not just starts.
+- Station capacity turns demand pressure into a measurable operating risk.
+- Availability snapshots would let the model predict stockout or full-dock risk.
 
 Measures to add:
 
-- Station ID
-- Latitude and longitude
 - Station capacity
-- Active station days
-- Starts per station-day
-- Station-cluster demand
-- Station-cluster forecast error
-- Cross-station spatial lag features
+- Available bikes
+- Available docks
+- Stockout minutes
+- Full-dock minutes
+- Starts per available bike
+- Demand pressure per dock
+- Forecasted risk by cluster
 
-### 2. Build Station-Cluster Forecasts
+### 2. Calibrate A Rebalancing Watchlist
 
 Why it matters:
 
-- Aggregate demand is useful for a portfolio story.
-- Station-cluster demand is closer to rebalancing and operations.
+- The current report ranks planning priorities, but it does not set an alert
+  threshold.
+- A decision-ready operating model should say which clusters deserve action and
+  how confident the alert is.
 
 Measures to add:
 
-- Cluster hourly rides
-- Cluster share of total rides
-- Cluster forecast error
-- Peak-hour cluster load
-- Error by cluster and hour
+- Alert threshold
+- Precision and recall against stockout/full-dock outcomes
+- False-alert rate
+- Missed-risk rate
+- Peak-hour alert quality
+- Event-window alert quality
 
-### 3. Add Weather, Event, Or Stronger Model Features
+### 3. Add Stronger Model And Uncertainty Layers
 
 Candidate models:
 
@@ -97,6 +121,7 @@ Measures to add:
 - Baseline improvement percentage
 - Prediction interval coverage
 - Error stability across seasons
+- Cluster-level interval width
 
 ### 4. Make Anomalies Explainable
 
@@ -111,6 +136,7 @@ Context to add:
 - Station outages
 - System-wide availability
 - Public status feeds
+- Rebalancing activity
 
 Measures to add:
 
@@ -151,4 +177,6 @@ A strong final version would answer:
 > hours, and what operational action should be taken?
 
 That version would shift the project from descriptive portfolio profile to an
-applied forecasting and operations case study.
+applied forecasting and operations case study. The current station-cluster
+layer answers the first half of that question; the next version should prove
+the operational action with capacity and availability outcomes.

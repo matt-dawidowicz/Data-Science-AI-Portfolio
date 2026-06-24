@@ -14,6 +14,15 @@ The answer is yes for a portfolio profile. The data has enough volume and a
 visible weekday/hour pattern to support demand profiling, simple baseline
 forecasting, anomaly candidates, and a clear next-step roadmap.
 
+The project now also asks:
+
+> Does the approach still hold when extended to a full year of public data and
+> repeated forecast origins?
+
+The answer is also yes for a stronger portfolio proof. The full-2024 layer
+profiles 44.25M valid rows, builds a complete 8,784-hour panel, and evaluates
+44 weekly 24-hour forecast origins.
+
 ## Data Acquisition
 
 The profile script downloads the public January 2024 Citi Bike trip-history
@@ -26,6 +35,16 @@ https://s3.amazonaws.com/tripdata/202401-citibike-tripdata.zip
 It also optionally pulls hourly New York City weather from Open-Meteo for the
 same month. Downloaded raw files are cached under `work/data/`, which is
 excluded from Git.
+
+The multi-month proof script downloads public monthly archives for an inclusive
+month range:
+
+```text
+https://s3.amazonaws.com/tripdata/YYYYMM-citibike-tripdata.zip
+```
+
+The full-2024 run uses Jan.-Dec. 2024. Raw multi-month archives are cached under
+`work/data/multi_month/`, which is also excluded from Git.
 
 ## Required Raw Columns
 
@@ -212,6 +231,55 @@ whether a baseline works across repeated forecast starts. The current version is
 still limited by one month of data, so it should be presented as validation
 practice rather than production evidence.
 
+## Full-Year Rolling Proof
+
+Run:
+
+```text
+python src/citibike_multi_month_proof.py --start-month 2024-01 --end-month 2024-12
+```
+
+This script streams the monthly archives, applies the same timestamp and
+duration validity rules, aggregates trip starts to an hourly panel, and scores
+weekly 24-hour forecast origins.
+
+Current full-year validation settings:
+
+| Setting | Value |
+| --- | ---: |
+| Training warmup | 60 days |
+| Origin cadence | 7 days |
+| First origin | 2024-03-01 |
+| Last origin | 2024-12-27 |
+| Origins scored | 44 |
+| Forecast horizon | 24 hours |
+
+The leakage boundary is:
+
+```text
+train = rows where hour < origin
+test = rows where origin <= hour < origin + 24 hours
+```
+
+Models compared:
+
+| Model | Definition |
+| --- | --- |
+| Previous day | Forecast equals the value from 24 hours earlier |
+| Previous week | Forecast equals the value from 168 hours earlier |
+| Hour-of-day profile | Expanding training average for the same hour of day |
+| Weekday/hour profile | Expanding training average for the same weekday and hour |
+| Seasonal lag blend | 65% weekday/hour profile plus 35% previous-week forecast |
+| Calendar + lag ridge | Regularized linear model using calendar and prior-demand features |
+
+The ridge features are deliberately restricted to values known before the
+24-hour horizon: calendar cycles, weekend and holiday flags, elapsed time, lag
+24h, lag 168h, and rolling means anchored one day back.
+
+The current full-year run makes the project materially stronger: the calendar +
+lag ridge model scores 750 MAE across 44 origins, versus 918 MAE for previous
+week and 1,034 MAE for previous day.
+
 ## Forecast Reference Band
 
 The forecast chart uses a simple residual reference band built from previous
@@ -253,22 +321,29 @@ Current validation checks include:
 - Showcase diagnostics check for missing and duplicate hourly periods.
 - Rolling-origin outputs are regenerated from the existing hourly profile.
 - Static showcase charts are exported as PNG files for portable HTML review.
+- The full-year proof verifies a complete 8,784-hour 2024 panel with zero
+  missing hours.
+- The full-year proof compares six models across 44 weekly rolling origins.
+- Full-year raw archives remain ignored under `work/data/multi_month/`.
 
 ## Limitations
 
-- One winter month is too narrow for production forecasting.
+- The January report is one winter month; the full-year proof is stronger but
+  still not a production operations model.
 - Station names are not stable identifiers.
 - Weather is joined from a single city coordinate.
 - Forecast intervals are simple residual bands.
 - Anomaly rows are descriptive until external context is joined.
+- The full-year ridge model does not yet include weather or external events.
 
 ## Next Methodological Upgrade
 
-The strongest next upgrade is not a more complex model first. It is a stronger
-evaluation design:
+The strongest next upgrade is now station-cluster forecasting tied to one
+operating decision:
 
-1. Extend to 12-24 months.
-2. Add rolling holdout windows.
-3. Add station IDs and station metadata.
-4. Compare the calendar baseline with one stronger model.
-5. Evaluate aggregate and station-cluster accuracy separately.
+1. Add station IDs, station metadata, and stable station grouping.
+2. Forecast aggregate and station-cluster demand separately.
+3. Add weather and event features to the rolling validation loop.
+4. Compare station-cluster accuracy against previous-week and ridge baselines.
+5. Define the decision target: rebalancing, capacity planning, or anomaly
+   alerting.

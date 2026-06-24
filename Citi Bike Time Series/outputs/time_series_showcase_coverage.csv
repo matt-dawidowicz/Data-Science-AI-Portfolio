@@ -8,7 +8,7 @@ Autocorrelation,autocorrelation_profile.csv,Implemented,"Lag correlations expose
 Lag features,lag_feature_correlations.csv,Implemented,Candidate lags and rolling means are ranked before heavier modeling.,Correlation does not imply out-of-sample lift.
 Exogenous variables,hourly_profile.csv,Implemented,Weather fields are joined at hourly grain and evaluated descriptively.,"Weather is one NYC coordinate, not station-level microclimate."
 Baseline forecasting,forecast_backtest_metrics.csv,Implemented,"Previous-day, previous-week, and calendar-profile baselines establish benchmarks.",Current main report uses a single Jan. 25-31 holdout.
-Rolling-origin validation,rolling_backtest_metrics.csv,Implemented,Daily rolling 24-hour origins demonstrate stronger forecast evaluation practice.,Still limited to one month of winter behavior.
+Rolling-origin validation,rolling_backtest_metrics.csv,Implemented,Daily rolling 24-hour origins demonstrate stronger forecast evaluation practice.,January-only method layer; see multi_month_proof.html for full-year validation.
 Forecast error metrics,forecast_backtest_metrics.csv,Implemented,"MAE, RMSE, MAPE, and mean actuals are reported for transparent model comparison.",MAPE can overemphasize low-volume overnight hours.
 Residual and anomaly analysis,anomaly_hours.csv,Implemented,Seasonal residuals identify hours worth investigating.,"External events, outages, and operations context are needed for root cause."
 Hierarchy and panels,top_stations.csv,Documented extension,Station rankings show how to evolve from aggregate demand to station-cluster panels.,Station IDs and metadata are required before longitudinal station forecasts.

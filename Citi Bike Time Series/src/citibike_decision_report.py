@@ -256,8 +256,8 @@ def build_report() -> None:
     <section class="executive-summary-box" data-contract-section="executive-summary">
       <h2>Executive Summary</h2>
       <ul>
-        <li><strong>Make the next iteration a multi-month, station-aware forecasting story.</strong> The current profile already proves a strong hourly demand rhythm: {fmt_k(summary["total_rides"])} January starts across {fmt_int(summary["hourly_points"])} hours, with rush-hour volume {fmt_num(profile["rush_vs_off_hour_ratio"], 2)}x off-hour volume and weekend hourly demand at {fmt_num(profile["weekend_vs_weekday_ratio"], 2)}x weekdays.</li>
-        <li><strong>Use the calendar profile as the benchmark, not the finish line.</strong> The simple weekday/hour baseline beat the previous-day baseline by {fmt_pct(mae_improvement_day, 1)} on MAE and the previous-week baseline by {fmt_pct(mae_improvement_week, 1)} on MAE over the Jan. 25-31 holdout, but one winter month is too narrow for a production claim.</li>
+        <li><strong>Make the next iteration a station-aware forecasting story.</strong> The January profile proves a strong hourly demand rhythm: {fmt_k(summary["total_rides"])} starts across {fmt_int(summary["hourly_points"])} hours, with rush-hour volume {fmt_num(profile["rush_vs_off_hour_ratio"], 2)}x off-hour volume and weekend hourly demand at {fmt_num(profile["weekend_vs_weekday_ratio"], 2)}x weekdays. The companion full-2024 proof now extends aggregate validation beyond this month.</li>
+        <li><strong>Use the calendar profile as the benchmark, not the finish line.</strong> The simple weekday/hour baseline beat the previous-day baseline by {fmt_pct(mae_improvement_day, 1)} on MAE and the previous-week baseline by {fmt_pct(mae_improvement_week, 1)} on MAE over the Jan. 25-31 holdout. The full-year proof then adds rolling origins and a stronger calendar-lag ridge benchmark.</li>
         <li><strong>Turn the portfolio hook from aggregate demand into an operations question.</strong> The top station, {html.escape(str(top_station["station"]))}, had {fmt_int(top_station["rides"])} starts, and the top 10 stations represented {fmt_pct(top10_share, 1)} of valid trips. That is enough texture to motivate station clusters, rebalancing, and anomaly alerting as the next showcase layer.</li>
       </ul>
     </section>
@@ -283,7 +283,7 @@ def build_report() -> None:
         <img src="charts/forecast_backtest.png" alt="Actual hourly starts versus the best baseline forecast on the holdout period">
         <figcaption>Holdout period: Jan. 25-31, 2024. The residual band is a reference band from previous-week residuals, not calibrated production uncertainty.</figcaption>
       </figure>
-      <p><strong>So what:</strong> the project should add one stronger model only after expanding the history. A SARIMAX or gradient-boosted lag-feature model is a good next step, but the story will be more credible after 12-24 months and rolling holdouts.</p>
+      <p><strong>So what:</strong> the project now has the aggregate full-year proof that this January report originally pointed toward. The next credible lift is station metadata, station clusters, and weather or event features tested inside the same rolling-validation loop.</p>
     </section>
 
     <section data-contract-section="key-findings">
@@ -301,9 +301,9 @@ def build_report() -> None:
     <section data-contract-section="recommended-next-steps">
       <h2>Recommended Next Steps</h2>
       <ol>
-        <li><strong>Extend the dataset to 12-24 months.</strong> This is the highest-confidence next move because it unlocks yearly seasonality, weather sensitivity, event effects, and rolling validation.</li>
+        <li><strong>Use the full-2024 proof as the aggregate benchmark.</strong> The project now has 12 months, a complete hourly panel, and rolling validation for aggregate demand.</li>
         <li><strong>Add station IDs and station metadata before station-level forecasts.</strong> Station names are not stable enough for longitudinal modeling by themselves.</li>
-        <li><strong>Build a station-cluster or neighborhood forecast after the aggregate benchmark.</strong> Keep the calendar profile as the benchmark and compare one stronger model against it across rolling holdouts.</li>
+        <li><strong>Build a station-cluster or neighborhood forecast after the aggregate benchmark.</strong> Keep previous-week and calendar-lag ridge as benchmarks across rolling holdouts.</li>
         <li><strong>Make anomalies explainable, not just detectable.</strong> Join severe weather, holidays, service status, and local event context before describing anomalies as operational causes.</li>
       </ol>
     </section>
@@ -350,7 +350,7 @@ def build_source_notes(best: pd.Series, prev_day: pd.Series, prev_week: pd.Serie
 
 ## Context Note
 
-The decision is how to evolve the Citi Bike time-series showcase. The best-supported recommendation is to extend the project into a multi-month, station-aware forecasting and anomaly workflow. The current evidence is strong for a portfolio profile because it has public raw data, reproducible transformation code, hourly outputs, forecast backtest outputs, and chart assets. It is limited for live operational decisions because it covers one winter month and lacks official station metadata, internal operations context, and rolling validation.
+The decision is how to evolve the Citi Bike time-series showcase. The best-supported recommendation is now to move from aggregate full-year demand into a station-aware forecasting and anomaly workflow. The current evidence is strong for a portfolio profile because it has public raw data, reproducible transformation code, hourly outputs, forecast backtest outputs, full-year rolling validation, and chart assets. It is still limited for live operational decisions because it lacks official station metadata, internal operations context, weather/event feature validation, and calibrated uncertainty.
 
 ## Chart Map
 

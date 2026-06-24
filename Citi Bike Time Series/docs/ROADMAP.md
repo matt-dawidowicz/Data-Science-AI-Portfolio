@@ -17,6 +17,8 @@ final local review. It already includes:
 - Decomposition-style trend, seasonal expected value, and residual table
 - Baseline forecast backtest
 - Rolling-origin baseline validation
+- Full-2024 rolling-origin forecast proof
+- Calendar + lag ridge benchmark against transparent baselines
 - Anomaly candidate table
 - Charts
 - HTML reports
@@ -24,28 +26,24 @@ final local review. It already includes:
 - Methodology documentation
 - Model caveats
 
+## Completed Upgrade: Full-2024 Proof
+
+The project now includes the first high-value upgrade:
+
+- 12 public monthly archives for Jan.-Dec. 2024
+- 44.25M valid rows
+- 8,784 hourly observations
+- zero missing hourly periods
+- 44 weekly 24-hour rolling forecast origins
+- previous-day, previous-week, calendar-profile, blend, and ridge comparisons
+- full-year proof report and charts
+
+This does not make the project production-ready, but it makes the portfolio
+claim much stronger than the original one-month profile.
+
 ## High-Value Next Work
 
-### 1. Extend To 12-24 Months
-
-Why it matters:
-
-- Captures yearly seasonality.
-- Makes weather effects easier to evaluate.
-- Supports rolling backtests.
-- Separates one-off January behavior from stable patterns.
-
-Measures to add:
-
-- Monthly ride totals
-- Month-over-month change
-- Seasonal decomposition
-- Rolling forecast MAE and RMSE
-- Error by month and hour
-- Error by season
-- Holiday and event lift
-
-### 2. Add Station Metadata
+### 1. Add Station Metadata
 
 Why it matters:
 
@@ -64,7 +62,7 @@ Measures to add:
 - Station-cluster forecast error
 - Cross-station spatial lag features
 
-### 3. Build Station-Cluster Forecasts
+### 2. Build Station-Cluster Forecasts
 
 Why it matters:
 
@@ -79,13 +77,13 @@ Measures to add:
 - Peak-hour cluster load
 - Error by cluster and hour
 
-### 4. Add A Stronger Model
+### 3. Add Weather, Event, Or Stronger Model Features
 
 Candidate models:
 
 - SARIMAX with calendar and weather features
 - Gradient-boosted lag-feature model
-- Regularized regression with lag, calendar, and weather features
+- Regularized regression with lag, calendar, weather, and event features
 - Prophet-style additive baseline if the goal is explainable trend and
   seasonality comparison
 
@@ -100,7 +98,7 @@ Measures to add:
 - Prediction interval coverage
 - Error stability across seasons
 
-### 5. Make Anomalies Explainable
+### 4. Make Anomalies Explainable
 
 Why it matters:
 

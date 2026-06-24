@@ -1,10 +1,10 @@
 # Citi Bike Demand Forecasting
 
-Time-series profiling and baseline forecasting project built from public Citi
-Bike trip-history data. The project turns raw January 2024 trip starts into an
-hourly demand profile, calendar features, weather context, anomaly candidates,
-baseline forecast evaluation, rolling-origin validation, autocorrelation and lag
-diagnostics, charts, and decision-ready HTML reports.
+Time-series profiling and forecasting project built from public Citi Bike
+trip-history data. The project starts with a January 2024 methods showcase, then
+adds a full-2024 proof layer with 12 public monthly archives, a complete hourly
+panel, leakage-aware rolling validation, transparent baselines, and a simple
+calendar-lag ridge model.
 
 ## Portfolio Fit
 
@@ -22,24 +22,28 @@ skill set:
 - Time-series feature engineering
 - Autocorrelation, lag screening, and rolling-window diagnostics
 - Baseline forecasting and holdout evaluation
-- Rolling-origin forecast validation
+- Rolling-origin forecast validation across one month and a full year
+- A stronger lag-regression benchmark against transparent baselines
 - Anomaly detection against a seasonal profile
 - Business-facing reporting and documentation
 
 ## Headline Result
 
-The current January 2024 profile shows enough temporal structure to justify a
-larger forecasting project. Citi Bike demand has a visible commute pattern:
-rush-hour volume averaged 2.23x off-hour volume, weekends averaged 0.71x
-weekday hourly volume, and a simple weekday/hour calendar profile beat the
-previous-day and previous-week baselines on MAE over the Jan. 25-31 holdout.
+The January 2024 profile shows the core methods: regular hourly indexing,
+commute seasonality, weather context, anomalies, lag diagnostics, and simple
+calendar baselines. Citi Bike demand has a visible commute pattern: rush-hour
+volume averaged 2.23x off-hour volume, weekends averaged 0.71x weekday hourly
+volume, and a weekday/hour calendar profile beat the previous-day and
+previous-week baselines on MAE over the Jan. 25-31 holdout.
 
-The project now has a dedicated time-series showcase layer. It demonstrates
-regular time indexing, seasonality, smoothing, autocorrelation, lag features,
-rolling backtests, residual analysis, and forecast governance. The recommended
-next portfolio step is to extend the dataset to 12-24 months, add stable station
-identifiers, and build station-cluster forecasts or anomaly alerts around a
-specific decision such as rebalancing or station planning.
+The full-2024 proof layer strengthens the claim. It profiles 44.25M valid trip
+rows across 8,784 hourly observations with zero missing hours, then scores 44
+weekly 24-hour rolling forecast origins from Mar. 1 through Dec. 27, 2024. The
+best aggregate model is the calendar-lag ridge model with MAE of 750 rides per
+hour, beating the previous-week baseline's 918 MAE and the previous-day
+baseline's 1,034 MAE. The next portfolio step is station-cluster forecasting
+with stable station identifiers and a concrete operating decision such as
+rebalancing or station planning.
 
 ## Key Measures
 
@@ -67,16 +71,37 @@ specific decision such as rebalancing or station planning.
 
 For the full metric dictionary, see [docs/MEASURES.md](docs/MEASURES.md).
 
+## Full-Year Proof Measures
+
+| Measure | Current Value | Why It Matters |
+| --- | ---: | --- |
+| Months profiled | 12 | Moves beyond a one-month winter snapshot |
+| Raw rows read | 44,303,209 | Confirms the proof uses portfolio-scale public data |
+| Valid trips | 44,247,816 | Main quality-filtered source population |
+| Fixed-window rides | 44,247,470 | Demand total across the complete 2024 hourly panel |
+| Hourly observations | 8,784 | One full leap-year hourly panel |
+| Missing hourly periods | 0 | Confirms the longer panel is regular |
+| Rolling origins | 44 | Weekly 24-hour forecast starts after 60 training days |
+| Best full-year model | Calendar + lag ridge | Simple regularized model using calendar and prior-demand features |
+| Best full-year MAE | 750 rides/hour | Primary repeated-origin forecast error measure |
+| Previous-week MAE | 918 rides/hour | Strong transparent benchmark the richer model beats |
+| Peak hour | 2024-10-22 17:00 | Highest-demand hour in the 2024 panel |
+| Peak hourly rides | 19,563 | Scale of the largest observed hourly demand |
+
 ## Reviewer Path
 
 If you are reviewing this as a portfolio project, start here:
 
-1. Open [outputs/time_series_showcase.html](outputs/time_series_showcase.html)
+1. Open [outputs/multi_month_proof.html](outputs/multi_month_proof.html)
+   to see the stronger proof layer: 12 monthly archives, full-year hourly
+   coverage, rolling origins, model comparison, and final forecast trace.
+2. Open [outputs/time_series_showcase.html](outputs/time_series_showcase.html)
    to see the time-series methods proof: regular index, autocorrelation, lag
    features, rolling validation, and residual diagnostics.
-2. Open [outputs/decision_report.html](outputs/decision_report.html) to see the
+3. Open [outputs/decision_report.html](outputs/decision_report.html) to see the
    business-facing interpretation and recommendation.
-3. Read [docs/TIME_SERIES_SHOWCASE.md](docs/TIME_SERIES_SHOWCASE.md) for the
+4. Read [docs/MULTI_MONTH_PROOF.md](docs/MULTI_MONTH_PROOF.md) and
+   [docs/TIME_SERIES_SHOWCASE.md](docs/TIME_SERIES_SHOWCASE.md) for the
    interview narrative: what the project proves, what it does not prove, and
    how it should be extended.
 
@@ -89,6 +114,8 @@ If you are reviewing this as a portfolio project, start here:
 - [outputs/time_series_showcase.html](outputs/time_series_showcase.html):
   expanded time-series methods showcase with autocorrelation, lag features,
   rolling validation, and decomposition-style diagnostics.
+- [outputs/multi_month_proof.html](outputs/multi_month_proof.html): full-2024
+  forecasting proof with rolling model comparison and source inventory.
 - [outputs/decision_report_source_notes.md](outputs/decision_report_source_notes.md):
   source and validation notes for the decision report.
 
@@ -102,10 +129,12 @@ Citi Bike Time Series/
     citibike_time_series_profile.py
     citibike_decision_report.py
     citibike_time_series_showcase.py
+    citibike_multi_month_proof.py
   outputs/
     report.html
     decision_report.html
     time_series_showcase.html
+    multi_month_proof.html
     decision_report_source_notes.md
     profile_summary.json
     hourly_profile.csv
@@ -119,6 +148,13 @@ Citi Bike Time Series/
     decomposition_components.csv
     time_series_showcase_metrics.csv
     time_series_showcase_coverage.csv
+    multi_month_hourly_profile.csv
+    multi_month_daily_profile.csv
+    multi_month_source_inventory.csv
+    multi_month_model_metrics.csv
+    multi_month_origin_metrics.csv
+    multi_month_backtest_scored.csv
+    multi_month_proof_summary.json
     anomaly_hours.csv
     seasonality_profile.csv
     top_stations.csv
@@ -134,6 +170,11 @@ Citi Bike Time Series/
       rolling_backtest_mae.png
       decomposition_proxy.png
       seasonal_residual_distribution.png
+      multi_month_daily_demand.png
+      multi_month_monthly_volume.png
+      multi_month_model_mae.png
+      multi_month_origin_mae.png
+      multi_month_forecast_example.png
   data/
     sample_outputs/
   docs/
@@ -175,21 +216,33 @@ Build the expanded time-series showcase report:
 python src/citibike_time_series_showcase.py
 ```
 
-The profile script downloads the public Citi Bike archive and stores local
-cache files under `work/data/`. Those raw downloaded files are intentionally
-ignored by Git because the source archive is large and public.
+Build the full-2024 proof layer:
+
+```bash
+python src/citibike_multi_month_proof.py --start-month 2024-01 --end-month 2024-12
+```
+
+The profile and multi-month scripts download public Citi Bike archives and
+store local cache files under `work/data/`. Those raw downloaded files are
+intentionally ignored by Git because the source archives are large and public.
 
 ## Data Sources
 
 - Citi Bike public trip-history archive:
   `https://s3.amazonaws.com/tripdata/202401-citibike-tripdata.zip`
+- Citi Bike public monthly trip-history archives for Jan.-Dec. 2024:
+  `https://s3.amazonaws.com/tripdata/YYYYMM-citibike-tripdata.zip`
 - Open-Meteo historical weather archive for New York City, Jan. 1-31, 2024
 
 ## Important Caveats
 
-- This is a one-month winter profile, not a production forecast.
+- The January method layer is a one-month winter profile; the multi-month proof
+  extends forecast validation but is still not a production operations model.
 - Citi Bike timestamps are parsed as timezone-naive by pandas in this version.
-- Station outputs currently use station names, not stable station IDs.
+- Station outputs now include a multi-month station-id/name ranking, but
+  station-level forecasting still needs a dedicated metadata audit.
 - Weather correlations are descriptive and should not be read as causal.
 - Forecast intervals are simple residual reference bands, not calibrated
   prediction intervals.
+- The full-year ridge model is intentionally simple and transparent; it is a
+  stronger benchmark, not a claim of best-possible accuracy.

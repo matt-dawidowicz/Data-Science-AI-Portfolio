@@ -14,7 +14,7 @@
 
 ## Context Note
 
-The decision is how to evolve the Citi Bike time-series showcase. The best-supported recommendation is to extend the project into a multi-month, station-aware forecasting and anomaly workflow. The current evidence is strong for a portfolio profile because it has public raw data, reproducible transformation code, hourly outputs, forecast backtest outputs, and chart assets. It is limited for live operational decisions because it covers one winter month and lacks official station metadata, internal operations context, and rolling validation.
+The decision is how to evolve the Citi Bike time-series showcase. The best-supported recommendation is now to move from aggregate full-year demand into a station-aware forecasting and anomaly workflow. The current evidence is strong for a portfolio profile because it has public raw data, reproducible transformation code, hourly outputs, forecast backtest outputs, full-year rolling validation, and chart assets. It is still limited for live operational decisions because it lacks official station metadata, internal operations context, weather/event feature validation, and calibrated uncertainty.
 
 ## Chart Map
 

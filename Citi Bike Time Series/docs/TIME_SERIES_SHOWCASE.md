@@ -17,6 +17,12 @@ The strongest message is not that a complex model was forced onto one month of
 data. The stronger message is that the project builds the full analytical
 foundation a responsible forecast needs before model complexity.
 
+The project now has two proof layers:
+
+- the January methods layer, which is compact enough to review line by line
+- the full-2024 proof layer, which shows the same discipline at 44M-row scale
+  with rolling validation and a stronger benchmark model
+
 ## Reviewer Promise
 
 This project should be judged on analytical discipline:
@@ -44,6 +50,7 @@ That is the proof this version is meant to provide.
 | Exogenous features | `outputs/hourly_profile.csv` | Implemented | Weather joined at hourly grain |
 | Baseline forecasts | `outputs/forecast_backtest_metrics.csv` | Implemented | Previous-day, previous-week, and calendar-profile benchmarks |
 | Rolling validation | `outputs/rolling_backtest_metrics.csv` | Implemented | Daily rolling 24-hour forecast origins |
+| Full-year rolling proof | `outputs/multi_month_proof.html` | Implemented | 12 months, 44 rolling origins, and model comparison |
 | Error metrics | Forecast metric CSVs | Implemented | MAE, RMSE, MAPE, mean actual, and benchmark comparison |
 | Residual analysis | `outputs/anomaly_hours.csv` | Implemented | Seasonal residuals and anomaly candidates |
 | Hierarchical modeling | `outputs/top_stations.csv` | Extension documented | Path from aggregate demand to station-cluster forecasts |
@@ -73,6 +80,30 @@ The script reads the existing generated hourly profile and creates:
 It does not redownload the raw Citi Bike archive. It depends on the existing
 profile outputs, so run `citibike_time_series_profile.py` first if the output
 folder is empty.
+
+## Multi-Month Proof Script
+
+Run:
+
+```bash
+python src/citibike_multi_month_proof.py --start-month 2024-01 --end-month 2024-12
+```
+
+The script downloads or reuses cached public monthly archives, streams rows in
+chunks, creates a complete full-year hourly panel, and scores weekly rolling
+24-hour forecast origins. Current proof outputs include:
+
+- `outputs/multi_month_proof.html`
+- `outputs/multi_month_proof_summary.json`
+- `outputs/multi_month_hourly_profile.csv`
+- `outputs/multi_month_source_inventory.csv`
+- `outputs/multi_month_model_metrics.csv`
+- `outputs/multi_month_origin_metrics.csv`
+- `outputs/multi_month_backtest_scored.csv`
+- full-year PNG charts under `outputs/charts/`
+
+This is the strongest first stop for a reviewer who wants evidence beyond a
+single-month case study.
 
 ## Concepts To Talk Through In An Interview
 
@@ -126,7 +157,7 @@ validation habit:
 train on history before each origin -> forecast next 24 hours -> score errors
 ```
 
-The current project still has only one winter month, but rolling origins make
+The January showcase still has only one winter month, but rolling origins make
 the evaluation logic more portfolio-worthy.
 
 Why the rolling result can differ from the Jan. 25-31 holdout:
@@ -154,9 +185,10 @@ decomposition.
 Do not claim this is a production forecast. The current version is a showcase
 of method and judgment. Important limits:
 
-- one winter month
-- no annual seasonality
-- no station IDs in the generated station output
+- the January report is one winter month
+- the full-year proof shows annual coverage but still does not forecast live
+  inventory or capacity
+- station-level forecasting still needs a station metadata audit
 - weather correlations are descriptive
 - anomaly candidates lack event, outage, and operations context
 - residual bands are not calibrated prediction intervals
@@ -176,20 +208,19 @@ history.
 If asked what you would do next:
 
 ```text
-I would extend the archive pull to 12-24 months, add station IDs, run monthly
-rolling-origin validation, and compare a lag-feature model against the current
-baselines. I would judge the model by error stability across seasons and by
-whether it improves a concrete decision such as rebalancing or peak-hour
-planning.
+I already extended the aggregate proof to a full year and compared a
+calendar-lag ridge model against transparent baselines. Next I would add stable
+station IDs and station metadata, then evaluate station-cluster forecasts
+against the same rolling-origin discipline.
 ```
 
 ## Best Next Portfolio Upgrade
 
-The next major version should extend the public archive pull to 12-24 months,
-then rerun the same showcase pattern at a larger scale:
+The next major version should move from aggregate demand to station-cluster
+demand:
 
-1. Rolling monthly and weekly validation windows
-2. Yearly seasonality and holiday effects
-3. Station IDs and station metadata
-4. Station-cluster panel forecasts
-5. One stronger model compared against the transparent baselines
+1. Stable station IDs and station metadata
+2. Station-cluster panel forecasts
+3. Weather, event, and holiday features inside rolling validation
+4. Aggregate versus station-cluster error comparison
+5. One operating decision, such as rebalancing or peak-hour planning

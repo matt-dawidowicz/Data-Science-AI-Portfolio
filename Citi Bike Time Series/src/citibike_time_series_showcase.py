@@ -540,7 +540,7 @@ def build_showcase_coverage() -> pd.DataFrame:
             "rolling_backtest_metrics.csv",
             "Implemented",
             "Daily rolling 24-hour origins demonstrate stronger forecast evaluation practice.",
-            "Still limited to one month of winter behavior.",
+            "January-only method layer; see multi_month_proof.html for full-year validation.",
         ),
         (
             "Forecast error metrics",
@@ -756,7 +756,7 @@ def plot_rolling_backtest(rolling_metrics: pd.DataFrame) -> Path:
         fig,
         ax,
         "Rolling-origin validation keeps the benchmark honest",
-        "Daily 24-hour forecast origins from Jan. 15-30, 2024; lower MAE is better.",
+        "Daily 24-hour forecast origins from Jan. 15-31, 2024; lower MAE is better.",
     )
     return save_chart(fig, "rolling_backtest_mae.png")
 
@@ -1133,12 +1133,13 @@ def generate_showcase_report(
   </section>
 
   <section>
-    <h2>Important Limit</h2>
+    <h2>Important Limit And Upgrade Path</h2>
     <p>
-      This is still a one-month winter showcase. The strongest next version
-      would extend to 12-24 months, add station IDs and metadata, evaluate
-      rolling holdouts across seasons, and compare these transparent baselines
-      against one stronger model.
+      This report is still the January methods layer. The project now also
+      includes <code>multi_month_proof.html</code>, which extends aggregate
+      validation across full-year 2024 data. The strongest next version should
+      add station IDs, station metadata, and station-cluster forecasts tied to a
+      concrete operating decision.
     </p>
   </section>
 </main>

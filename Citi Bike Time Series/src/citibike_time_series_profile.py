@@ -922,9 +922,9 @@ def render_report(profile: dict, chart_paths: dict[str, Path]) -> str:
     <section data-contract-section="recommended-next-steps">
       <h2>Recommended Next Steps</h2>
       <ol>
-        <li>Extend the pull to 12-24 months so yearly seasonality, weather sensitivity, and regime changes are visible.</li>
-        <li>Add station-cluster forecasts for the top 50 stations or neighborhoods. That turns the project into a practical allocation problem.</li>
-        <li>Fit one stronger model after the baselines: SARIMAX with calendar/weather features, or a gradient-boosted lag-feature model.</li>
+        <li>Use the full-2024 proof layer as the aggregate benchmark for yearly seasonality and rolling validation.</li>
+        <li>Add station-cluster forecasts for the top stations or neighborhoods. That turns the project into a practical allocation problem.</li>
+        <li>Add weather, event, or stronger model features only after they beat previous-week and calendar-lag benchmarks in rolling validation.</li>
       </ol>
     </section>
 
@@ -936,7 +936,7 @@ def render_report(profile: dict, chart_paths: dict[str, Path]) -> str:
     <section data-contract-section="caveats-and-assumptions">
       <h2>Caveats and Assumptions</h2>
       <div class="callout">
-        <p>This is a first-pass profile on one winter month, not a production forecast. It intentionally emphasizes clean temporal profiling and transparent baselines. {html.escape(weather_phrase)} For a full showcase, extend the history and validate across multiple rolling holdout windows.</p>
+        <p>This is a first-pass profile on one winter month, not a production forecast. It intentionally emphasizes clean temporal profiling and transparent baselines. {html.escape(weather_phrase)} The companion full-2024 proof layer extends aggregate validation across multiple rolling holdout windows.</p>
       </div>
       <p class="source-note">Public sources used: Citi Bike trip history archive and, when available, Open-Meteo historical weather. Generated outputs include hourly profiles, backtest metrics, anomaly tables, and chart PNGs in this folder.</p>
     </section>

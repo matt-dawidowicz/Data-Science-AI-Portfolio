@@ -23,6 +23,16 @@ turning into decoration.
 | Decomposition proxy | `outputs/charts/decomposition_proxy.png` | Multi-series trend | How do actual demand, rolling trend, and seasonal expected value relate? | The project can explain level, seasonality, and residual movement separately. |
 | Seasonal residual distribution | `outputs/charts/seasonal_residual_distribution.png` | Histogram | How large are deviations after accounting for weekday/hour seasonality? | Residual spread identifies anomaly candidates without claiming root cause. |
 
+## Multi-Month Proof Charts
+
+| Chart | File | Chart Family | Question | Supported Takeaway |
+| --- | --- | --- | --- | --- |
+| Multi-month daily demand | `outputs/charts/multi_month_daily_demand.png` | Trend line | How does daily demand move across the full 2024 panel? | Longer coverage exposes level shifts that one winter month cannot prove. |
+| Multi-month monthly volume | `outputs/charts/multi_month_monthly_volume.png` | Column chart | How much demand exists in each public archive month? | Monthly totals provide a coverage and seasonality sanity check. |
+| Multi-month model MAE | `outputs/charts/multi_month_model_mae.png` | Ranked horizontal bar | Which model has the lowest repeated-origin MAE? | Calendar + lag ridge beats the transparent previous-day and previous-week baselines on MAE. |
+| Multi-month origin MAE | `outputs/charts/multi_month_origin_mae.png` | Multi-series trend | Is model performance stable across forecast origins? | Origin-level error shows whether a model only wins on average or survives difficult weeks. |
+| Multi-month forecast example | `outputs/charts/multi_month_forecast_example.png` | Two-series trend | What does the best model look like on the final scored origin? | A concrete 24-hour trace makes the validation less abstract. |
+
 ## Palette And Encoding Notes
 
 - Trend and lag structure use blue as the primary analytical color.
@@ -39,5 +49,7 @@ Before publishing:
 - Confirm every image renders.
 - Confirm titles and subtitles state metric grain and time window.
 - Confirm no chart implies causality from descriptive weather correlations.
-- Confirm one-month limitations are visible near the chart narrative.
+- Confirm January-only limitations are visible near the January chart narrative.
+- Confirm full-year charts describe 2024 validation without claiming production
+  readiness.
 

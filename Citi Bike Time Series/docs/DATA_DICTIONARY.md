@@ -220,3 +220,111 @@ Coverage map connecting time-series concepts to portfolio artifacts.
 | `status` | string | Implemented or documented extension |
 | `reviewer_value` | string | Why the artifact matters for a reviewer |
 | `caveat` | string | Limitation or responsible interpretation note |
+
+## `multi_month_hourly_profile.csv`
+
+One row per hour in the full-2024 panel.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `hour` | datetime | Hour timestamp in the fixed full-year panel |
+| `rides` | integer | Count of valid trip starts in the hour |
+| `date` | string | Calendar date for the hour |
+| `month` | string | Calendar month in YYYY-MM form |
+| `day_name` | string | Day name |
+| `day_of_week` | integer | Monday = 0, Sunday = 6 |
+| `hour_of_day` | integer | Hour from 0 to 23 |
+| `day_of_year` | integer | Calendar day number within the year |
+| `is_weekend` | boolean | True for Saturday or Sunday |
+| `is_federal_holiday` | boolean | True for simple U.S. federal holiday dates |
+| `hour_sin`, `hour_cos` | float | Cyclical hour-of-day encodings |
+| `dow_sin`, `dow_cos` | float | Cyclical day-of-week encodings |
+| `month_sin`, `month_cos` | float | Cyclical month encodings |
+| `is_weekend_int` | integer | Weekend flag converted to 0/1 for modeling |
+| `is_federal_holiday_int` | integer | Holiday flag converted to 0/1 for modeling |
+| `days_since_start` | float | Days elapsed from the first panel hour |
+| `lag_24h` | float | Rides 24 hours earlier |
+| `lag_168h` | float | Rides 168 hours earlier |
+| `rolling_24h_prior_day` | float | 24-hour rolling mean anchored one day back |
+| `rolling_168h_prior_day` | float | 168-hour rolling mean anchored one day back |
+
+The prior-day rolling features are designed for a 24-hour forecast horizon and
+avoid using values from inside the future forecast window.
+
+## `multi_month_source_inventory.csv`
+
+Monthly source and quality inventory for the full-year proof.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `month` | string | Archive month |
+| `source_url` | string | Public Citi Bike archive URL |
+| `archive_file` | string | Cached archive filename |
+| `archive_size_mb` | float | Downloaded archive size in megabytes |
+| `rows_total` | integer | Raw rows read for the month |
+| `rows_valid` | integer | Rows passing timestamp and duration filters |
+| `valid_rate` | float | Valid rows divided by total rows |
+| `first_started_at` | datetime | Earliest valid start timestamp in the archive |
+| `last_started_at` | datetime | Latest valid start timestamp in the archive |
+| `valid_rides_in_fixed_window` | integer | Valid starts inside the calendar month panel |
+
+## `multi_month_model_metrics.csv`
+
+Aggregate full-year rolling-origin model metrics.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `model` | string | Internal model name |
+| `model_label` | string | Reader-friendly model name |
+| `origins` | integer | Number of rolling forecast origins |
+| `holdout_hours` | integer | Scored forecast hours for the model |
+| `mean_actual` | float | Average actual hourly rides across scored windows |
+| `median_origin_mae` | float | Median MAE across forecast origins |
+| `origin_wins` | integer | Number of origins where the model had the lowest MAE |
+| `n` | integer | Number of non-null forecast rows used in scoring |
+| `mae` | float | Mean absolute error in rides per hour |
+| `rmse` | float | Root mean squared error in rides per hour |
+| `mape` | float | Mean absolute percentage error |
+| `origin_win_rate` | float | Origin wins divided by total origins |
+
+## `multi_month_origin_metrics.csv`
+
+Per-origin full-year model metrics.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `origin` | datetime | Forecast origin timestamp |
+| `model` | string | Internal model name |
+| `n` | integer | Number of scored forecast hours for the origin |
+| `mae` | float | Mean absolute error in rides per hour |
+| `rmse` | float | Root mean squared error in rides per hour |
+| `mape` | float | Mean absolute percentage error |
+
+## `multi_month_backtest_scored.csv`
+
+Hour-level full-year rolling forecast rows.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `origin` | datetime | Forecast origin timestamp |
+| `hour` | datetime | Forecasted hour |
+| `model` | string | Internal model name |
+| `actual` | float | Actual hourly rides |
+| `forecast` | float | Forecasted hourly rides |
+| `error` | float | Actual minus forecast |
+| `abs_error` | float | Absolute forecast error |
+
+## `multi_month_top_stations.csv`
+
+Top start station IDs/names across the full-year valid trip rows.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `station_id_name` | string | Combined start station ID and start station name |
+| `rides` | integer | Valid starts from that station key |
+
+## `multi_month_proof_summary.json`
+
+Compact metadata and headline measures for `multi_month_proof.html`, including
+the date range, row counts, fixed-window totals, rolling-origin settings, and
+best full-year model.

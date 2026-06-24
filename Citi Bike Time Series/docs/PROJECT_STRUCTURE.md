@@ -17,6 +17,7 @@ This document explains how the packaged project is organized.
 | `citibike_time_series_profile.py` | Main data pipeline, chart generation, and first-pass report |
 | `citibike_decision_report.py` | Builds the decision-ready portfolio report from generated outputs |
 | `citibike_time_series_showcase.py` | Builds expanded time-series diagnostics, charts, and showcase report from the hourly profile |
+| `citibike_multi_month_proof.py` | Streams multiple monthly archives, builds a full-year hourly panel, and evaluates rolling forecast origins |
 
 ## `outputs/`
 
@@ -28,6 +29,7 @@ Important files:
 - `report.html`
 - `decision_report.html`
 - `time_series_showcase.html`
+- `multi_month_proof.html`
 - `profile_summary.json`
 - `hourly_profile.csv`
 - `forecast_backtest_metrics.csv`
@@ -40,6 +42,14 @@ Important files:
 - `decomposition_components.csv`
 - `time_series_showcase_metrics.csv`
 - `time_series_showcase_coverage.csv`
+- `multi_month_proof_summary.json`
+- `multi_month_hourly_profile.csv`
+- `multi_month_daily_profile.csv`
+- `multi_month_source_inventory.csv`
+- `multi_month_model_metrics.csv`
+- `multi_month_origin_metrics.csv`
+- `multi_month_backtest_scored.csv`
+- `multi_month_top_stations.csv`
 - `anomaly_hours.csv`
 - `seasonality_profile.csv`
 - `top_stations.csv`
@@ -59,6 +69,11 @@ Static PNG charts used by the HTML reports:
 - `rolling_backtest_mae.png`
 - `decomposition_proxy.png`
 - `seasonal_residual_distribution.png`
+- `multi_month_daily_demand.png`
+- `multi_month_monthly_volume.png`
+- `multi_month_model_mae.png`
+- `multi_month_origin_mae.png`
+- `multi_month_forecast_example.png`
 
 ## `data/sample_outputs/`
 
@@ -72,6 +87,7 @@ Documentation for reviewers:
 | File | Purpose |
 | --- | --- |
 | `MEASURES.md` | Metric definitions and current values |
+| `MULTI_MONTH_PROOF.md` | Full-year validation design, model comparison, outputs, and interview defense |
 | `TIME_SERIES_SHOWCASE.md` | Time-series concept map, interview framing, and extension path |
 | `CHART_MAP.md` | Visual purpose, chart family, and quality checks for each chart |
 | `METHODOLOGY.md` | Data processing, modeling, validation, and limitations |

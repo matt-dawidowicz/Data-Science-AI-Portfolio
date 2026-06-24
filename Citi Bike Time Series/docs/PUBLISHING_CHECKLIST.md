@@ -10,9 +10,11 @@ Use this before adding the project to the portfolio repository.
 - `src/citibike_time_series_profile.py`
 - `src/citibike_decision_report.py`
 - `src/citibike_time_series_showcase.py`
+- `src/citibike_multi_month_proof.py`
 - `outputs/report.html`
 - `outputs/decision_report.html`
 - `outputs/time_series_showcase.html`
+- `outputs/multi_month_proof.html`
 - `outputs/profile_summary.json`
 - `outputs/forecast_backtest_metrics.csv`
 - `outputs/rolling_backtest_metrics.csv`
@@ -21,6 +23,14 @@ Use this before adding the project to the portfolio repository.
 - `outputs/decomposition_components.csv`
 - `outputs/time_series_showcase_metrics.csv`
 - `outputs/time_series_showcase_coverage.csv`
+- `outputs/multi_month_proof_summary.json`
+- `outputs/multi_month_hourly_profile.csv`
+- `outputs/multi_month_daily_profile.csv`
+- `outputs/multi_month_source_inventory.csv`
+- `outputs/multi_month_model_metrics.csv`
+- `outputs/multi_month_origin_metrics.csv`
+- `outputs/multi_month_backtest_scored.csv`
+- `outputs/multi_month_top_stations.csv`
 - `outputs/anomaly_hours.csv`
 - `outputs/top_stations.csv`
 - `outputs/member_mix.csv`
@@ -47,8 +57,10 @@ Run these from the project folder:
 python -m py_compile src/citibike_time_series_profile.py
 python -m py_compile src/citibike_decision_report.py
 python -m py_compile src/citibike_time_series_showcase.py
+python -m py_compile src/citibike_multi_month_proof.py
 python src/citibike_decision_report.py
 python src/citibike_time_series_showcase.py
+python src/citibike_multi_month_proof.py --start-month 2024-01 --end-month 2024-12 --skip-download
 ```
 
 Then manually open:
@@ -56,6 +68,7 @@ Then manually open:
 - `outputs/report.html`
 - `outputs/decision_report.html`
 - `outputs/time_series_showcase.html`
+- `outputs/multi_month_proof.html`
 
 Check:
 
@@ -67,6 +80,8 @@ Check:
 - The showcase report labels decomposition as descriptive/proxy analysis.
 - Rolling-origin metrics are described as validation practice, not production
   performance.
+- The multi-month proof clearly says it is a stronger benchmark, not a
+  production operations model.
 
 ## Suggested Portfolio Repository Placement
 
@@ -74,7 +89,7 @@ Place the folder beside the existing linked-list project:
 
 ```text
 Data-Science-AI-Portfolio/
-  Linked Lists/
+  Linked_List_Showcase/
   Citi Bike Time Series/
 ```
 
@@ -86,24 +101,24 @@ time-series section.
 ```md
 ### Citi Bike Demand Forecasting
 
-Time-series profiling and baseline forecasting project built from public Citi
-Bike trip-history data. The analysis processes 1.89M trips, creates an hourly
-demand panel, evaluates calendar and lag baselines, detects anomaly candidates,
-and produces portfolio-ready HTML reports.
+Time-series profiling and forecasting project built from public Citi Bike
+trip-history data. The analysis starts with a January methods layer, then adds
+a full-2024 proof with 44.25M valid rows, 8,784 hourly observations, 44 rolling
+forecast origins, transparent baselines, and a calendar-lag ridge benchmark.
 
 - Skills: pandas, time-series features, baseline forecasting, anomaly
   detection, Seaborn/Matplotlib, report generation
-- Main report: `Citi Bike Time Series/outputs/decision_report.html`
+- Main report: `Citi Bike Time Series/outputs/multi_month_proof.html`
 - Documentation: `Citi Bike Time Series/docs/`
 ```
 
 ## Future Enhancements Before A Public Showcase
 
-The current project is publishable as a first-pass portfolio case study. To make
-it stronger:
+The current project is publishable as a stronger portfolio case study. To make
+it more operational:
 
-1. Extend the data pull to 12-24 months.
-2. Add station IDs and station metadata.
-3. Add rolling holdout windows.
-4. Add a stronger model after the baseline.
+1. Add station IDs and station metadata.
+2. Build station-cluster forecasts.
+3. Add weather and event features to the rolling validation loop.
+4. Compare aggregate and station-cluster error separately.
 5. Add event and outage context for anomaly interpretation.

@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Citi Bike Multi-Month Forecast Proof</title>
+  <style>
+    :root {
+      --surface: #FCFCFD;
+      --panel: #FFFFFF;
+      --ink: #1F2430;
+      --muted: #6F768A;
+      --grid: #E6E8F0;
+      --accent: #5477C4;
+      --warm: #F0986E;
+    }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: Aptos, Inter, "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 20px 72px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(32px, 5vw, 50px);
+      line-height: 1.03;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 36px 0 12px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+    p, li {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.62;
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 24px 0 32px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .kpi strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .kpi span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .callout {
+      border-left: 4px solid var(--warm);
+      background: #FFEDDE;
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+    figure {
+      margin: 24px 0;
+    }
+    figure img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    figcaption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+      margin: 14px 0 24px;
+    }
+    .data-table th, .data-table td {
+      border-bottom: 1px solid var(--grid);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .data-table th {
+      background: #F4F5F7;
+      color: var(--ink);
+    }
+    .data-table tr:last-child td {
+      border-bottom: 0;
+    }
+    @media (max-width: 760px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px) {
+      .kpis { grid-template-columns: 1fr; }
+      .data-table { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Citi Bike Multi-Month Forecast Proof</h1>
+    <p>
+      This report upgrades the original January-only showcase into a longer
+      rolling-validation proof. It keeps the target simple and auditable:
+      valid Citi Bike trip starts per hour.
+    </p>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi"><strong>12</strong><span>months profiled</span></div>
+    <div class="kpi"><strong>8,784</strong><span>hourly observations</span></div>
+    <div class="kpi"><strong>44</strong><span>rolling origins</span></div>
+    <div class="kpi"><strong>750</strong><span>best MAE, rides/hour</span></div>
+  </section>
+
+  <section>
+    <h2>What changed from the first showcase</h2>
+    <p class="callout">
+      The project now has a stronger proof layer: multiple months of public
+      archives, a complete hourly panel, weekly rolling 24-hour forecast
+      origins, transparent baselines, and one regularized calendar-lag model.
+      The best aggregate model in this run is <strong>Calendar + lag ridge</strong>.
+    </p>
+  </section>
+
+  <section>
+    <h2>Coverage and validation charts</h2>
+
+        <figure>
+          <img src="charts/multi_month_daily_demand.png" alt="multi month daily demand">
+          <figcaption>Daily demand over the longer panel, with smoothing to show level shifts.</figcaption>
+        </figure>
+
+
+        <figure>
+          <img src="charts/multi_month_monthly_volume.png" alt="multi month monthly volume">
+          <figcaption>Monthly fixed-window valid trip starts, used as the coverage sanity check.</figcaption>
+        </figure>
+
+
+        <figure>
+          <img src="charts/multi_month_model_mae.png" alt="multi month model mae">
+          <figcaption>Aggregate rolling-origin MAE by model. Lower is better.</figcaption>
+        </figure>
+
+
+        <figure>
+          <img src="charts/multi_month_origin_mae.png" alt="multi month origin mae">
+          <figcaption>Origin-level MAE for the leading models, showing stability over time.</figcaption>
+        </figure>
+
+
+        <figure>
+          <img src="charts/multi_month_forecast_example.png" alt="multi month forecast example">
+          <figcaption>Final scored 24-hour origin for the best aggregate model.</figcaption>
+        </figure>
+
+  </section>
+
+  <section>
+    <h2>Rolling model comparison</h2>
+    <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Model</th>
+      <th>Origins</th>
+      <th>Holdout Hours</th>
+      <th>Mean Actual</th>
+      <th>MAE</th>
+      <th>RMSE</th>
+      <th>MAPE</th>
+      <th>Origin Win Rate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Calendar + lag ridge</td>
+      <td>44</td>
+      <td>1056</td>
+      <td>5,662</td>
+      <td>750</td>
+      <td>1,163</td>
+      <td>28.1%</td>
+      <td>36.4%</td>
+    </tr>
+    <tr>
+      <td>Previous week</td>
+      <td>44</td>
+      <td>1056</td>
+      <td>5,662</td>
+      <td>918</td>
+      <td>1,538</td>
+      <td>22.9%</td>
+      <td>36.4%</td>
+    </tr>
+    <tr>
+      <td>Previous day</td>
+      <td>44</td>
+      <td>1056</td>
+      <td>5,662</td>
+      <td>1,034</td>
+      <td>1,547</td>
+      <td>23.4%</td>
+      <td>11.4%</td>
+    </tr>
+    <tr>
+      <td>Seasonal lag blend</td>
+      <td>44</td>
+      <td>1056</td>
+      <td>5,662</td>
+      <td>1,350</td>
+      <td>1,831</td>
+      <td>29.0%</td>
+      <td>9.1%</td>
+    </tr>
+    <tr>
+      <td>Weekday/hour profile</td>
+      <td>44</td>
+      <td>1056</td>
+      <td>5,662</td>
+      <td>1,792</td>
+      <td>2,369</td>
+      <td>36.7%</td>
+      <td>6.8%</td>
+    </tr>
+    <tr>
+      <td>Hour-of-day profile</td>
+      <td>44</td>
+      <td>1056</td>
+      <td>5,662</td>
+      <td>1,970</td>
+      <td>2,550</td>
+      <td>38.5%</td>
+      <td>0.0%</td>
+    </tr>
+  </tbody>
+</table>
+  </section>
+
+  <section>
+    <h2>Monthly source inventory</h2>
+    <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Month</th>
+      <th>Valid Rows</th>
+      <th>Fixed-Window Rides</th>
+      <th>Valid Rate</th>
+      <th>Archive MB</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2024-01</td>
+      <td>1,886,109</td>
+      <td>1,885,947</td>
+      <td>99.9%</td>
+      <td>369.0</td>
+    </tr>
+    <tr>
+      <td>2024-02</td>
+      <td>2,119,759</td>
+      <td>2,119,772</td>
+      <td>99.9%</td>
+      <td>414.7</td>
+    </tr>
+    <tr>
+      <td>2024-03</td>
+      <td>2,660,492</td>
+      <td>2,660,571</td>
+      <td>99.9%</td>
+      <td>520.8</td>
+    </tr>
+    <tr>
+      <td>2024-04</td>
+      <td>3,213,017</td>
+      <td>3,212,949</td>
+      <td>99.9%</td>
+      <td>629.6</td>
+    </tr>
+    <tr>
+      <td>2024-05</td>
+      <td>4,127,680</td>
+      <td>4,128,648</td>
+      <td>99.8%</td>
+      <td>809.1</td>
+    </tr>
+    <tr>
+      <td>2024-06</td>
+      <td>4,775,760</td>
+      <td>4,775,185</td>
+      <td>99.8%</td>
+      <td>936.0</td>
+    </tr>
+    <tr>
+      <td>2024-07</td>
+      <td>4,715,602</td>
+      <td>4,715,625</td>
+      <td>99.8%</td>
+      <td>923.3</td>
+    </tr>
+    <tr>
+      <td>2024-08</td>
+      <td>4,596,258</td>
+      <td>4,596,529</td>
+      <td>99.8%</td>
+      <td>900.0</td>
+    </tr>
+    <tr>
+      <td>2024-09</td>
+      <td>4,991,804</td>
+      <td>4,991,348</td>
+      <td>99.9%</td>
+      <td>976.5</td>
+    </tr>
+    <tr>
+      <td>2024-10</td>
+      <td>5,144,572</td>
+      <td>5,145,143</td>
+      <td>99.9%</td>
+      <td>1,006.6</td>
+    </tr>
+    <tr>
+      <td>2024-11</td>
+      <td>3,706,689</td>
+      <td>3,705,932</td>
+      <td>99.9%</td>
+      <td>724.4</td>
+    </tr>
+    <tr>
+      <td>2024-12</td>
+      <td>2,310,074</td>
+      <td>2,309,821</td>
+      <td>100.0%</td>
+      <td>450.8</td>
+    </tr>
+  </tbody>
+</table>
+  </section>
+
+  <section>
+    <h2>Honest limits</h2>
+    <ul>
+      <li>Trip starts are modeled, not live bike inventory or station capacity.</li>
+      <li>Station names and IDs still need a dedicated station-metadata audit before station-level forecasts.</li>
+      <li>The ridge model is intentionally simple. It proves feature discipline, not best-possible forecast accuracy.</li>
+      <li>External events and weather are not yet used in the multi-month model.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

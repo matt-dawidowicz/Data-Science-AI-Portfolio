@@ -328,3 +328,178 @@ Top start station IDs/names across the full-year valid trip rows.
 Compact metadata and headline measures for `multi_month_proof.html`, including
 the date range, row counts, fixed-window totals, rolling-origin settings, and
 best full-year model.
+
+## `station_cluster_source_inventory.csv`
+
+Monthly source and quality inventory for the station-cluster layer.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `month` | string | Archive month |
+| `source_url` | string | Public Citi Bike archive URL |
+| `archive_file` | string | Cached archive filename |
+| `archive_size_mb` | float | Downloaded archive size in megabytes |
+| `rows_total` | integer | Raw rows read for the month |
+| `rows_valid` | integer | Rows passing timestamp and duration filters |
+| `rows_valid_fixed_window` | integer | Valid rows inside the fixed calendar-month modeling window |
+| `rows_with_station_id` | integer | Fixed-window valid rows with usable start station ID |
+| `valid_rate` | float | Valid rows divided by total rows |
+| `station_id_coverage` | float | Fixed-window valid rows with station ID divided by fixed-window valid rows |
+| `first_started_at` | datetime | Earliest valid start timestamp in the archive |
+| `last_started_at` | datetime | Latest valid start timestamp in the archive |
+| `valid_rides_in_fixed_window` | integer | Valid starts inside the calendar month panel |
+
+## `station_cluster_station_metadata.csv`
+
+Observed station metadata derived from valid trip rows.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `station_id` | string | Stable start station ID from the Citi Bike trip archive |
+| `station_name` | string | Most common observed station name for the station ID |
+| `annual_starts` | integer | Fixed-window valid 2024 starts from the station ID |
+| `months_active` | integer | Count of archive months where the station ID appeared |
+| `first_started_at` | datetime | Earliest valid trip start for the station ID |
+| `last_started_at` | datetime | Latest valid trip start for the station ID |
+| `latitude` | float | Average observed start latitude after coordinate filtering |
+| `longitude` | float | Average observed start longitude after coordinate filtering |
+| `coordinate_rows` | integer | Valid coordinate observations used for the averages |
+| `share_of_system_starts` | float | Station starts divided by fixed-window system starts |
+
+## `station_cluster_assignments.csv`
+
+Top station IDs assigned to deterministic geographic clusters.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `station_id` | string | Stable station ID |
+| `station_name` | string | Most common observed station name |
+| `annual_starts` | integer | Fixed-window valid 2024 starts |
+| `months_active` | integer | Active archive months observed |
+| `latitude` | float | Observed station latitude |
+| `longitude` | float | Observed station longitude |
+| `cluster_id` | string | Deterministic cluster ID |
+| `cluster_label` | string | Reader-friendly cluster label anchored on the top station |
+
+## `station_cluster_summary.csv`
+
+Cluster-level station count, volume, and geography.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `cluster_id` | string | Deterministic cluster ID |
+| `cluster_label` | string | Reader-friendly cluster label |
+| `annual_starts` | integer | Fixed-window valid 2024 starts from stations in the cluster |
+| `station_count` | integer | Count of station IDs in the cluster |
+| `center_latitude` | float | Mean station latitude inside the cluster |
+| `center_longitude` | float | Mean station longitude inside the cluster |
+| `top_station` | string | Highest-volume station name inside the cluster |
+| `share_of_system_starts` | float | Cluster starts divided by fixed-window system starts |
+| `rank` | integer | Cluster rank by annual starts |
+| `segment_id` | string | Segment key used in forecast outputs |
+| `segment_label` | string | Segment label used in forecast outputs |
+| `segment_type` | string | `station_cluster` |
+
+## `station_cluster_hourly_profile.csv`
+
+Long hourly model panel for the system total and station clusters.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `segment_id` | string | `system_total` or station cluster ID |
+| `segment_label` | string | Reader-friendly segment label |
+| `segment_type` | string | `system` or `station_cluster` |
+| `hour` | datetime | Hour timestamp in the 2024 panel |
+| `rides` | integer | Valid trip starts for the segment and hour |
+| `date`, `month`, `day_name` | string | Calendar labels |
+| `day_of_week`, `hour_of_day`, `day_of_year` | integer | Calendar fields used for features |
+| `is_weekend`, `is_federal_holiday` | boolean | Calendar flags |
+| `temperature_2m` | float | Open-Meteo temperature in Celsius |
+| `precipitation` | float | Open-Meteo precipitation in millimeters |
+| `snowfall` | float | Open-Meteo snowfall in centimeters |
+| `wind_speed_10m` | float | Open-Meteo wind speed in km/h |
+| `weather_code` | float | Open-Meteo weather code |
+| `event_intensity` | float | Holiday/event feature weight after windowing |
+| `event_names`, `event_types`, `event_windows` | string | Event labels joined to the hour |
+| `lag_24h`, `lag_168h` | float | Segment rides 24 and 168 hours earlier |
+| `rolling_24h_prior_day` | float | Segment 24-hour rolling mean anchored one day back |
+| `rolling_168h_prior_day` | float | Segment 168-hour rolling mean anchored one day back |
+
+## `station_cluster_model_metrics.csv`
+
+Aggregate rolling-origin metrics by segment and model.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `segment_id`, `segment_label`, `segment_type` | string | Forecast target segment |
+| `model`, `model_label` | string | Internal and reader-facing model name |
+| `origins` | integer | Number of rolling origins scored |
+| `holdout_hours` | integer | Segment/model forecast rows scored |
+| `mean_actual` | float | Average actual rides in scored rows |
+| `total_actual` | float | Total actual rides in scored rows |
+| `median_origin_mae` | float | Median per-origin MAE |
+| `origin_wins` | integer | Count of segment origins where this model had lowest MAE |
+| `n` | integer | Non-null scored forecast rows |
+| `mae`, `rmse`, `mape`, `wape` | float | Forecast error metrics |
+| `origin_win_rate` | float | Origin wins divided by origins for the segment |
+
+## `station_cluster_model_lift.csv`
+
+Wide comparison of previous-week, calendar-lag ridge, and weather/event ridge.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `segment_id`, `segment_label`, `segment_type` | string | Forecast target segment |
+| `mae_*`, `rmse_*`, `wape_*` | float | Error metrics by model |
+| `mae_lift_vs_previous_week` | float | Previous-week MAE minus weather/event ridge MAE |
+| `mae_lift_pct_vs_previous_week` | float | MAE lift divided by previous-week MAE |
+| `mae_lift_vs_calendar_lag_ridge` | float | Calendar-lag ridge MAE minus weather/event ridge MAE |
+| `mae_lift_pct_vs_calendar_lag_ridge` | float | MAE lift divided by calendar-lag ridge MAE |
+| `best_model`, `best_model_label` | string | Lowest-MAE model for the segment |
+
+## `station_cluster_capacity_priorities.csv`
+
+Decision table for rebalancing and capacity-planning review.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `cluster_id`, `cluster_label` | string | Station-cluster identifiers |
+| `annual_starts`, `station_count`, `share_of_system_starts` | numeric | Cluster scale measures |
+| `mae`, `rmse`, `wape`, `mean_actual` | float | Weather/event ridge forecast metrics |
+| `mae_lift_pct_vs_previous_week` | float | Weather/event ridge lift versus previous week |
+| `mae_lift_pct_vs_calendar_lag_ridge` | float | Weather/event ridge lift versus calendar-lag ridge |
+| `priority_score` | float | Heuristic rank combining scale and forecast-error context |
+| `capacity_planning_use` | string | Reader-facing planning recommendation |
+
+## `station_cluster_origin_metrics.csv`
+
+Per-origin model metrics for every segment.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `segment_id`, `segment_label`, `segment_type` | string | Forecast target segment |
+| `origin` | datetime | Forecast origin timestamp |
+| `model`, `model_label` | string | Forecast model |
+| `n` | integer | Scored hours for that segment/model/origin |
+| `mae`, `rmse`, `mape`, `wape` | float | Forecast error metrics |
+
+## `station_cluster_backtest_scored.csv`
+
+Hour-level forecast rows for the station-cluster validation.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `segment_id`, `segment_label`, `segment_type` | string | Forecast target segment |
+| `origin` | datetime | Forecast origin timestamp |
+| `hour` | datetime | Forecasted hour |
+| `model`, `model_label` | string | Forecast model |
+| `actual` | float | Actual segment rides |
+| `forecast` | float | Forecasted segment rides |
+| `error` | float | Actual minus forecast |
+| `abs_error` | float | Absolute error |
+
+## `station_cluster_forecast_summary.json`
+
+Compact metadata and headline measures for `station_cluster_forecast.html`,
+including station-cluster coverage, weather coverage, rolling-origin settings,
+model lift, and the rebalancing/capacity-planning recommendation.

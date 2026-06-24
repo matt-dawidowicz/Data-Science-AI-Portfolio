@@ -5,14 +5,15 @@ interview discussion, or README summary.
 
 ## Project Title
 
-Citi Bike Demand Forecasting: Full-Year Time-Series Forecast Proof
+Citi Bike Demand Forecasting: Station-Cluster Time-Series Forecasting
 
 ## One-Line Summary
 
 Built a reproducible time-series forecasting showcase from public Citi Bike
 archives, starting with a January methods layer and expanding to a full-2024
 proof with 44.25M valid trips, 8,784 hourly observations, 44 rolling forecast
-origins, transparent baselines, and a calendar-lag ridge benchmark.
+origins, transparent baselines, a calendar-lag ridge benchmark, and a
+station-cluster forecasting layer for rebalancing/capacity planning.
 
 ## Portfolio Category
 
@@ -24,7 +25,9 @@ Citi Bike trip activity has strong temporal patterns, but a useful forecasting
 showcase needs to prove those patterns before introducing complex models. This
 project starts with a clean January 2024 hourly panel, defines valid trip-start
 metrics, builds calendar and weather features, evaluates simple baselines, then
-extends the aggregate proof across all of 2024 with rolling validation.
+extends the aggregate proof across all of 2024 with rolling validation. The
+latest layer moves from systemwide demand to station-cluster demand so the
+forecast supports a concrete operating decision.
 
 ## What I Built
 
@@ -43,11 +46,21 @@ extends the aggregate proof across all of 2024 with rolling validation.
 - Weekly rolling 24-hour validation from Mar. 1 through Dec. 27, 2024.
 - A calendar-lag ridge model compared against previous-day, previous-week,
   hour-of-day, weekday/hour, and blend baselines.
+- Stable station groups built from station IDs, observed station names, and
+  observed coordinates.
+- A station-cluster hourly panel for the system total plus 6 top demand
+  clusters.
+- Weather, holiday, and major-event features evaluated inside the rolling
+  validation loop.
+- A weather/event ridge model compared against previous-week and calendar-lag
+  ridge baselines for every segment.
+- A rebalancing/capacity-planning priority table that turns forecast output
+  into a decision frame.
 - A decomposition-style output that separates rolling trend, seasonal expected
   demand, and residual movement.
 - Anomaly candidates based on deviations from the weekday/hour profile.
-- Static report visuals and four HTML reports: profile, recommendation,
-  time-series showcase, and multi-month proof reports.
+- Static report visuals and five HTML reports: profile, recommendation,
+  time-series showcase, multi-month proof, and station-cluster forecast reports.
 - An expanded time-series showcase report that maps each time-series concept to
   a concrete artifact.
 - Documentation for measures, methodology, outputs, model behavior, caveats,
@@ -66,6 +79,13 @@ beating previous-week and previous-day baselines on aggregate MAE. That suggests
 the next version should focus on station-aware operations rather than simply
 adding model complexity.
 
+The station-cluster layer makes that next step real. It clusters the top 120
+station IDs into 6 demand pools, joins full-year weather and event features,
+and shows that the weather/event ridge model beats both the previous-week and
+calendar-lag ridge baselines for the system total and all 6 clusters. The
+highest-priority planning cluster is Cluster 01 - W 21 St & 6 Ave area, with
+3.97M annual starts and 71.7 MAE under the weather/event model.
+
 ## Key Results
 
 - 1,886,109 valid trips after timestamp and duration filtering.
@@ -81,6 +101,12 @@ adding model complexity.
 - 44 weekly rolling forecast origins from Mar. 1-Dec. 27, 2024.
 - Calendar + lag ridge full-year MAE: 750 rides per hour.
 - Previous-week full-year MAE: 918 rides per hour.
+- 120 top station IDs grouped into 6 station clusters.
+- 99.93% of valid rows had a usable station ID.
+- Weather/event ridge system MAE: 711 rides per hour.
+- Weather/event ridge improved system MAE by 22.7% versus previous week and
+  5.2% versus calendar-lag ridge.
+- Weather/event ridge beat both baselines for all 6 station clusters.
 
 ## Technical Skills Demonstrated
 
@@ -97,6 +123,9 @@ adding model complexity.
 - Rolling-origin backtesting
 - Regularized lag-regression benchmark
 - Multi-month archive streaming and aggregation
+- Station ID normalization and metadata-derived clustering
+- Grouped time-series forecasting
+- Weather, holiday, and event feature engineering
 - Residual analysis and anomaly framing
 - Anomaly scoring with seasonal expected values
 - Seaborn/Matplotlib charting
@@ -116,7 +145,8 @@ adding model complexity.
 5. I treated anomalies as candidates, not causes, because root-cause claims
    need external event or operations context.
 6. I improved the project beyond the first month by adding a full-2024 proof
-   layer; next I would add station metadata and station-cluster forecasts.
+   layer, then pushed it into station-cluster forecasting tied to
+   rebalancing/capacity planning.
 
 ## Resume Bullets
 
@@ -129,24 +159,28 @@ adding model complexity.
 - Extended the project to a full-2024 rolling validation proof with 44 forecast
   origins; a calendar-lag ridge benchmark achieved 750 MAE versus 918 for the
   previous-week baseline.
+- Built station-cluster forecasts from the top 120 station IDs and full-year
+  weather/event features; the richer model improved system MAE to 711 and beat
+  both baselines across all 6 clusters.
 - Added autocorrelation, lag-feature, decomposition-style residual, and
   rolling-origin diagnostics to demonstrate end-to-end time-series workflow
   design.
 - Documented data quality rules, metric definitions, model caveats, and a
-  roadmap for extending the project to station-cluster forecasting.
+  roadmap for extending the project toward capacity and availability outcomes.
 
 ## Recommended Portfolio Card
 
 **Citi Bike Demand Forecasting**
 
-Analyzed 44.25M valid public Citi Bike trips to build January and full-year
-hourly demand profiles, evaluate transparent baselines, compare a calendar-lag
-ridge model across rolling origins, inspect autocorrelation and lag structure,
-detect anomaly candidates, and identify the next modeling path for station-aware
-urban mobility forecasting.
+Analyzed 44.25M valid public Citi Bike trips to build January, full-year, and
+station-cluster hourly demand profiles; evaluate transparent baselines; compare
+calendar-lag and weather/event ridge models across rolling origins; inspect
+autocorrelation and lag structure; detect anomaly candidates; and frame the
+forecast as a rebalancing/capacity-planning watchlist.
 
 **Tools:** Python, pandas, NumPy, Seaborn, Matplotlib, HTML reporting
 
 **Methods:** Time-series profiling, calendar features, autocorrelation, lag
-features, rolling-origin backtesting, baseline forecasting, regularized
-lag-regression, residual analysis, anomaly detection, data documentation
+features, grouped time series, rolling-origin backtesting, baseline forecasting,
+regularized lag-regression, weather/event regressors, residual analysis,
+anomaly detection, data documentation

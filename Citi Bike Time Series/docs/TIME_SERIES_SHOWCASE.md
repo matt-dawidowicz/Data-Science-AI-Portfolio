@@ -188,7 +188,8 @@ of method and judgment. Important limits:
 - the January report is one winter month
 - the full-year proof shows annual coverage but still does not forecast live
   inventory or capacity
-- station-level forecasting still needs a station metadata audit
+- station-cluster forecasting now exists, but it still forecasts trip starts
+  rather than live bike or dock availability
 - weather correlations are descriptive
 - anomaly candidates lack event, outage, and operations context
 - residual bands are not calibrated prediction intervals
@@ -209,18 +210,22 @@ If asked what you would do next:
 
 ```text
 I already extended the aggregate proof to a full year and compared a
-calendar-lag ridge model against transparent baselines. Next I would add stable
-station IDs and station metadata, then evaluate station-cluster forecasts
-against the same rolling-origin discipline.
+calendar-lag ridge model against transparent baselines. I then added stable
+station ID clusters, weather/event features, and segment-level rolling
+validation. Next I would add capacity and availability outcomes so the forecast
+can be judged against real rebalancing risk.
 ```
 
-## Best Next Portfolio Upgrade
+## Completed Portfolio Upgrade
 
-The next major version should move from aggregate demand to station-cluster
-demand:
+The aggregate-to-cluster upgrade now exists in:
 
-1. Stable station IDs and station metadata
-2. Station-cluster panel forecasts
-3. Weather, event, and holiday features inside rolling validation
-4. Aggregate versus station-cluster error comparison
-5. One operating decision, such as rebalancing or peak-hour planning
+```text
+outputs/station_cluster_forecast.html
+docs/STATION_CLUSTER_FORECASTING.md
+```
+
+It adds stable station IDs and metadata, station-cluster panel forecasts,
+weather/event/holiday features inside rolling validation, aggregate versus
+station-cluster error comparison, and a rebalancing/capacity-planning decision
+frame.

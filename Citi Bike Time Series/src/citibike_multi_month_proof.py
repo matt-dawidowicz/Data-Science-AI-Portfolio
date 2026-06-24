@@ -95,15 +95,24 @@ TOKENS = {
 
 @dataclass(frozen=True)
 class MonthArchive:
+    """Resolved Citi Bike archive metadata for one YYYY-MM source month."""
+
     month: str
     url: str
     path: Path
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build the multi-month Citi Bike proof layer.")
-    parser.add_argument("--start-month", default=DEFAULT_START_MONTH, help="Inclusive YYYY-MM month.")
-    parser.add_argument("--end-month", default=DEFAULT_END_MONTH, help="Inclusive YYYY-MM month.")
+    """Parse command-line options for the multi-month proof layer."""
+    parser = argparse.ArgumentParser(
+        description="Build the multi-month Citi Bike proof layer."
+    )
+    parser.add_argument(
+        "--start-month", default=DEFAULT_START_MONTH, help="Inclusive YYYY-MM month."
+    )
+    parser.add_argument(
+        "--end-month", default=DEFAULT_END_MONTH, help="Inclusive YYYY-MM month."
+    )
     parser.add_argument(
         "--origin-step-days",
         type=int,
@@ -131,6 +140,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the multi-month proof pipeline and write portfolio artifacts."""
     args = parse_args()
     prepare_dirs()
 
@@ -156,16 +166,22 @@ def main() -> None:
         args=args,
     )
 
-    chart_paths = build_charts(hourly, monthly_summaries, metrics, origin_metrics, scored)
-    write_outputs(hourly, monthly_summaries, metrics, origin_metrics, scored, summary, chart_paths)
+    chart_paths = build_charts(
+        hourly, monthly_summaries, metrics, origin_metrics, scored
+    )
+    write_outputs(
+        hourly, monthly_summaries, metrics, origin_metrics, scored, summary, chart_paths
+    )
 
 
 def prepare_dirs() -> None:
+    """Create local work, output, and chart directories."""
     for path in [WORK_DIR, DATA_DIR, OUT_DIR, CHART_DIR]:
         path.mkdir(parents=True, exist_ok=True)
 
 
 def month_range(start_month: str, end_month: str) -> list[str]:
+    """Return inclusive YYYY-MM month labels between two bounds."""
     start = pd.Period(start_month, freq="M")
     end = pd.Period(end_month, freq="M")
     if end < start:
@@ -174,6 +190,7 @@ def month_range(start_month: str, end_month: str) -> list[str]:
 
 
 def archive_for_month(month: str) -> MonthArchive:
+    """Build the expected Citi Bike archive URL and cache path for a month."""
     compact = month.replace("-", "")
     filename = f"{compact}-citibike-tripdata.zip"
     return MonthArchive(
@@ -184,13 +201,16 @@ def archive_for_month(month: str) -> MonthArchive:
 
 
 def ensure_archive(archive: MonthArchive, *, skip_download: bool) -> None:
+    """Ensure one monthly Citi Bike archive exists and is a valid ZIP."""
     if archive.path.exists() and archive.path.stat().st_size > 1_000_000:
         if zipfile.is_zipfile(archive.path):
             return
         archive.path.unlink()
 
     if skip_download:
-        raise FileNotFoundError(f"Missing cached archive for {archive.month}: {archive.path}")
+        raise FileNotFoundError(
+            f"Missing cached archive for {archive.month}: {archive.path}"
+        )
 
     print(f"Downloading {archive.url}")
     request = urllib.request.Request(archive.url, headers={"User-Agent": USER_AGENT})
@@ -203,14 +223,18 @@ def ensure_archive(archive: MonthArchive, *, skip_download: bool) -> None:
 
 
 def get_csv_names(zip_path: Path) -> list[str]:
+    """Return sorted CSV member names from a Citi Bike ZIP archive."""
     with zipfile.ZipFile(zip_path) as zf:
-        csv_names = sorted(name for name in zf.namelist() if name.lower().endswith(".csv"))
+        csv_names = sorted(
+            name for name in zf.namelist() if name.lower().endswith(".csv")
+        )
     if not csv_names:
         raise RuntimeError(f"No CSV files found inside {zip_path}")
     return csv_names
 
 
 def get_csv_header(zip_path: Path, csv_name: str) -> list[str]:
+    """Return the header row for one CSV member inside an archive."""
     with zipfile.ZipFile(zip_path) as zf:
         with zf.open(csv_name) as raw:
             return raw.readline().decode("utf-8-sig").strip().split(",")
@@ -219,6 +243,7 @@ def get_csv_header(zip_path: Path, csv_name: str) -> list[str]:
 def build_multi_month_hourly_panel(
     archives: list[MonthArchive],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Stream archives into monthly summaries and a continuous hourly panel."""
     hourly_counter: Counter[pd.Timestamp] = Counter()
     station_counter: Counter[str] = Counter()
     monthly_rows: list[dict[str, object]] = []
@@ -250,8 +275,12 @@ def build_multi_month_hourly_panel(
                     )
                     for chunk in reader:
                         rows_total += len(chunk)
-                        chunk["started_at"] = pd.to_datetime(chunk["started_at"], errors="coerce")
-                        chunk["ended_at"] = pd.to_datetime(chunk["ended_at"], errors="coerce")
+                        chunk["started_at"] = pd.to_datetime(
+                            chunk["started_at"], errors="coerce"
+                        )
+                        chunk["ended_at"] = pd.to_datetime(
+                            chunk["ended_at"], errors="coerce"
+                        )
                         duration = (
                             chunk["ended_at"] - chunk["started_at"]
                         ).dt.total_seconds() / 60
@@ -268,18 +297,29 @@ def build_multi_month_hourly_panel(
                         current_first = chunk["started_at"].min()
                         current_last = chunk["started_at"].max()
                         first_started = (
-                            current_first if first_started is None else min(first_started, current_first)
+                            current_first
+                            if first_started is None
+                            else min(first_started, current_first)
                         )
                         last_started = (
-                            current_last if last_started is None else max(last_started, current_last)
+                            current_last
+                            if last_started is None
+                            else max(last_started, current_last)
                         )
 
-                        hourly_counter.update(chunk["started_at"].dt.floor("h").value_counts().to_dict())
-                        if "start_station_id" in chunk.columns and "start_station_name" in chunk.columns:
+                        hourly_counter.update(
+                            chunk["started_at"].dt.floor("h").value_counts().to_dict()
+                        )
+                        if (
+                            "start_station_id" in chunk.columns
+                            and "start_station_name" in chunk.columns
+                        ):
                             station_key = (
                                 chunk["start_station_id"].fillna("unknown").astype(str)
                                 + " | "
-                                + chunk["start_station_name"].fillna("unknown").astype(str)
+                                + chunk["start_station_name"]
+                                .fillna("unknown")
+                                .astype(str)
                             )
                             station_counter.update(station_key)
 
@@ -307,7 +347,9 @@ def build_multi_month_hourly_panel(
     full_hours = pd.date_range(first_hour, last_hour, freq="h")
 
     hourly = pd.DataFrame({"hour": full_hours})
-    hourly["rides"] = hourly["hour"].map(lambda value: int(hourly_counter.get(value, 0)))
+    hourly["rides"] = hourly["hour"].map(
+        lambda value: int(hourly_counter.get(value, 0))
+    )
     hourly = add_calendar_columns(hourly)
 
     monthly_summaries = pd.DataFrame(monthly_rows)
@@ -328,6 +370,7 @@ def build_multi_month_hourly_panel(
 
 
 def add_calendar_columns(hourly: pd.DataFrame) -> pd.DataFrame:
+    """Add reusable calendar fields to an hourly demand panel."""
     frame = hourly.copy()
     frame["date"] = frame["hour"].dt.date.astype(str)
     frame["month"] = frame["hour"].dt.to_period("M").astype(str)
@@ -336,12 +379,15 @@ def add_calendar_columns(hourly: pd.DataFrame) -> pd.DataFrame:
     frame["hour_of_day"] = frame["hour"].dt.hour
     frame["day_of_year"] = frame["hour"].dt.dayofyear
     frame["is_weekend"] = frame["day_of_week"].isin([5, 6])
-    holidays = federal_holiday_dates(frame["hour"].dt.year.min(), frame["hour"].dt.year.max())
+    holidays = federal_holiday_dates(
+        frame["hour"].dt.year.min(), frame["hour"].dt.year.max()
+    )
     frame["is_federal_holiday"] = frame["date"].isin(holidays)
     return frame
 
 
 def federal_holiday_dates(start_year: int, end_year: int) -> set[str]:
+    """Return U.S. federal holiday dates for an inclusive year span."""
     dates: set[str] = set()
     for year in range(int(start_year), int(end_year) + 1):
         fixed = [(1, 1), (6, 19), (7, 4), (11, 11), (12, 25)]
@@ -356,12 +402,14 @@ def federal_holiday_dates(start_year: int, end_year: int) -> set[str]:
 
 
 def nth_weekday(year: int, month: int, weekday: int, n: int) -> pd.Timestamp:
+    """Return the nth weekday date within a month."""
     first = pd.Timestamp(year=year, month=month, day=1)
     offset = (weekday - first.weekday()) % 7
     return first + pd.Timedelta(days=offset + 7 * (n - 1))
 
 
 def last_weekday(year: int, month: int, weekday: int) -> pd.Timestamp:
+    """Return the final weekday date within a month."""
     last_day = calendar.monthrange(year, month)[1]
     last = pd.Timestamp(year=year, month=month, day=last_day)
     offset = (last.weekday() - weekday) % 7
@@ -369,6 +417,7 @@ def last_weekday(year: int, month: int, weekday: int) -> pd.Timestamp:
 
 
 def add_forecast_features(hourly: pd.DataFrame) -> pd.DataFrame:
+    """Add lag, rolling, and cyclical features for model backtesting."""
     frame = hourly.copy().sort_values("hour").reset_index(drop=True)
     rides = frame["rides"].astype(float)
     frame["hour_sin"] = np.sin(2 * np.pi * frame["hour_of_day"] / 24)
@@ -380,14 +429,18 @@ def add_forecast_features(hourly: pd.DataFrame) -> pd.DataFrame:
     frame["month_cos"] = np.cos(2 * np.pi * frame["month_number"] / 12)
     frame["is_weekend_int"] = frame["is_weekend"].astype(int)
     frame["is_federal_holiday_int"] = frame["is_federal_holiday"].astype(int)
-    frame["days_since_start"] = (frame["hour"] - frame["hour"].min()).dt.total_seconds() / 86_400
+    frame["days_since_start"] = (
+        frame["hour"] - frame["hour"].min()
+    ).dt.total_seconds() / 86_400
     frame["lag_24h"] = rides.shift(24)
     frame["lag_168h"] = rides.shift(168)
 
     # For a 24-hour forecast origin, these rolling features are anchored one
     # day back. They do not peek into the forecast horizon.
     frame["rolling_24h_prior_day"] = rides.shift(24).rolling(24, min_periods=12).mean()
-    frame["rolling_168h_prior_day"] = rides.shift(24).rolling(168, min_periods=72).mean()
+    frame["rolling_168h_prior_day"] = (
+        rides.shift(24).rolling(168, min_periods=72).mean()
+    )
     return frame
 
 
@@ -398,10 +451,15 @@ def build_rolling_backtests(
     min_train_days: int,
     origin_step_days: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Score forecast models across leakage-aware rolling origins."""
     hourly_by_hour = hourly.set_index("hour")["rides"].astype(float)
-    first_origin = (hourly["hour"].min() + pd.Timedelta(days=min_train_days)).normalize()
+    first_origin = (
+        hourly["hour"].min() + pd.Timedelta(days=min_train_days)
+    ).normalize()
     last_origin = hourly["hour"].max() - pd.Timedelta(hours=horizon_hours - 1)
-    origins = pd.date_range(first_origin, last_origin.normalize(), freq=f"{origin_step_days}D")
+    origins = pd.date_range(
+        first_origin, last_origin.normalize(), freq=f"{origin_step_days}D"
+    )
 
     scored_rows: list[dict[str, object]] = []
     origin_rows: list[dict[str, object]] = []
@@ -421,7 +479,9 @@ def build_rolling_backtests(
             "hour_of_day_profile": forecast_from_hour_profile(train, test),
             "weekday_hour_profile": forecast_from_calendar_profile(train, test),
         }
-        forecasts["seasonal_lag_blend"] = 0.65 * forecasts["weekday_hour_profile"] + 0.35 * forecasts["previous_week"]
+        forecasts["seasonal_lag_blend"] = (
+            0.65 * forecasts["weekday_hour_profile"] + 0.35 * forecasts["previous_week"]
+        )
         forecasts["calendar_lag_ridge"] = forecast_from_calendar_lag_ridge(train, test)
 
         for model, forecast in forecasts.items():
@@ -440,7 +500,9 @@ def build_rolling_backtests(
             scored["error"] = scored["actual"] - scored["forecast"]
             scored["abs_error"] = scored["error"].abs()
             scored_rows.extend(scored.to_dict("records"))
-            origin_rows.append({"origin": origin, "model": model, **score_forecast(scored)})
+            origin_rows.append(
+                {"origin": origin, "model": model, **score_forecast(scored)}
+            )
 
     scored_df = pd.DataFrame(scored_rows)
     origin_metrics = pd.DataFrame(origin_rows)
@@ -448,7 +510,10 @@ def build_rolling_backtests(
     return aggregate_metrics, origin_metrics, scored_df
 
 
-def forecast_from_previous(hourly_by_hour: pd.Series, hours: pd.Series, lag: int) -> pd.Series:
+def forecast_from_previous(
+    hourly_by_hour: pd.Series, hours: pd.Series, lag: int
+) -> pd.Series:
+    """Forecast demand by copying demand from a prior fixed-hour lag."""
     return pd.Series(
         [hourly_by_hour.get(hour - pd.Timedelta(hours=lag), np.nan) for hour in hours],
         index=hours.index,
@@ -457,12 +522,16 @@ def forecast_from_previous(hourly_by_hour: pd.Series, hours: pd.Series, lag: int
 
 
 def forecast_from_hour_profile(train: pd.DataFrame, test: pd.DataFrame) -> pd.Series:
+    """Forecast demand from the training-set average by hour of day."""
     profile = train.groupby("hour_of_day")["rides"].mean()
     global_mean = float(train["rides"].mean())
     return test["hour_of_day"].map(profile).fillna(global_mean).astype(float)
 
 
-def forecast_from_calendar_profile(train: pd.DataFrame, test: pd.DataFrame) -> pd.Series:
+def forecast_from_calendar_profile(
+    train: pd.DataFrame, test: pd.DataFrame
+) -> pd.Series:
+    """Forecast demand from the training-set weekday and hour profile."""
     calendar_profile = train.groupby(["day_of_week", "hour_of_day"])["rides"].mean()
     hour_profile = train.groupby("hour_of_day")["rides"].mean()
     global_mean = float(train["rides"].mean())
@@ -479,7 +548,10 @@ def forecast_from_calendar_profile(train: pd.DataFrame, test: pd.DataFrame) -> p
     return pd.Series(forecasts, index=test.index, dtype=float)
 
 
-def forecast_from_calendar_lag_ridge(train: pd.DataFrame, test: pd.DataFrame) -> pd.Series:
+def forecast_from_calendar_lag_ridge(
+    train: pd.DataFrame, test: pd.DataFrame
+) -> pd.Series:
+    """Forecast demand with a ridge model using calendar and lag features."""
     usable_train = train.dropna(subset=REGRESSION_FEATURES + ["rides"]).copy()
     usable_test = test.dropna(subset=REGRESSION_FEATURES).copy()
     predictions = pd.Series(np.nan, index=test.index, dtype=float)
@@ -497,7 +569,9 @@ def forecast_from_calendar_lag_ridge(train: pd.DataFrame, test: pd.DataFrame) ->
     alpha = 25.0
     penalty = np.eye(x_design.shape[1])
     penalty[0, 0] = 0.0
-    beta = np.linalg.solve(x_design.T @ x_design + alpha * penalty, x_design.T @ y_train)
+    beta = np.linalg.solve(
+        x_design.T @ x_design + alpha * penalty, x_design.T @ y_train
+    )
 
     x_test = usable_test[REGRESSION_FEATURES].to_numpy(dtype=float)
     x_test_scaled = (x_test - means) / stds
@@ -507,6 +581,7 @@ def forecast_from_calendar_lag_ridge(train: pd.DataFrame, test: pd.DataFrame) ->
 
 
 def score_forecast(scored: pd.DataFrame) -> dict[str, float]:
+    """Calculate accuracy metrics for one scored forecast slice."""
     if scored.empty:
         return {"n": 0, "mae": np.nan, "rmse": np.nan, "mape": np.nan}
     error = scored["actual"] - scored["forecast"]
@@ -519,14 +594,19 @@ def score_forecast(scored: pd.DataFrame) -> dict[str, float]:
     }
 
 
-def aggregate_model_metrics(scored: pd.DataFrame, origin_metrics: pd.DataFrame) -> pd.DataFrame:
+def aggregate_model_metrics(
+    scored: pd.DataFrame, origin_metrics: pd.DataFrame
+) -> pd.DataFrame:
+    """Aggregate scored rows into model-level validation metrics."""
     if scored.empty:
         return pd.DataFrame()
 
     winners = pd.DataFrame()
     if not origin_metrics.empty:
         winner_idx = origin_metrics.groupby("origin")["mae"].idxmin()
-        winners = origin_metrics.loc[winner_idx].groupby("model").size().rename("origin_wins")
+        winners = (
+            origin_metrics.loc[winner_idx].groupby("model").size().rename("origin_wins")
+        )
 
     rows = []
     for model, part in scored.groupby("model"):
@@ -539,7 +619,9 @@ def aggregate_model_metrics(scored: pd.DataFrame, origin_metrics: pd.DataFrame) 
                 "origins": int(part["origin"].nunique()),
                 "holdout_hours": int(len(part)),
                 "mean_actual": float(part["actual"].mean()),
-                "median_origin_mae": float(origin_part["mae"].median()) if not origin_part.empty else np.nan,
+                "median_origin_mae": float(origin_part["mae"].median())
+                if not origin_part.empty
+                else np.nan,
                 "origin_wins": int(winners.get(model, 0)) if not winners.empty else 0,
                 **metrics,
             }
@@ -547,11 +629,14 @@ def aggregate_model_metrics(scored: pd.DataFrame, origin_metrics: pd.DataFrame) 
 
     metrics_df = pd.DataFrame(rows).sort_values(["mae", "rmse"]).reset_index(drop=True)
     total_origins = metrics_df["origins"].max()
-    metrics_df["origin_win_rate"] = metrics_df["origin_wins"] / total_origins if total_origins else 0.0
+    metrics_df["origin_win_rate"] = (
+        metrics_df["origin_wins"] / total_origins if total_origins else 0.0
+    )
     return metrics_df
 
 
 def label_model(model: object) -> str:
+    """Return a readable label for a forecast model identifier."""
     return MODEL_LABELS.get(str(model), str(model).replace("_", " ").title())
 
 
@@ -564,6 +649,7 @@ def build_summary(
     scored: pd.DataFrame,
     args: argparse.Namespace,
 ) -> dict[str, object]:
+    """Build the JSON summary for the multi-month proof layer."""
     daily = hourly.groupby("date", as_index=False)["rides"].sum()
     best = metrics.iloc[0].to_dict() if not metrics.empty else {}
     summary = {
@@ -575,7 +661,11 @@ def build_summary(
         "last_hour": str(hourly["hour"].max()),
         "hourly_observations": int(len(hourly)),
         "missing_hours": int(
-            len(pd.date_range(hourly["hour"].min(), hourly["hour"].max(), freq="h").difference(hourly["hour"]))
+            len(
+                pd.date_range(
+                    hourly["hour"].min(), hourly["hour"].max(), freq="h"
+                ).difference(hourly["hour"])
+            )
         ),
         "total_fixed_window_rides": int(hourly["rides"].sum()),
         "average_daily_rides": float(daily["rides"].mean()),
@@ -585,12 +675,15 @@ def build_summary(
         "rows_total": int(monthly_summaries["rows_total"].sum()),
         "rows_valid": int(monthly_summaries["rows_valid"].sum()),
         "valid_rate": float(
-            monthly_summaries["rows_valid"].sum() / monthly_summaries["rows_total"].sum()
+            monthly_summaries["rows_valid"].sum()
+            / monthly_summaries["rows_total"].sum()
         ),
         "origin_step_days": int(args.origin_step_days),
         "horizon_hours": int(args.horizon_hours),
         "min_train_days": int(args.min_train_days),
-        "rolling_origins": int(origin_metrics["origin"].nunique()) if not origin_metrics.empty else 0,
+        "rolling_origins": int(origin_metrics["origin"].nunique())
+        if not origin_metrics.empty
+        else 0,
         "scored_holdout_rows": int(len(scored)),
         "best_model": best,
     }
@@ -598,6 +691,7 @@ def build_summary(
 
 
 def make_json_safe(value: object) -> object:
+    """Convert NumPy, pandas, and timestamp values into JSON-safe values."""
     if isinstance(value, dict):
         return {str(key): make_json_safe(item) for key, item in value.items()}
     if isinstance(value, list):
@@ -618,6 +712,7 @@ def make_json_safe(value: object) -> object:
 
 
 def use_chart_theme() -> None:
+    """Apply the shared visual theme for Matplotlib charts."""
     sns.set_theme(
         style="whitegrid",
         rc={
@@ -645,6 +740,7 @@ def add_chart_header(
     title_width: int = 82,
     subtitle_width: int = 116,
 ) -> None:
+    """Add a consistent title and subtitle treatment to a chart."""
     title = textwrap.fill(title, width=title_width, break_long_words=False)
     subtitle = textwrap.fill(subtitle, width=subtitle_width, break_long_words=False)
     fig.subplots_adjust(top=0.84)
@@ -672,6 +768,7 @@ def add_chart_header(
 
 
 def format_date_axis(ax: plt.Axes) -> None:
+    """Format a chart x-axis for compact dates."""
     locator = mdates.AutoDateLocator(minticks=4, maxticks=8)
     ax.xaxis.set_major_locator(locator)
     ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
@@ -679,6 +776,7 @@ def format_date_axis(ax: plt.Axes) -> None:
 
 
 def save_chart(fig: plt.Figure, filename: str) -> Path:
+    """Save a chart image to the project chart directory."""
     path = CHART_DIR / filename
     fig.savefig(path, dpi=160, bbox_inches="tight")
     plt.close(fig)
@@ -692,6 +790,7 @@ def build_charts(
     origin_metrics: pd.DataFrame,
     scored: pd.DataFrame,
 ) -> list[Path]:
+    """Render the multi-month proof charts."""
     use_chart_theme()
     chart_paths = [
         plot_multi_month_daily_demand(hourly),
@@ -705,15 +804,40 @@ def build_charts(
 
 
 def plot_multi_month_daily_demand(hourly: pd.DataFrame) -> Path:
+    """Plot daily demand with short and medium rolling averages."""
     daily = hourly.groupby("date", as_index=False)["rides"].sum()
     daily["date"] = pd.to_datetime(daily["date"])
     daily["rolling_7d"] = daily["rides"].rolling(7, min_periods=3).mean()
     daily["rolling_28d"] = daily["rides"].rolling(28, min_periods=10).mean()
 
     fig, ax = plt.subplots(figsize=(11, 5.2))
-    sns.lineplot(data=daily, x="date", y="rides", ax=ax, color="#C5CAD3", linewidth=0.7, label="Daily rides")
-    sns.lineplot(data=daily, x="date", y="rolling_7d", ax=ax, color=TOKENS["blue_light"], linewidth=1.0, label="7-day average")
-    sns.lineplot(data=daily, x="date", y="rolling_28d", ax=ax, color=TOKENS["blue"], linewidth=1.2, label="28-day average")
+    sns.lineplot(
+        data=daily,
+        x="date",
+        y="rides",
+        ax=ax,
+        color="#C5CAD3",
+        linewidth=0.7,
+        label="Daily rides",
+    )
+    sns.lineplot(
+        data=daily,
+        x="date",
+        y="rolling_7d",
+        ax=ax,
+        color=TOKENS["blue_light"],
+        linewidth=1.0,
+        label="7-day average",
+    )
+    sns.lineplot(
+        data=daily,
+        x="date",
+        y="rolling_28d",
+        ax=ax,
+        color=TOKENS["blue"],
+        linewidth=1.2,
+        label="28-day average",
+    )
     format_date_axis(ax)
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{x / 1000:.0f}k"))
     ax.set_xlabel("")
@@ -729,6 +853,7 @@ def plot_multi_month_daily_demand(hourly: pd.DataFrame) -> Path:
 
 
 def plot_monthly_volume(monthly_summaries: pd.DataFrame) -> Path:
+    """Plot fixed-window trip volume by source month."""
     plot_df = monthly_summaries.copy()
     plot_df["month_start"] = pd.to_datetime(plot_df["month"] + "-01")
     fig, ax = plt.subplots(figsize=(10.5, 5.0))
@@ -743,7 +868,9 @@ def plot_monthly_volume(monthly_summaries: pd.DataFrame) -> Path:
     )
     ax.set_xlabel("")
     ax.set_ylabel("Trip starts")
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{x / 1_000_000:.1f}M"))
+    ax.yaxis.set_major_formatter(
+        mticker.FuncFormatter(lambda x, _: f"{x / 1_000_000:.1f}M")
+    )
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
     add_chart_header(
         fig,
@@ -755,6 +882,7 @@ def plot_monthly_volume(monthly_summaries: pd.DataFrame) -> Path:
 
 
 def plot_model_mae(metrics: pd.DataFrame) -> Path:
+    """Plot aggregate model MAE from rolling validation."""
     plot_df = metrics.sort_values("mae", ascending=True).copy()
     fig, ax = plt.subplots(figsize=(9.8, 5.2))
     sns.barplot(
@@ -788,6 +916,7 @@ def plot_model_mae(metrics: pd.DataFrame) -> Path:
 
 
 def plot_origin_mae(origin_metrics: pd.DataFrame, metrics: pd.DataFrame) -> Path:
+    """Plot validation error over rolling forecast origins."""
     models = metrics.sort_values("mae")["model"].head(4).tolist()
     plot_df = origin_metrics[origin_metrics["model"].isin(models)].copy()
     plot_df["model_label"] = plot_df["model"].map(label_model)
@@ -815,12 +944,23 @@ def plot_origin_mae(origin_metrics: pd.DataFrame, metrics: pd.DataFrame) -> Path
 
 
 def plot_forecast_example(scored: pd.DataFrame, metrics: pd.DataFrame) -> Path:
+    """Plot one concrete holdout forecast trace for the best model."""
     best_model = str(metrics.iloc[0]["model"])
     origin = scored["origin"].max()
-    plot_df = scored[(scored["origin"] == origin) & (scored["model"] == best_model)].copy()
+    plot_df = scored[
+        (scored["origin"] == origin) & (scored["model"] == best_model)
+    ].copy()
 
     fig, ax = plt.subplots(figsize=(10.5, 5.0))
-    sns.lineplot(data=plot_df, x="hour", y="actual", ax=ax, color=TOKENS["blue"], linewidth=1.3, label="Actual")
+    sns.lineplot(
+        data=plot_df,
+        x="hour",
+        y="actual",
+        ax=ax,
+        color=TOKENS["blue"],
+        linewidth=1.3,
+        label="Actual",
+    )
     sns.lineplot(
         data=plot_df,
         x="hour",
@@ -854,6 +994,7 @@ def write_outputs(
     summary: dict[str, object],
     chart_paths: list[Path],
 ) -> None:
+    """Write CSV, JSON, chart, and HTML outputs for the proof layer."""
     daily = hourly.groupby("date", as_index=False)["rides"].sum()
     hourly.to_csv(OUT_DIR / "multi_month_hourly_profile.csv", index=False)
     daily.to_csv(OUT_DIR / "multi_month_daily_profile.csv", index=False)
@@ -861,10 +1002,14 @@ def write_outputs(
     metrics.to_csv(OUT_DIR / "multi_month_model_metrics.csv", index=False)
     origin_metrics.to_csv(OUT_DIR / "multi_month_origin_metrics.csv", index=False)
     scored.to_csv(OUT_DIR / "multi_month_backtest_scored.csv", index=False)
-    with (OUT_DIR / "multi_month_proof_summary.json").open("w", encoding="utf-8") as handle:
+    with (OUT_DIR / "multi_month_proof_summary.json").open(
+        "w", encoding="utf-8"
+    ) as handle:
         json.dump(summary, handle, indent=2)
     report = strip_trailing_whitespace(
-        render_html_report(summary, monthly_summaries, metrics, origin_metrics, chart_paths)
+        render_html_report(
+            summary, monthly_summaries, metrics, origin_metrics, chart_paths
+        )
     )
     (OUT_DIR / "multi_month_proof.html").write_text(report, encoding="utf-8")
     print(json.dumps(summary, indent=2))
@@ -872,6 +1017,7 @@ def write_outputs(
 
 
 def strip_trailing_whitespace(text: str) -> str:
+    """Remove trailing whitespace while preserving a final newline."""
     return "\n".join(line.rstrip() for line in text.splitlines()) + "\n"
 
 
@@ -882,13 +1028,14 @@ def render_html_report(
     origin_metrics: pd.DataFrame,
     chart_paths: list[Path],
 ) -> str:
+    """Render the multi-month proof layer as standalone HTML."""
     best = summary.get("best_model", {})
     if not isinstance(best, dict):
         best = {}
     chart_blocks = "\n".join(
         f"""
         <figure>
-          <img src="charts/{html.escape(path.name)}" alt="{html.escape(path.stem.replace('_', ' '))}">
+          <img src="charts/{html.escape(path.name)}" alt="{html.escape(path.stem.replace("_", " "))}">
           <figcaption>{html.escape(chart_caption(path.name))}</figcaption>
         </figure>
         """
@@ -926,7 +1073,13 @@ def render_html_report(
     )
     monthly_table = table_html(
         monthly_summaries,
-        columns=["month", "rows_valid", "valid_rides_in_fixed_window", "valid_rate", "archive_size_mb"],
+        columns=[
+            "month",
+            "rows_valid",
+            "valid_rides_in_fixed_window",
+            "valid_rate",
+            "archive_size_mb",
+        ],
         rename={
             "month": "Month",
             "rows_valid": "Valid Rows",
@@ -941,7 +1094,9 @@ def render_html_report(
             "Archive MB": lambda value: fmt_number(value, digits=1),
         },
     )
-    best_label = html.escape(str(best.get("model_label", label_model(best.get("model", "")))))
+    best_label = html.escape(
+        str(best.get("model_label", label_model(best.get("model", ""))))
+    )
     best_mae = fmt_number(best.get("mae", np.nan))
 
     return f"""<!doctype html>
@@ -1129,6 +1284,7 @@ def table_html(
     rename: dict[str, str],
     formatters: dict[str, object],
 ) -> str:
+    """Render selected DataFrame columns as a styled HTML table."""
     display = df.loc[:, columns].rename(columns=rename)
     return display.to_html(
         index=False,
@@ -1140,18 +1296,21 @@ def table_html(
 
 
 def fmt_number(value: object, digits: int = 0) -> str:
+    """Format a number for compact report tables."""
     if pd.isna(value):
         return "n/a"
     return f"{float(value):,.{digits}f}"
 
 
 def fmt_percent(value: object, digits: int = 1) -> str:
+    """Format a decimal ratio as a percentage string."""
     if pd.isna(value):
         return "n/a"
     return f"{float(value) * 100:.{digits}f}%"
 
 
 def chart_caption(filename: str) -> str:
+    """Return the report caption for a generated chart filename."""
     captions = {
         "multi_month_daily_demand.png": "Daily demand over the longer panel, with smoothing to show level shifts.",
         "multi_month_monthly_volume.png": "Monthly fixed-window valid trip starts, used as the coverage sanity check.",
@@ -1159,7 +1318,9 @@ def chart_caption(filename: str) -> str:
         "multi_month_origin_mae.png": "Origin-level MAE for the leading models, showing stability over time.",
         "multi_month_forecast_example.png": "Final scored 24-hour origin for the best aggregate model.",
     }
-    return captions.get(filename, filename.replace("_", " ").replace(".png", "").title())
+    return captions.get(
+        filename, filename.replace("_", " ").replace(".png", "").title()
+    )
 
 
 if __name__ == "__main__":

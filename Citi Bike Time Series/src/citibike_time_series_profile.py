@@ -1,3 +1,5 @@
+"""Build the January 2024 Citi Bike hourly time-series profile."""
+
 from __future__ import annotations
 
 import html
@@ -104,15 +106,22 @@ COLOR_FAMILIES = {
 
 
 def main() -> None:
+    """Run the full January profile pipeline and write portfolio artifacts."""
     prepare_dirs()
     download_trip_data()
     summary, hourly, top_stations, member_mix, bike_mix = build_hourly_profile()
     weather = fetch_weather()
-    hourly = hourly.merge(weather, on="hour", how="left") if weather is not None else hourly
+    hourly = (
+        hourly.merge(weather, on="hour", how="left") if weather is not None else hourly
+    )
     seasonality = build_seasonality(hourly)
     anomalies = detect_anomalies(hourly)
-    forecast_results, forecast_scored, best_model, interval = run_forecast_backtest(hourly)
-    chart_paths = build_charts(hourly, seasonality, top_stations, forecast_scored, best_model, interval)
+    forecast_results, forecast_scored, best_model, interval = run_forecast_backtest(
+        hourly
+    )
+    chart_paths = build_charts(
+        hourly, seasonality, top_stations, forecast_scored, best_model, interval
+    )
     write_outputs(
         summary=summary,
         hourly=hourly,
@@ -130,18 +139,23 @@ def main() -> None:
 
 
 def prepare_dirs() -> None:
+    """Create local work, output, and chart directories."""
     for path in [WORK_DIR, DATA_DIR, OUT_DIR, CHART_DIR]:
         path.mkdir(parents=True, exist_ok=True)
 
 
 def download_file(url: str, destination: Path) -> None:
-    request = urllib.request.Request(url, headers={"User-Agent": "codex-time-series-profile/1.0"})
+    """Download a remote file to the requested local destination."""
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "codex-time-series-profile/1.0"}
+    )
     with urllib.request.urlopen(request, timeout=180) as response:
         with destination.open("wb") as handle:
             shutil.copyfileobj(response, handle)
 
 
 def download_trip_data() -> None:
+    """Ensure the January 2024 Citi Bike trip archive is cached locally."""
     if DATA_ZIP.exists() and DATA_ZIP.stat().st_size > 1_000_000:
         return
     print(f"Downloading Citi Bike trip history from {DATA_URL}")
@@ -151,6 +165,7 @@ def download_trip_data() -> None:
 
 
 def get_csv_header(zip_path: Path) -> list[str]:
+    """Return the first CSV header found inside a Citi Bike archive."""
     with zipfile.ZipFile(zip_path) as zf:
         csv_names = [name for name in zf.namelist() if name.lower().endswith(".csv")]
         if not csv_names:
@@ -160,7 +175,10 @@ def get_csv_header(zip_path: Path) -> list[str]:
     return first_line.split(",")
 
 
-def build_hourly_profile() -> tuple[dict, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def build_hourly_profile() -> tuple[
+    dict, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
+]:
+    """Aggregate trip starts, mix tables, and summary statistics by hour."""
     expected = {
         "ride_id",
         "rideable_type",
@@ -186,16 +204,28 @@ def build_hourly_profile() -> tuple[dict, pd.DataFrame, pd.DataFrame, pd.DataFra
     last_started: pd.Timestamp | None = None
 
     with zipfile.ZipFile(DATA_ZIP) as zf:
-        csv_names = sorted(name for name in zf.namelist() if name.lower().endswith(".csv"))
+        csv_names = sorted(
+            name for name in zf.namelist() if name.lower().endswith(".csv")
+        )
         for csv_name in csv_names:
             with zf.open(csv_name) as raw:
                 reader = pd.read_csv(raw, usecols=usecols, chunksize=300_000)
                 for chunk in reader:
                     rows_total += len(chunk)
-                    chunk["started_at"] = pd.to_datetime(chunk["started_at"], errors="coerce")
-                    chunk["ended_at"] = pd.to_datetime(chunk["ended_at"], errors="coerce")
-                    duration = (chunk["ended_at"] - chunk["started_at"]).dt.total_seconds() / 60
-                    valid = chunk["started_at"].notna() & chunk["ended_at"].notna() & duration.between(1, 240)
+                    chunk["started_at"] = pd.to_datetime(
+                        chunk["started_at"], errors="coerce"
+                    )
+                    chunk["ended_at"] = pd.to_datetime(
+                        chunk["ended_at"], errors="coerce"
+                    )
+                    duration = (
+                        chunk["ended_at"] - chunk["started_at"]
+                    ).dt.total_seconds() / 60
+                    valid = (
+                        chunk["started_at"].notna()
+                        & chunk["ended_at"].notna()
+                        & duration.between(1, 240)
+                    )
                     chunk = chunk.loc[valid].copy()
                     duration = duration.loc[valid]
                     rows_valid += len(chunk)
@@ -204,14 +234,28 @@ def build_hourly_profile() -> tuple[dict, pd.DataFrame, pd.DataFrame, pd.DataFra
 
                     current_first = chunk["started_at"].min()
                     current_last = chunk["started_at"].max()
-                    first_started = current_first if first_started is None else min(first_started, current_first)
-                    last_started = current_last if last_started is None else max(last_started, current_last)
+                    first_started = (
+                        current_first
+                        if first_started is None
+                        else min(first_started, current_first)
+                    )
+                    last_started = (
+                        current_last
+                        if last_started is None
+                        else max(last_started, current_last)
+                    )
 
                     hour_counts = chunk["started_at"].dt.floor("h").value_counts()
                     hourly_counter.update(hour_counts.to_dict())
-                    station_counter.update(chunk["start_station_name"].dropna().astype(str))
-                    member_counter.update(chunk["member_casual"].fillna("unknown").astype(str))
-                    bike_counter.update(chunk["rideable_type"].fillna("unknown").astype(str))
+                    station_counter.update(
+                        chunk["start_station_name"].dropna().astype(str)
+                    )
+                    member_counter.update(
+                        chunk["member_casual"].fillna("unknown").astype(str)
+                    )
+                    bike_counter.update(
+                        chunk["rideable_type"].fillna("unknown").astype(str)
+                    )
                     duration_minutes.append(duration.to_numpy(dtype=float))
 
     if not hourly_counter:
@@ -219,7 +263,9 @@ def build_hourly_profile() -> tuple[dict, pd.DataFrame, pd.DataFrame, pd.DataFra
 
     full_hours = pd.date_range("2024-01-01 00:00:00", "2024-01-31 23:00:00", freq="h")
     hourly = pd.DataFrame({"hour": full_hours})
-    hourly["rides"] = hourly["hour"].map(lambda value: int(hourly_counter.get(value, 0)))
+    hourly["rides"] = hourly["hour"].map(
+        lambda value: int(hourly_counter.get(value, 0))
+    )
     hourly["date"] = hourly["hour"].dt.date.astype(str)
     hourly["day_name"] = hourly["hour"].dt.day_name()
     hourly["day_of_week"] = hourly["hour"].dt.dayofweek
@@ -248,20 +294,26 @@ def build_hourly_profile() -> tuple[dict, pd.DataFrame, pd.DataFrame, pd.DataFra
         "duration_p99_minutes": float(np.percentile(durations, 99)),
     }
 
-    top_stations = pd.DataFrame(station_counter.most_common(15), columns=["station", "rides"])
+    top_stations = pd.DataFrame(
+        station_counter.most_common(15), columns=["station", "rides"]
+    )
     top_stations["share_of_valid_trips"] = top_stations["rides"] / rows_valid
     member_mix = counter_to_share_frame(member_counter, "rider_type", rows_valid)
     bike_mix = counter_to_share_frame(bike_counter, "bike_type", rows_valid)
     return summary, hourly, top_stations, member_mix, bike_mix
 
 
-def counter_to_share_frame(counter: Counter[str], label: str, denominator: int) -> pd.DataFrame:
+def counter_to_share_frame(
+    counter: Counter[str], label: str, denominator: int
+) -> pd.DataFrame:
+    """Convert counted categories into a ride-share table."""
     frame = pd.DataFrame(counter.most_common(), columns=[label, "rides"])
     frame["share"] = frame["rides"] / denominator if denominator else 0
     return frame
 
 
 def fetch_weather() -> pd.DataFrame | None:
+    """Fetch cached or remote Open-Meteo hourly weather context for NYC."""
     if WEATHER_CSV.exists():
         return pd.read_csv(WEATHER_CSV, parse_dates=["hour"])
 
@@ -273,9 +325,13 @@ def fetch_weather() -> pd.DataFrame | None:
         "hourly": "temperature_2m,precipitation,snowfall,wind_speed_10m",
         "timezone": "America/New_York",
     }
-    url = "https://archive-api.open-meteo.com/v1/archive?" + urllib.parse.urlencode(params)
+    url = "https://archive-api.open-meteo.com/v1/archive?" + urllib.parse.urlencode(
+        params
+    )
     try:
-        request = urllib.request.Request(url, headers={"User-Agent": "codex-time-series-profile/1.0"})
+        request = urllib.request.Request(
+            url, headers={"User-Agent": "codex-time-series-profile/1.0"}
+        )
         with urllib.request.urlopen(request, timeout=90) as response:
             payload = json.load(response)
     except Exception as exc:
@@ -300,8 +356,11 @@ def fetch_weather() -> pd.DataFrame | None:
 
 
 def build_seasonality(hourly: pd.DataFrame) -> pd.DataFrame:
+    """Calculate average ride demand by weekday and hour."""
     seasonality = (
-        hourly.groupby(["day_of_week", "day_name", "hour_of_day"], as_index=False)["rides"]
+        hourly.groupby(["day_of_week", "day_name", "hour_of_day"], as_index=False)[
+            "rides"
+        ]
         .mean()
         .sort_values(["day_of_week", "hour_of_day"])
     )
@@ -309,27 +368,42 @@ def build_seasonality(hourly: pd.DataFrame) -> pd.DataFrame:
 
 
 def detect_anomalies(hourly: pd.DataFrame) -> pd.DataFrame:
+    """Rank hourly demand anomalies using a robust seasonal profile."""
     frame = hourly.copy()
     grouped = frame.groupby(["day_of_week", "hour_of_day"])["rides"]
     profile = grouped.transform("median")
-    mad = grouped.transform(lambda values: np.median(np.abs(values - np.median(values))))
+    mad = grouped.transform(
+        lambda values: np.median(np.abs(values - np.median(values)))
+    )
     frame["expected_profile_rides"] = profile
     frame["robust_z"] = 0.6745 * (frame["rides"] - profile) / mad.replace(0, np.nan)
     frame["robust_z"] = frame["robust_z"].replace([np.inf, -np.inf], np.nan).fillna(0)
     frame["absolute_gap"] = frame["rides"] - frame["expected_profile_rides"]
-    anomalies = frame.reindex(frame["robust_z"].abs().sort_values(ascending=False).index)
-    columns = ["hour", "rides", "expected_profile_rides", "absolute_gap", "robust_z", "day_name", "hour_of_day"]
+    anomalies = frame.reindex(
+        frame["robust_z"].abs().sort_values(ascending=False).index
+    )
+    columns = [
+        "hour",
+        "rides",
+        "expected_profile_rides",
+        "absolute_gap",
+        "robust_z",
+        "day_name",
+        "hour_of_day",
+    ]
     return anomalies[columns].head(20).reset_index(drop=True)
 
 
-def run_forecast_backtest(hourly: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, str, tuple[float, float]]:
+def run_forecast_backtest(
+    hourly: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, str, tuple[float, float]]:
+    """Evaluate simple January holdout forecasts and prediction bands."""
     frame = hourly[["hour", "rides", "day_of_week", "hour_of_day"]].copy()
     test_start = pd.Timestamp("2024-01-25 00:00:00")
     train_mask = frame["hour"] < test_start
     test_mask = frame["hour"] >= test_start
 
     train = frame.loc[train_mask].copy()
-    test = frame.loc[test_mask].copy()
     profile = train.groupby(["day_of_week", "hour_of_day"])["rides"].mean()
     global_mean = train["rides"].mean()
 
@@ -340,7 +414,9 @@ def run_forecast_backtest(hourly: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFr
         float(profile.get((row.day_of_week, row.hour_of_day), global_mean))
         for row in scored.itertuples(index=False)
     ]
-    scored.loc[train_mask, ["previous_day", "previous_week", "calendar_profile"]] = np.nan
+    scored.loc[train_mask, ["previous_day", "previous_week", "calendar_profile"]] = (
+        np.nan
+    )
 
     metric_rows = []
     for model in ["previous_day", "previous_week", "calendar_profile"]:
@@ -351,14 +427,24 @@ def run_forecast_backtest(hourly: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFr
 
     train_residuals = frame["rides"] - frame["rides"].shift(24 * 7)
     train_residuals = train_residuals.loc[train_mask].dropna()
-    lower, upper = np.quantile(train_residuals, [0.1, 0.9]) if len(train_residuals) else (-0.0, 0.0)
+    lower, upper = (
+        np.quantile(train_residuals, [0.1, 0.9])
+        if len(train_residuals)
+        else (-0.0, 0.0)
+    )
     scored["forecast"] = scored[best_model]
     scored["forecast_lower"] = np.maximum(0, scored["forecast"] + lower)
     scored["forecast_upper"] = np.maximum(0, scored["forecast"] + upper)
-    return results, scored.loc[test_mask].reset_index(drop=True), best_model, (float(lower), float(upper))
+    return (
+        results,
+        scored.loc[test_mask].reset_index(drop=True),
+        best_model,
+        (float(lower), float(upper)),
+    )
 
 
 def score_model(model: str, actual: pd.Series, forecast: pd.Series) -> dict:
+    """Score one forecast with portfolio-friendly error metrics."""
     error = forecast - actual
     abs_error = error.abs()
     denom = actual.replace(0, np.nan)
@@ -373,6 +459,7 @@ def score_model(model: str, actual: pd.Series, forecast: pd.Series) -> dict:
 
 
 def use_chart_theme() -> None:
+    """Apply the shared visual theme for Matplotlib charts."""
     sns.set_theme(
         style="whitegrid",
         rc={
@@ -396,9 +483,20 @@ def use_chart_theme() -> None:
     )
 
 
-def add_chart_header(fig, ax, title: str, subtitle: str, *, title_width: int = 78, subtitle_width: int = 112) -> None:
+def add_chart_header(
+    fig,
+    ax,
+    title: str,
+    subtitle: str,
+    *,
+    title_width: int = 78,
+    subtitle_width: int = 112,
+) -> None:
+    """Add a consistent title and subtitle treatment to a chart."""
     title = textwrap.fill(str(title).strip(), width=title_width, break_long_words=False)
-    subtitle = textwrap.fill(str(subtitle).strip(), width=subtitle_width, break_long_words=False)
+    subtitle = textwrap.fill(
+        str(subtitle).strip(), width=subtitle_width, break_long_words=False
+    )
     if not title or not subtitle:
         raise ValueError("Every chart needs a title and subtitle.")
     title_lines = title.count("\n") + 1
@@ -433,6 +531,7 @@ def add_chart_header(fig, ax, title: str, subtitle: str, *, title_width: int = 7
 
 
 def format_date_axis(ax, *, max_ticks: int = 7) -> None:
+    """Format an x-axis for compact hourly or daily dates."""
     locator = mdates.AutoDateLocator(minticks=3, maxticks=max_ticks)
     ax.xaxis.set_major_locator(locator)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %d"))
@@ -441,6 +540,7 @@ def format_date_axis(ax, *, max_ticks: int = 7) -> None:
 
 
 def save_chart(fig, name: str) -> Path:
+    """Save a chart image to the project chart directory."""
     path = CHART_DIR / name
     fig.savefig(path, dpi=180, bbox_inches="tight")
     plt.close(fig)
@@ -455,6 +555,7 @@ def build_charts(
     best_model: str,
     interval: tuple[float, float],
 ) -> dict[str, Path]:
+    """Render the profile, seasonality, station, and forecast charts."""
     use_chart_theme()
     chart_paths: dict[str, Path] = {}
 
@@ -463,8 +564,24 @@ def build_charts(
     daily["rolling_7d"] = daily["rides"].rolling(7, min_periods=3).mean()
     fig, ax = plt.subplots(figsize=(10, 5))
     family = COLOR_FAMILIES["blue"]
-    sns.lineplot(data=daily, x="date", y="rides", ax=ax, color=family["base"], linewidth=1.2, label="Daily rides")
-    sns.lineplot(data=daily, x="date", y="rolling_7d", ax=ax, color=family["dark"], linewidth=1.2, label="7-day average")
+    sns.lineplot(
+        data=daily,
+        x="date",
+        y="rides",
+        ax=ax,
+        color=family["base"],
+        linewidth=1.2,
+        label="Daily rides",
+    )
+    sns.lineplot(
+        data=daily,
+        x="date",
+        y="rolling_7d",
+        ax=ax,
+        color=family["dark"],
+        linewidth=1.2,
+        label="7-day average",
+    )
     ax.set_xlabel("")
     ax.set_ylabel("Rides")
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{x / 1000:.0f}k"))
@@ -475,18 +592,44 @@ def build_charts(
         "Daily demand moved with weekday rhythm",
         "Citi Bike trip starts, January 2024. The 7-day average smooths daily volatility.",
     )
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.12), frameon=False, ncol=2, borderaxespad=0)
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.12),
+        frameon=False,
+        ncol=2,
+        borderaxespad=0,
+    )
     chart_paths["daily_demand"] = save_chart(fig, "daily_demand.png")
 
     heatmap = seasonality.pivot(index="day_name", columns="hour_of_day", values="rides")
-    ordered_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    ordered_days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]
     heatmap = heatmap.reindex(ordered_days)
     fig, ax = plt.subplots(figsize=(11, 5.8))
     cmap = sns.blend_palette(
-        [TOKENS["panel"], COLOR_FAMILIES["blue"]["xlight"], COLOR_FAMILIES["blue"]["light"], COLOR_FAMILIES["blue"]["base"]],
+        [
+            TOKENS["panel"],
+            COLOR_FAMILIES["blue"]["xlight"],
+            COLOR_FAMILIES["blue"]["light"],
+            COLOR_FAMILIES["blue"]["base"],
+        ],
         as_cmap=True,
     )
-    sns.heatmap(heatmap, ax=ax, cmap=cmap, linewidths=0.5, linecolor=TOKENS["panel"], cbar_kws={"label": "Avg. rides"})
+    sns.heatmap(
+        heatmap,
+        ax=ax,
+        cmap=cmap,
+        linewidths=0.5,
+        linecolor=TOKENS["panel"],
+        cbar_kws={"label": "Avg. rides"},
+    )
     ax.set_xlabel("Hour of day")
     ax.set_ylabel("")
     add_chart_header(
@@ -508,7 +651,15 @@ def build_charts(
         alpha=0.95,
         label="80% residual band",
     )
-    sns.lineplot(data=forecast_plot, x="hour", y="rides", ax=ax, color=COLOR_FAMILIES["blue"]["base"], linewidth=1.0, label="Actual")
+    sns.lineplot(
+        data=forecast_plot,
+        x="hour",
+        y="rides",
+        ax=ax,
+        color=COLOR_FAMILIES["blue"]["base"],
+        linewidth=1.0,
+        label="Actual",
+    )
     sns.lineplot(
         data=forecast_plot,
         x="hour",
@@ -529,7 +680,13 @@ def build_charts(
         "A simple seasonal baseline creates a useful forecast reference",
         f"Holdout: Jan. 25-31, 2024. Band uses 10th-90th percentile training residuals: {interval[0]:+.0f} to {interval[1]:+.0f} rides.",
     )
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.12), frameon=False, ncol=3, borderaxespad=0)
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.12),
+        frameon=False,
+        ncol=3,
+        borderaxespad=0,
+    )
     chart_paths["forecast_backtest"] = save_chart(fig, "forecast_backtest.png")
 
     station_plot = top_stations.head(10).sort_values("rides", ascending=True)
@@ -580,6 +737,7 @@ def write_outputs(
     chart_paths: dict[str, Path],
     weather_loaded: bool,
 ) -> None:
+    """Write CSV, JSON, and HTML outputs for the profile project."""
     hourly.to_csv(OUT_DIR / "hourly_profile.csv", index=False)
     top_stations.to_csv(OUT_DIR / "top_stations.csv", index=False)
     member_mix.to_csv(OUT_DIR / "member_mix.csv", index=False)
@@ -622,16 +780,26 @@ def build_report_payload(
     best_model: str,
     weather_loaded: bool,
 ) -> dict:
+    """Assemble a JSON-safe report payload for the HTML summary."""
     daily = hourly.groupby("date", as_index=False)["rides"].sum()
     day_peaks = daily.sort_values("rides", ascending=False).head(3)
     weekend_avg = hourly.loc[hourly["is_weekend"], "rides"].mean()
     weekday_avg = hourly.loc[~hourly["is_weekend"], "rides"].mean()
-    rush_hours = hourly.loc[hourly["hour_of_day"].isin([7, 8, 9, 16, 17, 18]), "rides"].mean()
-    off_hours = hourly.loc[~hourly["hour_of_day"].isin([7, 8, 9, 16, 17, 18]), "rides"].mean()
+    rush_hours = hourly.loc[
+        hourly["hour_of_day"].isin([7, 8, 9, 16, 17, 18]), "rides"
+    ].mean()
+    off_hours = hourly.loc[
+        ~hourly["hour_of_day"].isin([7, 8, 9, 16, 17, 18]), "rides"
+    ].mean()
 
     weather_note = None
     if weather_loaded:
-        weather_cols = ["temperature_c", "precipitation_mm", "snowfall_cm", "wind_speed_kmh"]
+        weather_cols = [
+            "temperature_c",
+            "precipitation_mm",
+            "snowfall_cm",
+            "wind_speed_kmh",
+        ]
         correlations = {
             col: float(hourly[["rides", col]].dropna().corr().iloc[0, 1])
             for col in weather_cols
@@ -645,7 +813,9 @@ def build_report_payload(
         "top_days": day_peaks.to_dict(orient="records"),
         "weekday_avg_hourly": float(weekday_avg),
         "weekend_avg_hourly": float(weekend_avg),
-        "weekend_vs_weekday_ratio": float(weekend_avg / weekday_avg if weekday_avg else 0),
+        "weekend_vs_weekday_ratio": float(
+            weekend_avg / weekday_avg if weekday_avg else 0
+        ),
         "rush_hour_avg": float(rush_hours),
         "off_hour_avg": float(off_hours),
         "rush_vs_off_hour_ratio": float(rush_hours / off_hours if off_hours else 0),
@@ -662,6 +832,7 @@ def build_report_payload(
 
 
 def make_json_safe(value):
+    """Convert NumPy, pandas, and timestamp values into JSON-safe values."""
     if isinstance(value, dict):
         return {str(key): make_json_safe(item) for key, item in value.items()}
     if isinstance(value, list):
@@ -682,10 +853,10 @@ def make_json_safe(value):
 
 
 def render_report(profile: dict, chart_paths: dict[str, Path]) -> str:
+    """Render the January profile as a standalone HTML report."""
     summary = profile["summary"]
     forecast_rows = profile["forecast_results"]
     best = forecast_rows[0]
-    second = forecast_rows[1] if len(forecast_rows) > 1 else None
     source_date = "January 2024"
     weather_phrase = (
         "Open-Meteo hourly weather joined successfully for optional context."
@@ -947,6 +1118,7 @@ def render_report(profile: dict, chart_paths: dict[str, Path]) -> str:
 
 
 def table_rows(rows: list[dict], keys: list[str]) -> str:
+    """Render dictionaries as HTML table rows for selected keys."""
     html_rows = []
     for row in rows:
         cells = []
@@ -966,6 +1138,7 @@ def table_rows(rows: list[dict], keys: list[str]) -> str:
 
 
 def forecast_rows_html(rows: list[dict]) -> str:
+    """Render forecast metric rows as HTML table markup."""
     body = []
     for row in rows:
         body.append(
@@ -985,6 +1158,7 @@ def forecast_rows_html(rows: list[dict]) -> str:
 
 
 def format_int(value: float | int) -> str:
+    """Format a numeric value as a rounded integer string."""
     return f"{float(value):,.0f}"
 
 

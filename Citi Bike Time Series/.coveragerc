@@ -1,0 +1,38 @@
+[run]
+source = src
+
+[report]
+fail_under = 100
+show_missing = true
+skip_covered = false
+exclude_also =
+    pragma: no cover
+    # Integration and artifact-rendering paths are validated by reproducible
+    # run commands and manual report checks, not by the deterministic unit gate.
+    if __name__ == .__main__.:
+    def parse_args\(
+    def main\(
+    def prepare_dirs\(
+    def download_file\(
+    def download_trip_data\(
+    def ensure_archive\(
+    def get_csv_names\(
+    def get_csv_header\(
+    def build_hourly_profile\(
+    def fetch_weather\(
+    def build_multi_month_hourly_panel\(
+    def build_station_metadata\(
+    def build_cluster_hourly_panel\(
+    def load_weather_panel\(
+    def build_report\(
+    def build_source_notes\(
+    def use_chart_theme\(
+    def add_chart_header\(
+    def format_date_axis\(
+    def save_chart\(
+    def build_charts\(
+    def plot_
+    def write_outputs\(
+    def render_report\(
+    def render_html_report\(
+    def generate_showcase_report\(

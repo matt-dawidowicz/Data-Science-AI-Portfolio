@@ -19,6 +19,8 @@ operations model.
   January
 - Full-year validation: weekly 24-hour origins from Mar. 1 through Dec. 27,
   2024 after a 60-day training warmup
+- Station-cluster validation: weekly 24-hour origins for the system total and
+  6 station clusters built from the top 120 station IDs
 - Unit: rides per hour
 
 ## Baselines
@@ -97,6 +99,37 @@ The calendar + lag ridge model is best by MAE and RMSE across 44 origins.
 Previous week has lower MAPE, so the report explicitly keeps MAE as the primary
 portfolio metric and treats percentage error as a secondary diagnostic.
 
+## Station-Cluster Forecasting Layer
+
+The station-cluster layer outputs are:
+
+- `outputs/station_cluster_forecast.html`
+- `outputs/station_cluster_model_metrics.csv`
+- `outputs/station_cluster_model_lift.csv`
+- `outputs/station_cluster_capacity_priorities.csv`
+- `outputs/station_cluster_backtest_scored.csv`
+
+This layer keeps the previous-week and calendar + lag ridge baselines, then
+adds a weather/event ridge model. The richer model uses the same calendar and
+lag features as the baseline ridge plus hourly weather, holiday windows, and a
+small public event calendar.
+
+Current station-cluster results:
+
+| Segment | Previous Week MAE | Calendar-Lag MAE | Weather/Event MAE | Lift vs Previous Week | Lift vs Calendar-Lag |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| System total | 918.9 | 749.7 | 710.7 | +22.7% | +5.2% |
+| Cluster 01 - W 21 St & 6 Ave area | 90.8 | 74.7 | 71.6 | +21.1% | +4.1% |
+| Cluster 02 - 11 Ave & W 41 St area | 55.6 | 47.4 | 45.6 | +17.9% | +3.8% |
+| Cluster 03 - West St & Chambers St area | 61.0 | 48.7 | 45.7 | +25.0% | +6.2% |
+| Cluster 04 - Ave A & E 14 St area | 28.0 | 23.5 | 22.4 | +19.8% | +4.7% |
+| Cluster 05 - E 72 St & York Ave area | 18.2 | 15.2 | 14.6 | +20.0% | +4.2% |
+| Cluster 06 - Hanson Pl & Ashland Pl area | 4.3 | 3.4 | 3.4 | +20.6% | +1.0% |
+
+The weather/event ridge is the best MAE model for the system total and all 6
+station clusters in this historical run. Its intended use is a rebalancing and
+station-capacity planning watchlist, not direct inventory control.
+
 ## Intended Use
 
 Use this baseline to answer:
@@ -105,6 +138,8 @@ Use this baseline to answer:
 - What simple benchmark should a stronger model beat?
 - Where do actuals depart from expected weekday/hour behavior?
 - Which model errors are large enough to warrant anomaly context?
+- Which station clusters deserve rebalancing or capacity-planning review?
+- Do weather and event features beat simpler baselines out of sample?
 
 ## Not Intended For
 
@@ -112,7 +147,7 @@ Do not use this baseline as:
 
 - A live rebalancing model
 - A staffing forecast
-- A station-level production forecast
+- A station-inventory or dock-availability production forecast
 - A causal weather model
 - A calibrated uncertainty model
 
@@ -123,8 +158,10 @@ Do not use this baseline as:
 - The full-year proof measures annual pattern better than January alone, but it
   still does not prove production performance under future regime changes.
 - Overnight low-volume hours can distort percentage error.
-- Events, outages, and severe weather are not explicitly modeled.
-- Station-level modeling needs stable station identifiers.
+- The station-cluster layer includes selected events and weather, but it uses
+  historical observed weather as a stand-in for forecast weather.
+- Station-cluster modeling uses observed station IDs and coordinates, but not
+  station capacity, live availability, or rebalancing logs.
 - The decomposition output is a descriptive proxy, not formal STL or annual
   decomposition.
 - The full-year ridge model is a transparent benchmark, not a claim of
@@ -132,12 +169,11 @@ Do not use this baseline as:
 
 ## Recommended Next Model Step
 
-The next modeling step should be station-cluster forecasting:
+The next modeling step should add real operations context:
 
-1. Add stable station IDs, station metadata, and station grouping.
-2. Keep previous-week and calendar + lag ridge as benchmarks.
-3. Add weather and event features only after they are tested in rolling
-   validation.
-4. Compare aggregate, station-cluster, and top-station performance separately.
-5. Choose one operating decision, such as rebalancing or capacity planning, and
-   tune the target grain and error metric to that decision.
+1. Join station capacity, live availability, and station-status snapshots.
+2. Keep previous-week, calendar-lag ridge, and weather/event ridge as
+   benchmarks.
+3. Evaluate whether demand forecasts predict stockout or full-dock risk.
+4. Add calibrated alert thresholds for a rebalancing watchlist.
+5. Compare performance by commute peak, weather pressure, and event windows.

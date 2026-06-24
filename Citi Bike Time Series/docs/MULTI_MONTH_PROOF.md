@@ -156,21 +156,24 @@ The strongest way to explain this layer:
 ## What It Still Does Not Prove
 
 - It does not forecast station inventory or bike availability.
-- It does not include weather or event features in the full-year model yet.
-- It does not solve station-level forecasting; the next step needs station
-  metadata and stable station grouping.
+- This aggregate full-year script does not include weather or event features;
+  those are added in the station-cluster forecasting layer.
+- It does not solve inventory-aware station forecasting; the station-cluster
+  layer forecasts trip-start demand, not bike or dock availability.
 - It does not produce calibrated prediction intervals.
-- It does not select an operating decision, such as rebalancing, staffing, or
-  station planning. The right decision would determine the target grain and
-  acceptable error tradeoff.
+- It does not select an operating decision by itself; the station-cluster layer
+  ties the next model to rebalancing and station-capacity planning.
 
-## Strong Next Step
+## Completed Next Step
 
-The next best portfolio upgrade is station-cluster forecasting:
+The next portfolio upgrade is now implemented in:
 
-1. Build stable station groups using station IDs and metadata.
-2. Forecast aggregate demand plus demand for the top station clusters.
-3. Add weather and holiday/event features to the rolling validation loop.
-4. Evaluate whether the richer model beats previous-week and ridge baselines.
-5. Tie the result to one decision: rebalancing, capacity planning, or anomaly
-   alerting.
+```text
+python src/citibike_station_cluster_forecast.py --start-month 2024-01 --end-month 2024-12 --skip-download
+```
+
+That layer builds stable station groups from station IDs and observed metadata,
+forecasts the system total plus 6 station clusters, adds weather and
+holiday/event features, evaluates the richer model against previous-week and
+calendar-lag ridge baselines, and ties the result to rebalancing and
+capacity-planning review.

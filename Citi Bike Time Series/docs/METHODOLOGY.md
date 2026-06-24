@@ -23,6 +23,17 @@ The answer is also yes for a stronger portfolio proof. The full-2024 layer
 profiles 44.25M valid rows, builds a complete 8,784-hour panel, and evaluates
 44 weekly 24-hour forecast origins.
 
+The project now asks a third, more operational question:
+
+> Can the full-year forecast be pushed from aggregate demand into station
+> clusters with weather, holiday, and event features?
+
+The answer is yes for a portfolio-grade rebalancing and capacity-planning
+watchlist. The station-cluster layer models the system total plus 6 station
+clusters built from the top 120 station IDs, then validates previous-week,
+calendar-lag ridge, and weather/event ridge models across the same 44 weekly
+24-hour origins.
+
 ## Data Acquisition
 
 The profile script downloads the public January 2024 Citi Bike trip-history
@@ -46,6 +57,15 @@ https://s3.amazonaws.com/tripdata/YYYYMM-citibike-tripdata.zip
 The full-2024 run uses Jan.-Dec. 2024. Raw multi-month archives are cached under
 `work/data/multi_month/`, which is also excluded from Git.
 
+The station-cluster script reuses those monthly archives and adds full-year
+Open-Meteo historical weather for New York City:
+
+```text
+https://archive-api.open-meteo.com/v1/archive
+```
+
+Weather JSON is cached under `work/data/weather/`, which is excluded from Git.
+
 ## Required Raw Columns
 
 The script expects these Citi Bike columns:
@@ -59,6 +79,17 @@ The script expects these Citi Bike columns:
 
 If one of those columns is missing, the script raises an error instead of
 silently producing a partial profile.
+
+The station-cluster script additionally uses these optional raw columns when
+they are present:
+
+- `start_station_id`
+- `start_station_name`
+- `start_lat`
+- `start_lng`
+
+Station IDs anchor the longitudinal grouping. Station names are used only for
+readable labels, because names can change.
 
 ## Quality Filter
 
@@ -280,6 +311,60 @@ The current full-year run makes the project materially stronger: the calendar +
 lag ridge model scores 750 MAE across 44 origins, versus 918 MAE for previous
 week and 1,034 MAE for previous day.
 
+## Station-Cluster Forecasting
+
+Run:
+
+```text
+python src/citibike_station_cluster_forecast.py --start-month 2024-01 --end-month 2024-12 --skip-download
+```
+
+This script adds the station-aware operating layer:
+
+1. Stream valid trip rows from the 2024 monthly archives.
+2. Build station metadata from observed station IDs, names, and coordinates.
+3. Select the top 120 station IDs by annual starts.
+4. Build 6 deterministic geographic station clusters using weighted k-means.
+5. Create a long hourly panel for the system total plus each station cluster.
+6. Join hourly weather, holiday windows, and selected public event windows.
+7. Score previous-week, calendar-lag ridge, and weather/event ridge models
+   across weekly 24-hour rolling origins.
+8. Produce a rebalancing/capacity-planning priority table.
+
+The weather/event ridge uses the calendar-lag ridge feature set plus:
+
+- temperature
+- precipitation
+- snowfall
+- wind speed
+- weather code
+- precipitation and snow flags
+- temperature comfort transforms
+- federal holiday windows
+- holiday eve and holiday window flags
+- selected major event windows
+- event peak-hour flags
+
+Observed historical weather is used as a stand-in for weather forecasts. A
+production version should replace it with forecast weather available before the
+origin.
+
+Current station-cluster validation result:
+
+| Segment | Previous Week MAE | Calendar-Lag MAE | Weather/Event MAE |
+| --- | ---: | ---: | ---: |
+| System total | 918.9 | 749.7 | 710.7 |
+| Cluster 01 - W 21 St & 6 Ave area | 90.8 | 74.7 | 71.6 |
+| Cluster 02 - 11 Ave & W 41 St area | 55.6 | 47.4 | 45.6 |
+| Cluster 03 - West St & Chambers St area | 61.0 | 48.7 | 45.7 |
+| Cluster 04 - Ave A & E 14 St area | 28.0 | 23.5 | 22.4 |
+| Cluster 05 - E 72 St & York Ave area | 18.2 | 15.2 | 14.6 |
+| Cluster 06 - Hanson Pl & Ashland Pl area | 4.3 | 3.4 | 3.4 |
+
+The richer model beats both baselines for every modeled segment in this run.
+The decision implication is to use the station-cluster output as a planning
+watchlist, not as direct proof of station inventory risk.
+
 ## Forecast Reference Band
 
 The forecast chart uses a simple residual reference band built from previous
@@ -308,6 +393,9 @@ is needed before interpreting an anomaly:
 | Weekday/hour heatmap | Shows dense seasonality in one view |
 | Forecast backtest line | Compares actuals with the best baseline over the holdout |
 | Ranked station bars | Makes station concentration easy to scan |
+| Station cluster map | Shows how top station IDs were grouped from observed coordinates |
+| Station cluster lift bars | Shows whether weather/event ridge beat previous-week baseline by segment |
+| Station-cluster MAE bars | Compares previous-week, calendar-lag ridge, and weather/event ridge by target |
 
 ## Validation
 
@@ -325,25 +413,36 @@ Current validation checks include:
   missing hours.
 - The full-year proof compares six models across 44 weekly rolling origins.
 - Full-year raw archives remain ignored under `work/data/multi_month/`.
+- The station-cluster layer verifies 99.93% station ID coverage across
+  fixed-window modeled starts.
+- The station-cluster layer joins 8,784 weather hours with 0 missing hours.
+- The station-cluster layer compares weather/event ridge against previous-week
+  and calendar-lag ridge baselines for every modeled segment.
+- The station-cluster charts and HTML report are exported as portable PNG/HTML
+  artifacts.
 
 ## Limitations
 
 - The January report is one winter month; the full-year proof is stronger but
   still not a production operations model.
-- Station names are not stable identifiers.
+- Station names are not stable identifiers; the station-cluster layer uses
+  station IDs for grouping and names only for readable labels.
 - Weather is joined from a single city coordinate.
 - Forecast intervals are simple residual bands.
 - Anomaly rows are descriptive until external context is joined.
-- The full-year ridge model does not yet include weather or external events.
+- The station-cluster layer includes selected weather and event features, but
+  it does not include station capacity, live availability, or rebalancing logs.
+- The weather/event ridge uses observed historical weather as a stand-in for
+  weather forecasts that would be available before an operating day.
 
 ## Next Methodological Upgrade
 
-The strongest next upgrade is now station-cluster forecasting tied to one
-operating decision:
+The strongest next upgrade is now operational validation tied to inventory and
+capacity outcomes:
 
-1. Add station IDs, station metadata, and stable station grouping.
-2. Forecast aggregate and station-cluster demand separately.
-3. Add weather and event features to the rolling validation loop.
-4. Compare station-cluster accuracy against previous-week and ridge baselines.
-5. Define the decision target: rebalancing, capacity planning, or anomaly
-   alerting.
+1. Join station capacity, live availability, and station-status snapshots.
+2. Measure stockout or full-dock risk after high-demand forecast windows.
+3. Add calibrated alert thresholds for a rebalancing watchlist.
+4. Compare error and alert quality by commute peak, event window, and weather
+   pressure.
+5. Convert the report into a lightweight dashboard or notebook walkthrough.

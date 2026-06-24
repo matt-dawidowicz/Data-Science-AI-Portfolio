@@ -115,6 +115,7 @@ COLOR_FAMILIES = {
 
 
 def use_chart_theme() -> None:
+    """Apply the shared visual theme for Matplotlib charts."""
     sns.set_theme(
         style="whitegrid",
         rc={
@@ -147,6 +148,7 @@ def add_chart_header(
     title_width: int = 80,
     subtitle_width: int = 112,
 ) -> None:
+    """Add a consistent title and subtitle treatment to a chart."""
     title = textwrap.fill(str(title).strip(), width=title_width, break_long_words=False)
     subtitle = textwrap.fill(
         str(subtitle).strip(), width=subtitle_width, break_long_words=False
@@ -186,6 +188,7 @@ def add_chart_header(
 
 
 def format_date_axis(ax: plt.Axes, *, max_ticks: int = 7) -> None:
+    """Format a chart x-axis for compact dates."""
     locator = mdates.AutoDateLocator(minticks=3, maxticks=max_ticks)
     ax.xaxis.set_major_locator(locator)
     ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
@@ -193,6 +196,7 @@ def format_date_axis(ax: plt.Axes, *, max_ticks: int = 7) -> None:
 
 
 def save_chart(fig: plt.Figure, filename: str) -> Path:
+    """Save a chart image to the project chart directory."""
     path = CHART_DIR / filename
     fig.savefig(path, dpi=160, bbox_inches="tight")
     plt.close(fig)
@@ -215,12 +219,14 @@ def fmt_number(value: object, *, digits: int = 0) -> str:
 
 
 def fmt_percent(value: object, *, digits: int = 1) -> str:
+    """Format a decimal ratio as a percentage string."""
     if pd.isna(value):
         return "n/a"
     return f"{float(value) * 100:.{digits}f}%"
 
 
 def load_hourly_profile() -> pd.DataFrame:
+    """Load and validate the generated hourly Citi Bike profile."""
     if not HOURLY_CSV.exists():
         raise FileNotFoundError(
             f"Missing {HOURLY_CSV}. Run citibike_time_series_profile.py first."
@@ -239,7 +245,9 @@ def load_hourly_profile() -> pd.DataFrame:
     }
     missing = required.difference(hourly.columns)
     if missing:
-        raise ValueError(f"hourly_profile.csv is missing required columns: {sorted(missing)}")
+        raise ValueError(
+            f"hourly_profile.csv is missing required columns: {sorted(missing)}"
+        )
 
     hourly = hourly.sort_values("hour").reset_index(drop=True)
     hourly["rides"] = hourly["rides"].astype(float)
@@ -247,6 +255,7 @@ def load_hourly_profile() -> pd.DataFrame:
 
 
 def validate_hourly_index(hourly: pd.DataFrame) -> dict[str, int | str]:
+    """Check hourly continuity and duplicate timestamps in the profile."""
     expected = pd.date_range(hourly["hour"].min(), hourly["hour"].max(), freq="h")
     observed = pd.DatetimeIndex(hourly["hour"])
     missing_hours = expected.difference(observed)
@@ -262,6 +271,7 @@ def validate_hourly_index(hourly: pd.DataFrame) -> dict[str, int | str]:
 
 
 def safe_mape(actual: pd.Series, forecast: pd.Series) -> float:
+    """Calculate MAPE while ignoring zero-actual rows."""
     mask = actual != 0
     if not mask.any():
         return float("nan")
@@ -269,6 +279,7 @@ def safe_mape(actual: pd.Series, forecast: pd.Series) -> float:
 
 
 def score_forecast(actual: pd.Series, forecast: pd.Series) -> dict[str, float]:
+    """Calculate forecast accuracy metrics after dropping missing pairs."""
     scored = pd.DataFrame({"actual": actual, "forecast": forecast}).dropna()
     if scored.empty:
         return {"n": 0, "mae": float("nan"), "rmse": float("nan"), "mape": float("nan")}
@@ -282,7 +293,10 @@ def score_forecast(actual: pd.Series, forecast: pd.Series) -> dict[str, float]:
     }
 
 
-def build_autocorrelation_profile(hourly: pd.DataFrame, max_lag: int = 168) -> pd.DataFrame:
+def build_autocorrelation_profile(
+    hourly: pd.DataFrame, max_lag: int = 168
+) -> pd.DataFrame:
+    """Build autocorrelation values across candidate hourly lags."""
     rides = hourly["rides"]
     rows = []
     for lag in range(1, max_lag + 1):
@@ -297,6 +311,7 @@ def build_autocorrelation_profile(hourly: pd.DataFrame, max_lag: int = 168) -> p
 
 
 def classify_lag(lag: int) -> str:
+    """Classify a lag into short, daily, weekly, or other families."""
     if lag in {1, 2, 3, 6, 12}:
         return "short lag"
     if lag % 168 == 0:
@@ -307,6 +322,7 @@ def classify_lag(lag: int) -> str:
 
 
 def build_lag_feature_correlations(hourly: pd.DataFrame) -> pd.DataFrame:
+    """Rank lag, rolling, and weather features by demand correlation."""
     rides = hourly["rides"]
     feature_series: dict[str, tuple[str, pd.Series]] = {
         "lag_1h": ("short-memory lag", rides.shift(1)),
@@ -345,7 +361,9 @@ def build_lag_feature_correlations(hourly: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values("abs_correlation", ascending=False)
 
 
-def forecast_from_previous(hourly_by_hour: pd.Series, hours: pd.Series, lag: int) -> pd.Series:
+def forecast_from_previous(
+    hourly_by_hour: pd.Series, hours: pd.Series, lag: int
+) -> pd.Series:
     """Forecast each test hour from a previous observed hour."""
     return pd.Series(
         [hourly_by_hour.get(hour - pd.Timedelta(hours=lag), np.nan) for hour in hours],
@@ -361,7 +379,9 @@ def forecast_from_hour_profile(train: pd.DataFrame, test: pd.DataFrame) -> pd.Se
     return test["hour_of_day"].map(hour_profile).fillna(global_mean).astype(float)
 
 
-def forecast_from_calendar_profile(train: pd.DataFrame, test: pd.DataFrame) -> pd.Series:
+def forecast_from_calendar_profile(
+    train: pd.DataFrame, test: pd.DataFrame
+) -> pd.Series:
     """Use the expanding training average for the same weekday and hour."""
     calendar_profile = train.groupby(["day_of_week", "hour_of_day"])["rides"].mean()
     hour_profile = train.groupby("hour_of_day")["rides"].mean()
@@ -370,12 +390,18 @@ def forecast_from_calendar_profile(train: pd.DataFrame, test: pd.DataFrame) -> p
     for row in test.itertuples(index=False):
         key = (row.day_of_week, row.hour_of_day)
         forecasts.append(
-            float(calendar_profile.get(key, hour_profile.get(row.hour_of_day, global_mean)))
+            float(
+                calendar_profile.get(
+                    key, hour_profile.get(row.hour_of_day, global_mean)
+                )
+            )
         )
     return pd.Series(forecasts, index=test.index, dtype=float)
 
 
-def build_rolling_backtests(hourly: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def build_rolling_backtests(
+    hourly: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run leakage-safe daily 24-hour rolling-origin baseline backtests."""
     hourly_by_hour = hourly.set_index("hour")["rides"]
     first_origin = hourly["hour"].min() + pd.Timedelta(days=14)
@@ -388,7 +414,10 @@ def build_rolling_backtests(hourly: pd.DataFrame) -> tuple[pd.DataFrame, pd.Data
         # This line is the leakage boundary: no forecast may use rows at or
         # after the origin, even when calculating calendar averages.
         train = hourly[hourly["hour"] < origin]
-        test = hourly[(hourly["hour"] >= origin) & (hourly["hour"] < origin + pd.Timedelta(hours=24))]
+        test = hourly[
+            (hourly["hour"] >= origin)
+            & (hourly["hour"] < origin + pd.Timedelta(hours=24))
+        ]
         if len(train) < 24 * 7 or len(test) != 24:
             continue
 
@@ -454,16 +483,24 @@ def build_decomposition_components(hourly: pd.DataFrame) -> pd.DataFrame:
         components["rides"].rolling(window=168, center=True, min_periods=72).mean()
     )
 
-    seasonal_profile = components.groupby(["day_of_week", "hour_of_day"])["rides"].mean()
+    seasonal_profile = components.groupby(["day_of_week", "hour_of_day"])[
+        "rides"
+    ].mean()
     components["seasonal_expected"] = [
         float(seasonal_profile.loc[(row.day_of_week, row.hour_of_day)])
         for row in components.itertuples(index=False)
     ]
-    components["seasonal_component"] = components["seasonal_expected"] - components["rides"].mean()
-    components["seasonal_residual"] = components["rides"] - components["seasonal_expected"]
+    components["seasonal_component"] = (
+        components["seasonal_expected"] - components["rides"].mean()
+    )
+    components["seasonal_residual"] = (
+        components["rides"] - components["seasonal_expected"]
+    )
     residual_median = components["seasonal_residual"].median()
     residual_mad = (components["seasonal_residual"] - residual_median).abs().median()
-    scale = 1.4826 * residual_mad if residual_mad else components["seasonal_residual"].std()
+    scale = (
+        1.4826 * residual_mad if residual_mad else components["seasonal_residual"].std()
+    )
     components["residual_robust_z"] = (
         (components["seasonal_residual"] - residual_median) / scale if scale else np.nan
     )
@@ -471,6 +508,7 @@ def build_decomposition_components(hourly: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_showcase_coverage() -> pd.DataFrame:
+    """Build the reviewer-facing matrix of time-series concepts covered."""
     rows = [
         (
             "Regular time index",
@@ -585,6 +623,7 @@ def build_showcase_metrics(
     rolling_metrics: pd.DataFrame,
     components: pd.DataFrame,
 ) -> pd.DataFrame:
+    """Build compact evidence metrics for the showcase report."""
     lag_lookup = autocorr.set_index("lag_hours")["autocorrelation"]
     best_rolling = rolling_metrics.iloc[0] if not rolling_metrics.empty else None
     max_positive = components.loc[components["seasonal_residual"].idxmax()]
@@ -643,7 +682,9 @@ def build_showcase_metrics(
         (
             "rolling_validation",
             "best_rolling_backtest_mae",
-            round(float(best_rolling["mae"]), 2) if best_rolling is not None else np.nan,
+            round(float(best_rolling["mae"]), 2)
+            if best_rolling is not None
+            else np.nan,
             "Mean absolute error in rides per hour across rolling origins.",
         ),
         (
@@ -671,10 +712,13 @@ def build_showcase_metrics(
             "Average hourly demand level for scale.",
         ),
     ]
-    return pd.DataFrame(rows, columns=["category", "measure", "value", "interpretation"])
+    return pd.DataFrame(
+        rows, columns=["category", "measure", "value", "interpretation"]
+    )
 
 
 def plot_autocorrelation(autocorr: pd.DataFrame) -> Path:
+    """Plot hourly autocorrelation values and key seasonal lags."""
     family = COLOR_FAMILIES["blue"]
     fig, ax = plt.subplots(figsize=(10.5, 5.2))
     sns.lineplot(
@@ -702,6 +746,7 @@ def plot_autocorrelation(autocorr: pd.DataFrame) -> Path:
 
 
 def plot_lag_feature_correlations(lag_corr: pd.DataFrame) -> Path:
+    """Plot the strongest lag, rolling, and weather feature correlations."""
     plot_df = lag_corr.dropna().head(12).sort_values("correlation_with_rides")
     pos = COLOR_FAMILIES["olive"]
     neg = COLOR_FAMILIES["orange"]
@@ -727,6 +772,7 @@ def plot_lag_feature_correlations(lag_corr: pd.DataFrame) -> Path:
 
 
 def plot_rolling_backtest(rolling_metrics: pd.DataFrame) -> Path:
+    """Plot rolling-origin MAE by forecast model."""
     plot_df = rolling_metrics.sort_values("mae", ascending=True).copy()
     plot_df["model_label"] = plot_df["model"].map(label_model)
     family = COLOR_FAMILIES["gold"]
@@ -762,6 +808,7 @@ def plot_rolling_backtest(rolling_metrics: pd.DataFrame) -> Path:
 
 
 def plot_decomposition(components: pd.DataFrame) -> Path:
+    """Plot observed demand against trend and seasonal expected demand."""
     family = COLOR_FAMILIES["blue"]
     seasonal_family = COLOR_FAMILIES["gold"]
     fig, ax = plt.subplots(figsize=(11.0, 5.2))
@@ -813,6 +860,7 @@ def plot_decomposition(components: pd.DataFrame) -> Path:
 
 
 def plot_residual_distribution(components: pd.DataFrame) -> Path:
+    """Plot the distribution of seasonal residuals."""
     family = COLOR_FAMILIES["pink"]
     fig, ax = plt.subplots(figsize=(9.5, 5.0))
     sns.histplot(
@@ -844,13 +892,16 @@ def table_html(
     rename: dict[str, str] | None = None,
     formatters: dict[str, object] | None = None,
 ) -> str:
+    """Render selected DataFrame content as an HTML table."""
     display = df if max_rows is None else df.head(max_rows)
     if columns is not None:
         display = display.loc[:, columns]
     if rename:
         display = display.rename(columns=rename)
         if formatters:
-            formatters = {rename.get(key, key): value for key, value in formatters.items()}
+            formatters = {
+                rename.get(key, key): value for key, value in formatters.items()
+            }
 
     return display.to_html(
         index=False,
@@ -862,6 +913,7 @@ def table_html(
 
 
 def rolling_metrics_for_report(rolling_metrics: pd.DataFrame) -> pd.DataFrame:
+    """Prepare rolling metrics with reader-friendly model labels."""
     display = rolling_metrics.copy()
     display["model"] = display["model"].map(label_model)
     return display
@@ -873,17 +925,20 @@ def generate_showcase_report(
     rolling_metrics: pd.DataFrame,
     chart_paths: list[Path],
 ) -> Path:
+    """Render the time-series showcase as standalone HTML."""
     metric_lookup = metrics.set_index("measure")["value"].to_dict()
     chart_blocks = "\n".join(
         f"""
         <figure>
-          <img src="charts/{html.escape(path.name)}" alt="{html.escape(path.stem.replace('_', ' '))}">
-          <figcaption>{html.escape(CHART_CAPTIONS.get(path.name, path.stem.replace('_', ' ').title()))}</figcaption>
+          <img src="charts/{html.escape(path.name)}" alt="{html.escape(path.stem.replace("_", " "))}">
+          <figcaption>{html.escape(CHART_CAPTIONS.get(path.name, path.stem.replace("_", " ").title()))}</figcaption>
         </figure>
         """
         for path in chart_paths
     )
-    best_model = label_model(metric_lookup.get("best_rolling_backtest_model", "not available"))
+    best_model = label_model(
+        metric_lookup.get("best_rolling_backtest_model", "not available")
+    )
     best_mae = fmt_number(metric_lookup.get("best_rolling_backtest_mae", np.nan))
     rolling_report = rolling_metrics_for_report(rolling_metrics)
 
@@ -1097,39 +1152,51 @@ def generate_showcase_report(
 
   <section>
     <h2>Rolling Backtest Summary</h2>
-    {table_html(
-        rolling_report,
-        columns=["model", "origins", "holdout_hours", "mean_actual", "mae", "rmse", "mape"],
-        rename={
-            "model": "Model",
-            "origins": "Origins",
-            "holdout_hours": "Holdout Hours",
-            "mean_actual": "Mean Actual",
-            "mae": "MAE",
-            "rmse": "RMSE",
-            "mape": "MAPE",
-        },
-        formatters={
-            "mean_actual": lambda value: fmt_number(value),
-            "mae": lambda value: fmt_number(value),
-            "rmse": lambda value: fmt_number(value),
-            "mape": lambda value: fmt_percent(value),
-        },
-    )}
+    {
+        table_html(
+            rolling_report,
+            columns=[
+                "model",
+                "origins",
+                "holdout_hours",
+                "mean_actual",
+                "mae",
+                "rmse",
+                "mape",
+            ],
+            rename={
+                "model": "Model",
+                "origins": "Origins",
+                "holdout_hours": "Holdout Hours",
+                "mean_actual": "Mean Actual",
+                "mae": "MAE",
+                "rmse": "RMSE",
+                "mape": "MAPE",
+            },
+            formatters={
+                "mean_actual": lambda value: fmt_number(value),
+                "mae": lambda value: fmt_number(value),
+                "rmse": lambda value: fmt_number(value),
+                "mape": lambda value: fmt_percent(value),
+            },
+        )
+    }
   </section>
 
   <section>
     <h2>Time-Series Coverage Map</h2>
-    {table_html(
-        coverage,
-        rename={
-            "time_series_area": "Area",
-            "artifact": "Artifact",
-            "status": "Status",
-            "reviewer_value": "Reviewer Value",
-            "caveat": "Caveat",
-        },
-    )}
+    {
+        table_html(
+            coverage,
+            rename={
+                "time_series_area": "Area",
+                "artifact": "Artifact",
+                "status": "Status",
+                "reviewer_value": "Reviewer Value",
+                "caveat": "Caveat",
+            },
+        )
+    }
   </section>
 
   <section>
@@ -1152,6 +1219,7 @@ def generate_showcase_report(
 
 
 def main() -> None:
+    """Run the time-series showcase generation workflow."""
     use_chart_theme()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     CHART_DIR.mkdir(parents=True, exist_ok=True)
@@ -1160,7 +1228,9 @@ def main() -> None:
     index_validation = validate_hourly_index(hourly)
     autocorr = build_autocorrelation_profile(hourly)
     lag_corr = build_lag_feature_correlations(hourly)
-    rolling_metrics, rolling_origin_metrics, rolling_scored = build_rolling_backtests(hourly)
+    rolling_metrics, rolling_origin_metrics, rolling_scored = build_rolling_backtests(
+        hourly
+    )
     components = build_decomposition_components(hourly)
     coverage = build_showcase_coverage()
     metrics = build_showcase_metrics(
@@ -1170,7 +1240,9 @@ def main() -> None:
     autocorr.to_csv(OUT_DIR / "autocorrelation_profile.csv", index=False)
     lag_corr.to_csv(OUT_DIR / "lag_feature_correlations.csv", index=False)
     rolling_metrics.to_csv(OUT_DIR / "rolling_backtest_metrics.csv", index=False)
-    rolling_origin_metrics.to_csv(OUT_DIR / "rolling_backtest_origin_metrics.csv", index=False)
+    rolling_origin_metrics.to_csv(
+        OUT_DIR / "rolling_backtest_origin_metrics.csv", index=False
+    )
     rolling_scored.to_csv(OUT_DIR / "rolling_backtest_scored.csv", index=False)
     components.to_csv(OUT_DIR / "decomposition_components.csv", index=False)
     coverage.to_csv(OUT_DIR / "time_series_showcase_coverage.csv", index=False)

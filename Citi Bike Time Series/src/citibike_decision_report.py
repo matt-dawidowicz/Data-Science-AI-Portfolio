@@ -1,3 +1,5 @@
+"""Render the Citi Bike decision-facing HTML report from prepared outputs."""
+
 from __future__ import annotations
 
 import html
@@ -15,10 +17,12 @@ SOURCE_NOTES_PATH = PROFILE_DIR / "decision_report_source_notes.md"
 
 
 def fmt_int(value: float | int) -> str:
+    """Format a number as a rounded integer string."""
     return f"{int(round(float(value))):,}"
 
 
 def fmt_k(value: float | int) -> str:
+    """Format a number using compact thousand or million suffixes."""
     value = float(value)
     if abs(value) >= 1_000_000:
         return f"{value / 1_000_000:.2f}M"
@@ -28,14 +32,17 @@ def fmt_k(value: float | int) -> str:
 
 
 def fmt_pct(value: float, digits: int = 1) -> str:
+    """Format a decimal ratio as a percentage string."""
     return f"{value * 100:.{digits}f}%"
 
 
 def fmt_num(value: float, digits: int = 1) -> str:
+    """Format a number with grouped thousands and fixed decimals."""
     return f"{value:,.{digits}f}"
 
 
 def load_inputs() -> dict:
+    """Load profile, forecast, station, anomaly, and mix inputs."""
     with (PROFILE_DIR / "profile_summary.json").open("r", encoding="utf-8") as handle:
         profile = json.load(handle)
     return {
@@ -50,15 +57,19 @@ def load_inputs() -> dict:
 
 
 def table_html(frame: pd.DataFrame, columns: list[str], headers: list[str]) -> str:
+    """Render selected DataFrame columns as an HTML table."""
     rows = []
     for _, row in frame.iterrows():
-        cells = "".join(f"<td>{html.escape(str(row[column]))}</td>" for column in columns)
+        cells = "".join(
+            f"<td>{html.escape(str(row[column]))}</td>" for column in columns
+        )
         rows.append(f"<tr>{cells}</tr>")
     header_html = "".join(f"<th>{html.escape(header)}</th>" for header in headers)
     return f"<table><thead><tr>{header_html}</tr></thead><tbody>{''.join(rows)}</tbody></table>"
 
 
 def build_report() -> None:
+    """Build the decision report and companion source notes."""
     inputs = load_inputs()
     profile = inputs["profile"]
     summary = inputs["summary"]
@@ -79,7 +90,9 @@ def build_report() -> None:
         mae=lambda frame: frame["mae"].map(lambda value: fmt_int(value)),
         rmse=lambda frame: frame["rmse"].map(lambda value: fmt_int(value)),
         mape=lambda frame: frame["mape"].map(lambda value: fmt_pct(value, 1)),
-        mean_actual=lambda frame: frame["mean_actual"].map(lambda value: fmt_int(value)),
+        mean_actual=lambda frame: frame["mean_actual"].map(
+            lambda value: fmt_int(value)
+        ),
     )[["model", "mae", "rmse", "mape", "mean_actual"]]
 
     source_stamp = "Generated from Citi Bike January 2024 public trip history and Open-Meteo weather context."
@@ -330,10 +343,15 @@ def build_report() -> None:
 """
 
     REPORT_PATH.write_text(html_text, encoding="utf-8")
-    SOURCE_NOTES_PATH.write_text(build_source_notes(best, prev_day, prev_week, top10_share), encoding="utf-8")
+    SOURCE_NOTES_PATH.write_text(
+        build_source_notes(best, prev_day, prev_week, top10_share), encoding="utf-8"
+    )
 
 
-def build_source_notes(best: pd.Series, prev_day: pd.Series, prev_week: pd.Series, top10_share: float) -> str:
+def build_source_notes(
+    best: pd.Series, prev_day: pd.Series, prev_week: pd.Series, top10_share: float
+) -> str:
+    """Render Markdown source notes for the decision report."""
     return f"""# Citi Bike Decision Report Source Notes
 
 ## Report Contract

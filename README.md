@@ -8,16 +8,17 @@ This repository is organized as a portfolio workspace. Each major top-level
 folder is intended to stand on its own as a project with its own README,
 dependencies, examples, tests, and technical writeup.
 
-The first completed project is a Python data-structures showcase. It is not
-trying to replace Python's standard library. It is built to demonstrate
-implementation skill, type-aware package design, regression testing,
-documentation, CI discipline, and the ability to explain tradeoffs clearly.
+The portfolio currently includes a code-heavy data-structures showcase and an
+analytics-heavy time-series forecasting showcase. Together, they demonstrate
+implementation skill, reproducible analysis, baseline modeling, documentation,
+CI discipline, and the ability to explain technical tradeoffs clearly.
 
 ## Projects
 
 | Project | Location | What it demonstrates | Status |
 | --- | --- | --- | --- |
 | Linked List Showcase | [`Linked_List_Showcase`](Linked_List_Showcase) | Python package design, linked data structures, typed APIs, 100% coverage, CI, examples, benchmarks, and educational documentation | Complete showcase |
+| Citi Bike Demand Forecasting | [`Citi Bike Time Series`](Citi%20Bike%20Time%20Series) | Public data acquisition, hourly time-series profiling, seasonality, leakage-aware baselines, rolling validation, anomaly screening, and business-facing reporting | Complete showcase; ready for longer-horizon extension |
 
 ## Featured Project: Linked List Showcase
 
@@ -73,6 +74,43 @@ Best entry points:
 - [Portfolio Roadmap](PORTFOLIO_ROADMAP.md): how future top-level projects
   should be organized.
 
+## Featured Project: Citi Bike Demand Forecasting
+
+`Citi Bike Time Series` is a public-data analytics case study built around New
+York City Citi Bike trip history. It turns January 2024 trip starts into a
+regular hourly demand panel, then profiles seasonality, autocorrelation, lag
+signals, baseline forecasts, rolling-origin validation, anomaly candidates, and
+decision-ready reports.
+
+The project is intentionally honest about scope: it is a portfolio-grade
+time-series showcase, not a production forecasting system. Its best next
+extension would be a 12-24 month panel with stable station identifiers,
+seasonal backtests, and station-cluster forecasts tied to a concrete operational
+decision.
+
+Fast reviewer path:
+
+```bash
+cd "Citi Bike Time Series"
+python -m pip install -r requirements.txt
+python src/citibike_time_series_showcase.py
+```
+
+Best entry points:
+
+- [Project README](Citi%20Bike%20Time%20Series/README.md): project purpose,
+  key measures, source data, caveats, and reproduction steps.
+- [Time-Series Showcase Report](Citi%20Bike%20Time%20Series/outputs/time_series_showcase.html):
+  reviewer-ready HTML report covering regular indexing, seasonality,
+  autocorrelation, lag features, rolling validation, and residual diagnostics.
+- [Decision Report](Citi%20Bike%20Time%20Series/outputs/decision_report.html):
+  business-facing interpretation of the current January 2024 profile.
+- [Time-Series Showcase Notes](Citi%20Bike%20Time%20Series/docs/TIME_SERIES_SHOWCASE.md):
+  interview narrative explaining what the project proves, what it does not
+  prove, and how it should be extended.
+- [Measures](Citi%20Bike%20Time%20Series/docs/MEASURES.md): metric definitions,
+  formulas, outputs, and caveats.
+
 ## Repository Layout
 
 ```text
@@ -80,6 +118,16 @@ Best entry points:
   workflows/
     ci.yml
     tests.yml
+Citi Bike Time Series/
+  docs/
+  outputs/
+    charts/
+  src/
+    citibike_decision_report.py
+    citibike_time_series_profile.py
+    citibike_time_series_showcase.py
+  README.md
+  requirements.txt
 Linked_List_Showcase/
   benchmarks/
   docs/

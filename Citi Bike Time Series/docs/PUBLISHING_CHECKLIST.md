@@ -13,11 +13,13 @@ Use this before adding the project to the portfolio repository.
 - `src/citibike_time_series_showcase.py`
 - `src/citibike_multi_month_proof.py`
 - `src/citibike_station_cluster_forecast.py`
+- `src/citibike_portfolio_dashboard.py`
 - `outputs/report.html`
 - `outputs/decision_report.html`
 - `outputs/time_series_showcase.html`
 - `outputs/multi_month_proof.html`
 - `outputs/station_cluster_forecast.html`
+- `outputs/portfolio_dashboard.html`
 - `outputs/profile_summary.json`
 - `outputs/forecast_backtest_metrics.csv`
 - `outputs/rolling_backtest_metrics.csv`
@@ -45,6 +47,8 @@ Use this before adding the project to the portfolio repository.
 - `outputs/station_cluster_model_metrics.csv`
 - `outputs/station_cluster_model_lift.csv`
 - `outputs/station_cluster_capacity_priorities.csv`
+- `outputs/portfolio_feature_family_lift.csv`
+- `outputs/portfolio_decision_simulator.csv`
 - `outputs/station_cluster_origin_metrics.csv`
 - `outputs/station_cluster_backtest_scored.csv`
 - `outputs/anomaly_hours.csv`
@@ -83,10 +87,12 @@ python -m py_compile src/citibike_decision_report.py
 python -m py_compile src/citibike_time_series_showcase.py
 python -m py_compile src/citibike_multi_month_proof.py
 python -m py_compile src/citibike_station_cluster_forecast.py
+python -m py_compile src/citibike_portfolio_dashboard.py
 python src/citibike_decision_report.py
 python src/citibike_time_series_showcase.py
 python src/citibike_multi_month_proof.py --start-month 2024-01 --end-month 2024-12 --skip-download
 python src/citibike_station_cluster_forecast.py --start-month 2024-01 --end-month 2024-12 --skip-download --skip-weather-download
+python src/citibike_portfolio_dashboard.py
 ```
 
 Then manually open:
@@ -96,6 +102,7 @@ Then manually open:
 - `outputs/time_series_showcase.html`
 - `outputs/multi_month_proof.html`
 - `outputs/station_cluster_forecast.html`
+- `outputs/portfolio_dashboard.html`
 
 Check:
 
@@ -113,6 +120,10 @@ Check:
   station capacity, or dock availability.
 - Weather/event lift is shown against both previous-week and calendar-lag ridge
   baselines.
+- The portfolio dashboard scenario buttons filter the simulator table.
+- The simulator is described as a planning index, not an operations optimizer.
+- Feature-family lift is explained as out-of-sample improvement, not causal
+  attribution.
 - `docs/CODE_QUALITY.md` reflects the exact style checks that passed locally.
 - Coverage reports 100% for the configured deterministic unit-test layer, and
   the `.coveragerc` exclusions are limited to integration/reporting paths.

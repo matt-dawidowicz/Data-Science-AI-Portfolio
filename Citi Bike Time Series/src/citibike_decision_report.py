@@ -6,6 +6,7 @@ import html
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 
@@ -15,14 +16,35 @@ CHART_DIR = PROFILE_DIR / "charts"
 REPORT_PATH = PROFILE_DIR / "decision_report.html"
 SOURCE_NOTES_PATH = PROFILE_DIR / "decision_report_source_notes.md"
 
+PROFILE_REQUIRED_KEYS = {
+    "rush_vs_off_hour_ratio",
+    "weekend_vs_weekday_ratio",
+    "summary",
+}
+SUMMARY_REQUIRED_KEYS = {
+    "total_rides",
+    "hourly_points",
+    "average_daily_rides",
+    "average_hourly_rides",
+    "peak_hour_rides",
+    "peak_hour",
+}
+FORECAST_REQUIRED_COLUMNS = {"model", "mae", "rmse", "mape", "mean_actual"}
+TOP_STATIONS_REQUIRED_COLUMNS = {"station", "rides", "share_of_valid_trips"}
+ANOMALY_REQUIRED_COLUMNS = {"hour", "absolute_gap"}
+
 
 def fmt_int(value: float | int) -> str:
     """Format a number as a rounded integer string."""
+    if pd.isna(value):
+        return "n/a"
     return f"{int(round(float(value))):,}"
 
 
 def fmt_k(value: float | int) -> str:
     """Format a number using compact thousand or million suffixes."""
+    if pd.isna(value):
+        return "n/a"
     value = float(value)
     if abs(value) >= 1_000_000:
         return f"{value / 1_000_000:.2f}M"
@@ -33,31 +55,143 @@ def fmt_k(value: float | int) -> str:
 
 def fmt_pct(value: float, digits: int = 1) -> str:
     """Format a decimal ratio as a percentage string."""
+    if pd.isna(value):
+        return "n/a"
     return f"{value * 100:.{digits}f}%"
 
 
 def fmt_num(value: float, digits: int = 1) -> str:
     """Format a number with grouped thousands and fixed decimals."""
+    if pd.isna(value):
+        return "n/a"
     return f"{value:,.{digits}f}"
 
 
 def load_inputs() -> dict:
     """Load profile, forecast, station, anomaly, and mix inputs."""
-    with (PROFILE_DIR / "profile_summary.json").open("r", encoding="utf-8") as handle:
-        profile = json.load(handle)
+    profile = read_json_object(PROFILE_DIR / "profile_summary.json")
+    require_mapping_keys(profile, PROFILE_REQUIRED_KEYS, "profile_summary.json")
+    summary = profile["summary"]
+    if not isinstance(summary, dict):
+        raise ValueError("profile_summary.json field 'summary' must be an object.")
+    require_mapping_keys(summary, SUMMARY_REQUIRED_KEYS, "profile_summary.json summary")
+
+    forecast = read_csv_table(
+        PROFILE_DIR / "forecast_backtest_metrics.csv",
+        required_columns=FORECAST_REQUIRED_COLUMNS,
+    )
+    top_stations = read_csv_table(
+        PROFILE_DIR / "top_stations.csv",
+        required_columns=TOP_STATIONS_REQUIRED_COLUMNS,
+    )
+    anomalies = read_csv_table(
+        PROFILE_DIR / "anomaly_hours.csv",
+        required_columns=ANOMALY_REQUIRED_COLUMNS,
+    )
     return {
         "profile": profile,
-        "summary": profile["summary"],
-        "forecast": pd.read_csv(PROFILE_DIR / "forecast_backtest_metrics.csv"),
-        "top_stations": pd.read_csv(PROFILE_DIR / "top_stations.csv"),
-        "anomalies": pd.read_csv(PROFILE_DIR / "anomaly_hours.csv"),
-        "member_mix": pd.read_csv(PROFILE_DIR / "member_mix.csv"),
-        "bike_mix": pd.read_csv(PROFILE_DIR / "bike_mix.csv"),
+        "summary": summary,
+        "forecast": forecast,
+        "top_stations": top_stations,
+        "anomalies": anomalies,
+        "member_mix": read_csv_table(PROFILE_DIR / "member_mix.csv"),
+        "bike_mix": read_csv_table(PROFILE_DIR / "bike_mix.csv"),
     }
+
+
+def read_json_object(path: Path) -> dict:
+    """Read a JSON object from disk with a clear schema error."""
+    with path.open("r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise ValueError(f"{path.name} must contain a JSON object.")
+    return payload
+
+
+def read_csv_table(
+    path: Path, *, required_columns: set[str] | None = None
+) -> pd.DataFrame:
+    """Read a CSV source table and validate required columns when provided."""
+    frame = pd.read_csv(path)
+    if required_columns is not None:
+        require_columns(frame, required_columns, path.name)
+    return frame
+
+
+def require_mapping_keys(mapping: dict, required: set[str], source_name: str) -> None:
+    """Validate that a JSON mapping contains required keys."""
+    missing = sorted(required.difference(mapping))
+    if missing:
+        raise KeyError(f"{source_name} is missing required keys: {missing}")
+
+
+def require_columns(frame: pd.DataFrame, required: set[str], source_name: str) -> None:
+    """Validate that a DataFrame contains required columns."""
+    missing = sorted(required.difference(frame.columns))
+    if missing:
+        raise KeyError(f"{source_name} is missing required columns: {missing}")
+
+
+def require_nonempty(frame: pd.DataFrame, source_name: str) -> None:
+    """Validate that a source table has at least one row."""
+    if frame.empty:
+        raise ValueError(f"{source_name} has no rows.")
+
+
+def validate_numeric_columns(
+    frame: pd.DataFrame, columns: list[str], source_name: str
+) -> None:
+    """Validate that source columns are numeric and finite enough for reporting."""
+    for column in columns:
+        values = pd.to_numeric(frame[column], errors="coerce")
+        if values.isna().any() or not np.isfinite(values).all():
+            raise ValueError(
+                f"{source_name} has nonnumeric or missing values in {column}."
+            )
+        frame[column] = values.astype(float)
+
+
+def validate_mapping_numeric(mapping: dict, keys: list[str], source_name: str) -> None:
+    """Validate that JSON scalar fields are numeric and finite."""
+    for key in keys:
+        try:
+            value = float(mapping[key])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(
+                f"{source_name} has nonnumeric or missing value for {key}."
+            ) from exc
+        if not np.isfinite(value):
+            raise ValueError(
+                f"{source_name} has nonnumeric or missing value for {key}."
+            )
+
+
+def required_model_row(forecast: pd.DataFrame, model: str) -> pd.Series:
+    """Return exactly one forecast metric row for a required model."""
+    matches = forecast.loc[forecast["model"] == model]
+    if matches.empty:
+        raise ValueError(f"forecast_backtest_metrics.csv is missing model '{model}'.")
+    if len(matches) > 1:
+        raise ValueError(
+            f"forecast_backtest_metrics.csv has duplicate rows for model '{model}'."
+        )
+    return matches.iloc[0]
+
+
+def safe_improvement(baseline: object, challenger: object) -> float:
+    """Calculate relative improvement without dividing by zero or missing values."""
+    baseline_value = float(baseline)
+    challenger_value = float(challenger)
+    if baseline_value == 0:
+        return 0.0
+    return (baseline_value - challenger_value) / baseline_value
 
 
 def table_html(frame: pd.DataFrame, columns: list[str], headers: list[str]) -> str:
     """Render selected DataFrame columns as an HTML table."""
+    if len(columns) != len(headers):
+        raise ValueError("Table columns and headers must have the same length.")
+    require_columns(frame, set(columns), "HTML table source")
     rows = []
     for _, row in frame.iterrows():
         cells = "".join(
@@ -77,11 +211,40 @@ def build_report() -> None:
     top_stations = inputs["top_stations"].copy()
     anomalies = inputs["anomalies"].copy()
 
+    validate_mapping_numeric(
+        profile,
+        ["rush_vs_off_hour_ratio", "weekend_vs_weekday_ratio"],
+        "profile_summary.json",
+    )
+    validate_mapping_numeric(
+        summary,
+        [
+            "total_rides",
+            "hourly_points",
+            "average_daily_rides",
+            "average_hourly_rides",
+            "peak_hour_rides",
+        ],
+        "profile_summary.json summary",
+    )
+    validate_numeric_columns(
+        forecast,
+        ["mae", "rmse", "mape", "mean_actual"],
+        "forecast_backtest_metrics.csv",
+    )
+    validate_numeric_columns(
+        top_stations, ["rides", "share_of_valid_trips"], "top_stations.csv"
+    )
+    validate_numeric_columns(anomalies, ["absolute_gap"], "anomaly_hours.csv")
+    require_nonempty(forecast, "forecast_backtest_metrics.csv")
+    require_nonempty(top_stations, "top_stations.csv")
+    require_nonempty(anomalies, "anomaly_hours.csv")
+
     best = forecast.sort_values("mae").iloc[0]
-    prev_day = forecast.loc[forecast["model"] == "previous_day"].iloc[0]
-    prev_week = forecast.loc[forecast["model"] == "previous_week"].iloc[0]
-    mae_improvement_day = (prev_day["mae"] - best["mae"]) / prev_day["mae"]
-    mae_improvement_week = (prev_week["mae"] - best["mae"]) / prev_week["mae"]
+    prev_day = required_model_row(forecast, "previous_day")
+    prev_week = required_model_row(forecast, "previous_week")
+    mae_improvement_day = safe_improvement(prev_day["mae"], best["mae"])
+    mae_improvement_week = safe_improvement(prev_week["mae"], best["mae"])
     top10_share = float(top_stations.head(10)["share_of_valid_trips"].sum())
     top_station = top_stations.iloc[0]
     top_anomaly = anomalies.iloc[0]

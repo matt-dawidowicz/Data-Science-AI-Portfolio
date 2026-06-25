@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 
 import numpy as np
@@ -38,6 +39,76 @@ def hourly_showcase_frame(days: int = 31) -> pd.DataFrame:
     )
 
 
+def write_decision_inputs(
+    output_dir,
+    *,
+    profile: dict | None = None,
+    forecast: pd.DataFrame | None = None,
+    top_stations: pd.DataFrame | None = None,
+    anomalies: pd.DataFrame | None = None,
+) -> None:
+    """Write a complete, deterministic decision-report input fixture."""
+    output_dir.mkdir()
+    profile = profile or {
+        "rush_vs_off_hour_ratio": 2.2,
+        "weekend_vs_weekday_ratio": 0.8,
+        "summary": {
+            "total_rides": 100_000,
+            "hourly_points": 744,
+            "average_daily_rides": 3200,
+            "average_hourly_rides": 135,
+            "peak_hour_rides": 600,
+            "peak_hour": "2024-01-04 08:00:00",
+        },
+    }
+    forecast = (
+        forecast
+        if forecast is not None
+        else pd.DataFrame(
+            {
+                "model": ["calendar_profile", "previous_day", "previous_week"],
+                "mae": [80.0, 100.0, 120.0],
+                "rmse": [95.0, 115.0, 130.0],
+                "mape": [0.10, 0.12, 0.14],
+                "mean_actual": [150.0, 150.0, 150.0],
+            }
+        )
+    )
+    top_stations = (
+        top_stations
+        if top_stations is not None
+        else pd.DataFrame(
+            {
+                "station": ["A&B Station", "Second Station"],
+                "rides": [1000, 800],
+                "share_of_valid_trips": [0.10, 0.08],
+            }
+        )
+    )
+    anomalies = (
+        anomalies
+        if anomalies is not None
+        else pd.DataFrame(
+            {
+                "hour": ["2024-01-05 17:00:00"],
+                "absolute_gap": [42],
+            }
+        )
+    )
+    (output_dir / "profile_summary.json").write_text(
+        json.dumps(profile), encoding="utf-8"
+    )
+    forecast.to_csv(output_dir / "forecast_backtest_metrics.csv", index=False)
+    top_stations.to_csv(output_dir / "top_stations.csv", index=False)
+    anomalies.to_csv(output_dir / "anomaly_hours.csv", index=False)
+    pd.DataFrame({"kind": ["member"], "share": [1.0]}).to_csv(
+        output_dir / "member_mix.csv", index=False
+    )
+    pd.DataFrame({"kind": ["classic"], "share": [1.0]}).to_csv(
+        output_dir / "bike_mix.csv", index=False
+    )
+
+
 def test_decision_formatting_tables_and_input_loading(tmp_path, monkeypatch) -> None:
     """Check decision-report formatters, HTML escaping, and input loading."""
     assert decision.fmt_int(1234.5) == "1,234"
@@ -46,6 +117,10 @@ def test_decision_formatting_tables_and_input_loading(tmp_path, monkeypatch) -> 
     assert decision.fmt_k(42) == "42"
     assert decision.fmt_pct(0.1234, 2) == "12.34%"
     assert decision.fmt_num(1234.567, 2) == "1,234.57"
+    assert decision.fmt_int(np.nan) == "n/a"
+    assert decision.fmt_k(np.nan) == "n/a"
+    assert decision.fmt_pct(np.nan) == "n/a"
+    assert decision.fmt_num(np.nan) == "n/a"
 
     table = decision.table_html(
         pd.DataFrame({"name": ["A&B"], "value": ["<tag>"]}),
@@ -53,24 +128,198 @@ def test_decision_formatting_tables_and_input_loading(tmp_path, monkeypatch) -> 
         ["Name", "Value"],
     )
     assert "&amp;" in table and "&lt;tag&gt;" in table
+    with pytest.raises(ValueError, match="same length"):
+        decision.table_html(pd.DataFrame({"name": ["A"]}), ["name"], ["Name", "Extra"])
+    with pytest.raises(KeyError, match="missing required columns"):
+        decision.table_html(pd.DataFrame({"name": ["A"]}), ["missing"], ["Missing"])
 
     output_dir = tmp_path / "outputs"
-    output_dir.mkdir()
-    (output_dir / "profile_summary.json").write_text(
-        '{"summary": {"valid": 1}}', encoding="utf-8"
-    )
-    for filename in [
-        "forecast_backtest_metrics.csv",
-        "top_stations.csv",
-        "anomaly_hours.csv",
-        "member_mix.csv",
-        "bike_mix.csv",
-    ]:
-        (output_dir / filename).write_text("col\n1\n", encoding="utf-8")
+    write_decision_inputs(output_dir)
     monkeypatch.setattr(decision, "PROFILE_DIR", output_dir)
     loaded = decision.load_inputs()
-    assert loaded["summary"] == {"valid": 1}
-    assert loaded["forecast"].loc[0, "col"] == 1
+    assert loaded["summary"]["hourly_points"] == 744
+    assert loaded["forecast"].loc[0, "model"] == "calendar_profile"
+
+
+def test_decision_report_source_validation_and_generation(
+    tmp_path, monkeypatch
+) -> None:
+    """Reject malformed report inputs and render clear output for valid inputs."""
+    output_dir = tmp_path / "valid_outputs"
+    write_decision_inputs(output_dir)
+    monkeypatch.setattr(decision, "PROFILE_DIR", output_dir)
+    monkeypatch.setattr(decision, "REPORT_PATH", output_dir / "decision_report.html")
+    monkeypatch.setattr(
+        decision, "SOURCE_NOTES_PATH", output_dir / "decision_report_source_notes.md"
+    )
+
+    decision.build_report()
+    assert "A&amp;B Station" in (output_dir / "decision_report.html").read_text(
+        encoding="utf-8"
+    )
+    assert "calendar_profile" in (
+        output_dir / "decision_report_source_notes.md"
+    ).read_text(encoding="utf-8")
+    assert decision.safe_improvement(0, 5) == 0.0
+    assert (
+        decision.required_model_row(
+            pd.DataFrame({"model": ["previous_day"], "mae": [1]}), "previous_day"
+        )["mae"]
+        == 1
+    )
+
+    bad_json_dir = tmp_path / "bad_json"
+    write_decision_inputs(bad_json_dir)
+    (bad_json_dir / "profile_summary.json").write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(decision, "PROFILE_DIR", bad_json_dir)
+    with pytest.raises(ValueError, match="JSON object"):
+        decision.load_inputs()
+
+    bad_summary_dir = tmp_path / "bad_summary"
+    write_decision_inputs(
+        bad_summary_dir,
+        profile={
+            "rush_vs_off_hour_ratio": 2.2,
+            "weekend_vs_weekday_ratio": 0.8,
+            "summary": [],
+        },
+    )
+    monkeypatch.setattr(decision, "PROFILE_DIR", bad_summary_dir)
+    with pytest.raises(ValueError, match="summary"):
+        decision.load_inputs()
+
+    missing_key_dir = tmp_path / "missing_key"
+    write_decision_inputs(
+        missing_key_dir,
+        profile={
+            "rush_vs_off_hour_ratio": 2.2,
+            "summary": {
+                "total_rides": 100_000,
+                "hourly_points": 744,
+                "average_daily_rides": 3200,
+                "average_hourly_rides": 135,
+                "peak_hour_rides": 600,
+                "peak_hour": "2024-01-04 08:00:00",
+            },
+        },
+    )
+    monkeypatch.setattr(decision, "PROFILE_DIR", missing_key_dir)
+    with pytest.raises(KeyError, match="missing required keys"):
+        decision.load_inputs()
+
+    missing_model_dir = tmp_path / "missing_model"
+    write_decision_inputs(
+        missing_model_dir,
+        forecast=pd.DataFrame(
+            {
+                "model": ["calendar_profile", "previous_day"],
+                "mae": [80.0, 100.0],
+                "rmse": [95.0, 115.0],
+                "mape": [0.10, 0.12],
+                "mean_actual": [150.0, 150.0],
+            }
+        ),
+    )
+    monkeypatch.setattr(decision, "PROFILE_DIR", missing_model_dir)
+    with pytest.raises(ValueError, match="previous_week"):
+        decision.build_report()
+
+    duplicate_model_dir = tmp_path / "duplicate_model"
+    write_decision_inputs(
+        duplicate_model_dir,
+        forecast=pd.DataFrame(
+            {
+                "model": [
+                    "calendar_profile",
+                    "previous_day",
+                    "previous_day",
+                    "previous_week",
+                ],
+                "mae": [80.0, 100.0, 101.0, 120.0],
+                "rmse": [95.0, 115.0, 116.0, 130.0],
+                "mape": [0.10, 0.12, 0.13, 0.14],
+                "mean_actual": [150.0, 150.0, 150.0, 150.0],
+            }
+        ),
+    )
+    monkeypatch.setattr(decision, "PROFILE_DIR", duplicate_model_dir)
+    with pytest.raises(ValueError, match="duplicate"):
+        decision.build_report()
+
+    missing_column_dir = tmp_path / "missing_column"
+    write_decision_inputs(missing_column_dir)
+    pd.DataFrame({"model": ["previous_day"], "mae": [1.0]}).to_csv(
+        missing_column_dir / "forecast_backtest_metrics.csv", index=False
+    )
+    monkeypatch.setattr(decision, "PROFILE_DIR", missing_column_dir)
+    with pytest.raises(KeyError, match="missing required columns"):
+        decision.load_inputs()
+
+    invalid_numeric_dir = tmp_path / "invalid_numeric"
+    write_decision_inputs(
+        invalid_numeric_dir,
+        forecast=pd.DataFrame(
+            {
+                "model": ["calendar_profile", "previous_day", "previous_week"],
+                "mae": [80.0, np.inf, 120.0],
+                "rmse": [95.0, 115.0, 130.0],
+                "mape": [0.10, 0.12, 0.14],
+                "mean_actual": [150.0, 150.0, 150.0],
+            }
+        ),
+    )
+    monkeypatch.setattr(decision, "PROFILE_DIR", invalid_numeric_dir)
+    with pytest.raises(ValueError, match="nonnumeric or missing"):
+        decision.build_report()
+
+    empty_anomaly_dir = tmp_path / "empty_anomaly"
+    write_decision_inputs(
+        empty_anomaly_dir,
+        anomalies=pd.DataFrame(columns=["hour", "absolute_gap"]),
+    )
+    monkeypatch.setattr(decision, "PROFILE_DIR", empty_anomaly_dir)
+    with pytest.raises(ValueError, match="anomaly_hours.csv has no rows"):
+        decision.build_report()
+
+    bad_profile_dir = tmp_path / "bad_profile"
+    write_decision_inputs(
+        bad_profile_dir,
+        profile={
+            "rush_vs_off_hour_ratio": "bad",
+            "weekend_vs_weekday_ratio": 0.8,
+            "summary": {
+                "total_rides": 100_000,
+                "hourly_points": 744,
+                "average_daily_rides": 3200,
+                "average_hourly_rides": 135,
+                "peak_hour_rides": 600,
+                "peak_hour": "2024-01-04 08:00:00",
+            },
+        },
+    )
+    monkeypatch.setattr(decision, "PROFILE_DIR", bad_profile_dir)
+    with pytest.raises(ValueError, match="rush_vs_off_hour_ratio"):
+        decision.build_report()
+
+    infinite_profile_dir = tmp_path / "infinite_profile"
+    write_decision_inputs(
+        infinite_profile_dir,
+        profile={
+            "rush_vs_off_hour_ratio": np.inf,
+            "weekend_vs_weekday_ratio": 0.8,
+            "summary": {
+                "total_rides": 100_000,
+                "hourly_points": 744,
+                "average_daily_rides": 3200,
+                "average_hourly_rides": 135,
+                "peak_hour_rides": 600,
+                "peak_hour": "2024-01-04 08:00:00",
+            },
+        },
+    )
+    monkeypatch.setattr(decision, "PROFILE_DIR", infinite_profile_dir)
+    with pytest.raises(ValueError, match="rush_vs_off_hour_ratio"):
+        decision.build_report()
 
 
 def test_showcase_formatters_loading_and_validation(tmp_path, monkeypatch) -> None:

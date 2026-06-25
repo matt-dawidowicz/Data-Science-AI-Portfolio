@@ -503,3 +503,48 @@ Hour-level forecast rows for the station-cluster validation.
 Compact metadata and headline measures for `station_cluster_forecast.html`,
 including station-cluster coverage, weather coverage, rolling-origin settings,
 model lift, and the rebalancing/capacity-planning recommendation.
+
+## `portfolio_feature_family_lift.csv`
+
+Reviewer-facing feature-family explanation derived from out-of-sample model
+lift.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `feature_family` | string | Feature group being evaluated |
+| `baseline_model` | string | Simpler model used as the comparison point |
+| `challenger_model` | string | Richer model being evaluated |
+| `segments_evaluated` | integer | Number of system or station-cluster segments evaluated |
+| `segments_improved` | integer | Segments where the challenger reduced MAE |
+| `weighted_lift_pct` | float | Sum of MAE reduction divided by sum of baseline MAE |
+| `mean_lift_pct` | float | Average segment-level percentage lift |
+| `median_lift_pct` | float | Median segment-level percentage lift |
+| `best_segment` | string | Segment with the largest absolute MAE reduction |
+| `weakest_segment` | string | Segment with the smallest absolute MAE reduction |
+| `definition` | string | Plain-language description of the feature group |
+| `interpretation` | string | Portfolio-ready interpretation of the validation result |
+
+## `portfolio_decision_simulator.csv`
+
+Scenario-based planning table for the reviewer dashboard. This is a planning
+index, not an operations optimizer.
+
+| Column | Type | Definition |
+| --- | --- | --- |
+| `scenario` | string | Scenario key used by the dashboard filter |
+| `scenario_label` | string | Reader-friendly scenario name |
+| `cluster_label` | string | Station cluster being reviewed |
+| `annual_starts` | float | Annual fixed-window starts for the cluster |
+| `expected_hourly_starts` | float | Scenario-adjusted average hourly starts |
+| `weather_event_mae` | float | Weather/event ridge MAE for the cluster |
+| `weather_event_wape` | float | Weather/event ridge WAPE for the cluster |
+| `lift_vs_previous_week` | float | Weather/event ridge MAE lift versus previous week |
+| `risk_score` | float | 0-1 planning score from scale, error, WAPE, lift, and scenario pressure |
+| `priority_tier` | string | `High`, `Medium`, or `Monitor` |
+| `recommended_action` | string | Reader-facing planning recommendation |
+
+## `portfolio_dashboard.html`
+
+Static reviewer dashboard generated from validated project outputs. It includes
+headline KPIs, scenario controls, model comparison, feature-family lift,
+selected charts, and limitation notes.

@@ -20,6 +20,7 @@ This document explains how the packaged project is organized.
 | `citibike_time_series_showcase.py` | Builds expanded time-series diagnostics, charts, and showcase report from the hourly profile |
 | `citibike_multi_month_proof.py` | Streams multiple monthly archives, builds a full-year hourly panel, and evaluates rolling forecast origins |
 | `citibike_station_cluster_forecast.py` | Builds stable station clusters, joins weather/event features, and evaluates segment-level forecasts for rebalancing/capacity planning |
+| `citibike_portfolio_dashboard.py` | Builds the reviewer dashboard, scenario simulator, and feature-family lift explanation from generated outputs |
 
 ## `outputs/`
 
@@ -35,6 +36,7 @@ Pytest coverage tests for deterministic project logic:
 - time-series showcase diagnostics and rolling baselines
 - full-year proof calendar, feature, scoring, and summary helpers
 - station-cluster grouping, weather/event, lift, and capacity-priority helpers
+- portfolio dashboard, scenario simulator, source loading, and feature-family lift helpers
 
 Important files:
 
@@ -43,6 +45,7 @@ Important files:
 - `time_series_showcase.html`
 - `multi_month_proof.html`
 - `station_cluster_forecast.html`
+- `portfolio_dashboard.html`
 - `profile_summary.json`
 - `hourly_profile.csv`
 - `forecast_backtest_metrics.csv`
@@ -74,6 +77,8 @@ Important files:
 - `station_cluster_model_metrics.csv`
 - `station_cluster_model_lift.csv`
 - `station_cluster_capacity_priorities.csv`
+- `portfolio_feature_family_lift.csv`
+- `portfolio_decision_simulator.csv`
 - `station_cluster_origin_metrics.csv`
 - `station_cluster_backtest_scored.csv`
 - `anomaly_hours.csv`
@@ -117,7 +122,9 @@ Documentation for reviewers:
 
 | File | Purpose |
 | --- | --- |
+| `CASE_STUDY.md` | Portfolio-facing case study narrative, business question, method, result, and production next step |
 | `CODE_QUALITY.md` | PEP8, PEP257, Ruff, pydocstyle, and compile-check guidance |
+| `DASHBOARD_AND_SIMULATOR.md` | Dashboard, simulator, and feature-family explainability guide |
 | `MEASURES.md` | Metric definitions and current values |
 | `MULTI_MONTH_PROOF.md` | Full-year validation design, model comparison, outputs, and interview defense |
 | `STATION_CLUSTER_FORECASTING.md` | Station-cluster validation design, weather/event feature layer, decision framing, and caveats |
@@ -125,6 +132,7 @@ Documentation for reviewers:
 | `CHART_MAP.md` | Visual purpose, chart family, and quality checks for each chart |
 | `METHODOLOGY.md` | Data processing, modeling, validation, and limitations |
 | `DATA_DICTIONARY.md` | Output column definitions |
+| `LIMITATIONS.md` | Explicit failure modes and production-readiness boundaries |
 | `MODEL_CARD.md` | Forecast baseline purpose, scope, results, and risks |
 | `PORTFOLIO_WRITEUP.md` | Project narrative, resume bullets, and portfolio card copy |
 | `PUBLISHING_CHECKLIST.md` | Pre-push review checklist |

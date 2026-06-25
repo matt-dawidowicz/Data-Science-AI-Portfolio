@@ -93,6 +93,11 @@ MODEL_LABELS = {
     "calendar_lag_ridge": "Calendar + lag ridge",
     "weather_event_ridge": "Weather/event ridge",
 }
+MODEL_LIFT_REQUIRED_MODELS = [
+    "previous_week",
+    "calendar_lag_ridge",
+    "weather_event_ridge",
+]
 
 FONT_FAMILY = ["Aptos", "Inter", "Segoe UI", "DejaVu Sans", "Arial", "sans-serif"]
 MONO_FONT_FAMILY = ["SF Mono", "Menlo", "Consolas", "DejaVu Sans Mono", "monospace"]
@@ -1404,6 +1409,7 @@ def build_model_lift(metrics: pd.DataFrame) -> pd.DataFrame:
     """Compare weather/event ridge errors against the baseline models."""
     if metrics.empty:
         return pd.DataFrame()
+    validate_model_lift_metrics(metrics)
     pivot = metrics.pivot_table(
         index=["segment_id", "segment_label", "segment_type"],
         columns="model",
@@ -1416,9 +1422,10 @@ def build_model_lift(metrics: pd.DataFrame) -> pd.DataFrame:
         lift[f"mae_lift_vs_{baseline}"] = (
             lift[f"mae_{baseline}"] - lift["mae_weather_event_ridge"]
         )
+        baseline_mae = lift[f"mae_{baseline}"].replace(0, np.nan)
         lift[f"mae_lift_pct_vs_{baseline}"] = (
-            lift[f"mae_lift_vs_{baseline}"] / lift[f"mae_{baseline}"]
-        )
+            lift[f"mae_lift_vs_{baseline}"] / baseline_mae
+        ).fillna(0.0)
     model_order = [
         "weather_event_ridge",
         "calendar_lag_ridge",
@@ -1438,6 +1445,57 @@ def build_model_lift(metrics: pd.DataFrame) -> pd.DataFrame:
     lift["best_model"] = best_rows
     lift["best_model_label"] = lift["best_model"].map(label_model)
     return lift
+
+
+def validate_model_lift_metrics(metrics: pd.DataFrame) -> None:
+    """Validate segment/model metrics before calculating model lift."""
+    required_columns = {
+        "segment_id",
+        "segment_label",
+        "segment_type",
+        "model",
+        "mae",
+        "rmse",
+        "wape",
+    }
+    missing = sorted(required_columns.difference(metrics.columns))
+    if missing:
+        raise KeyError(f"Model lift metrics are missing required columns: {missing}")
+
+    numeric_columns = ["mae", "rmse", "wape"]
+    for column in numeric_columns:
+        values = pd.to_numeric(metrics[column], errors="coerce")
+        if values.isna().any() or not np.isfinite(values).all():
+            raise ValueError(f"Model lift metrics have invalid values in {column}.")
+        if (values < 0).any():
+            raise ValueError(f"Model lift metrics have negative values in {column}.")
+        metrics[column] = values.astype(float)
+
+    duplicate_rows = metrics.loc[
+        metrics.duplicated(["segment_id", "model"], keep=False),
+        ["segment_id", "model"],
+    ].drop_duplicates()
+    if not duplicate_rows.empty:
+        duplicate_keys = [
+            f"{row.segment_id}/{row.model}"
+            for row in duplicate_rows.itertuples(index=False)
+        ]
+        raise ValueError(
+            "Model lift metrics have duplicate segment/model row(s): "
+            + ", ".join(duplicate_keys)
+        )
+
+    required_models = set(MODEL_LIFT_REQUIRED_MODELS)
+    missing_segments = []
+    for segment_id, group in metrics.groupby("segment_id"):
+        missing_models = sorted(required_models - set(group["model"]))
+        if missing_models:
+            missing_segments.append(f"{segment_id}: {', '.join(missing_models)}")
+    if missing_segments:
+        raise ValueError(
+            "Model lift metrics are missing required model row(s): "
+            + "; ".join(missing_segments)
+        )
 
 
 def build_capacity_priorities(
@@ -1540,8 +1598,9 @@ def build_summary(
         "total_system_rides": int(system_hourly["rides"].sum()),
         "rows_total": int(monthly_summaries["rows_total"].sum()),
         "rows_valid": int(monthly_summaries["rows_valid"].sum()),
-        "station_id_coverage": float(
-            monthly_summaries["rows_with_station_id"].sum() / station_id_denominator
+        "station_id_coverage": safe_divide(
+            monthly_summaries["rows_with_station_id"].sum(),
+            station_id_denominator,
         ),
         "weather_hours": int(len(weather)),
         "weather_missing_hours": missing_weather_hours,
@@ -1565,6 +1624,14 @@ def build_summary(
         "recommendation": recommendation_text(cluster_lift, system_lift),
     }
     return make_json_safe(summary)
+
+
+def safe_divide(numerator: object, denominator: object) -> float:
+    """Divide two values while returning zero for zero or missing denominators."""
+    denominator_value = float(denominator)
+    if denominator_value == 0 or not np.isfinite(denominator_value):
+        return 0.0
+    return float(numerator) / denominator_value
 
 
 def recommendation_text(

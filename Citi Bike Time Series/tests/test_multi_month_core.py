@@ -173,6 +173,51 @@ def test_summary_json_formatting_and_tables() -> None:
     )
     assert summary["best_model"]["model"] == "calendar_lag_ridge"
     assert summary["valid_rate"] == 0.95
+    zero_rate_summary = multi.build_summary(
+        hourly=hourly,
+        monthly_summaries=monthly.assign(rows_total=0, rows_valid=0),
+        metrics=metrics,
+        origin_metrics=origin,
+        scored=pd.DataFrame({"x": [1, 2]}),
+        args=argparse.Namespace(
+            start_month="2024-01",
+            end_month="2024-01",
+            origin_step_days=7,
+            horizon_hours=24,
+            min_train_days=60,
+        ),
+    )
+    assert zero_rate_summary["valid_rate"] == 0.0
+    with pytest.raises(ValueError, match="Hourly profile"):
+        multi.build_summary(
+            hourly=hourly.iloc[0:0],
+            monthly_summaries=monthly,
+            metrics=metrics,
+            origin_metrics=origin,
+            scored=pd.DataFrame(),
+            args=argparse.Namespace(
+                start_month="2024-01",
+                end_month="2024-01",
+                origin_step_days=7,
+                horizon_hours=24,
+                min_train_days=60,
+            ),
+        )
+    with pytest.raises(ValueError, match="Monthly summaries"):
+        multi.build_summary(
+            hourly=hourly,
+            monthly_summaries=monthly.iloc[0:0],
+            metrics=metrics,
+            origin_metrics=origin,
+            scored=pd.DataFrame(),
+            args=argparse.Namespace(
+                start_month="2024-01",
+                end_month="2024-01",
+                origin_step_days=7,
+                horizon_hours=24,
+                min_train_days=60,
+            ),
+        )
 
     empty_summary = multi.build_summary(
         hourly=hourly,
@@ -190,6 +235,8 @@ def test_summary_json_formatting_and_tables() -> None:
     )
     assert empty_summary["best_model"] == {}
     assert empty_summary["rolling_origins"] == 0
+    assert multi.safe_divide(3, 2) == 1.5
+    assert multi.safe_divide(1, 0) == 0.0
 
     assert multi.label_model("unknown_model") == "Unknown Model"
     assert multi.strip_trailing_whitespace("a  \n") == "a\n"

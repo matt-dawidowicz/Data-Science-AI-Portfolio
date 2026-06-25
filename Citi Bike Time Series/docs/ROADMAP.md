@@ -23,6 +23,9 @@ final local review. It already includes:
 - Station-cluster forecasts for system total plus top demand clusters
 - Weather, holiday, and event features tested in rolling validation
 - Rebalancing/capacity-planning priority table
+- Portfolio dashboard for reviewer navigation
+- Scenario simulator for cluster-level planning review
+- Feature-family lift explanation based on out-of-sample validation
 - Anomaly candidate table
 - Charts
 - HTML reports
@@ -61,6 +64,25 @@ The project now includes the next high-value upgrade:
 This still does not make the project an inventory-control model. It forecasts
 trip-start demand by cluster, which is a useful planning signal but not the same
 as live bike availability, dock availability, or truck routing.
+
+## Completed Upgrade: Portfolio Dashboard And Simulator
+
+The project now includes a reviewer-first portfolio layer:
+
+- `outputs/portfolio_dashboard.html`
+- `outputs/portfolio_decision_simulator.csv`
+- `outputs/portfolio_feature_family_lift.csv`
+- `docs/CASE_STUDY.md`
+- `docs/DASHBOARD_AND_SIMULATOR.md`
+- `docs/LIMITATIONS.md`
+
+This layer turns the forecasting artifacts into a compact story for hiring
+reviewers. It shows the full-year proof, cluster-level model lift, a
+feature-family explanation, and scenario-based rebalancing review tiers.
+
+The simulator is intentionally not an optimizer. It is a planning index built
+from demand scale, model error, WAPE, and lift versus baseline. A production
+optimizer still needs capacity, availability, truck, and service-level data.
 
 ## High-Value Next Work
 

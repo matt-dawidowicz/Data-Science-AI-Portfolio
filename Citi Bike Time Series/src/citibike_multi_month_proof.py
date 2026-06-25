@@ -650,6 +650,10 @@ def build_summary(
     args: argparse.Namespace,
 ) -> dict[str, object]:
     """Build the JSON summary for the multi-month proof layer."""
+    if hourly.empty:
+        raise ValueError("Hourly profile has no rows.")
+    if monthly_summaries.empty:
+        raise ValueError("Monthly summaries table has no rows.")
     daily = hourly.groupby("date", as_index=False)["rides"].sum()
     best = metrics.iloc[0].to_dict() if not metrics.empty else {}
     summary = {
@@ -674,9 +678,9 @@ def build_summary(
         "peak_hour_rides": int(hourly["rides"].max()),
         "rows_total": int(monthly_summaries["rows_total"].sum()),
         "rows_valid": int(monthly_summaries["rows_valid"].sum()),
-        "valid_rate": float(
-            monthly_summaries["rows_valid"].sum()
-            / monthly_summaries["rows_total"].sum()
+        "valid_rate": safe_divide(
+            monthly_summaries["rows_valid"].sum(),
+            monthly_summaries["rows_total"].sum(),
         ),
         "origin_step_days": int(args.origin_step_days),
         "horizon_hours": int(args.horizon_hours),
@@ -688,6 +692,14 @@ def build_summary(
         "best_model": best,
     }
     return make_json_safe(summary)
+
+
+def safe_divide(numerator: object, denominator: object) -> float:
+    """Divide two values while returning zero for zero or missing denominators."""
+    denominator_value = float(denominator)
+    if denominator_value == 0 or not np.isfinite(denominator_value):
+        return 0.0
+    return float(numerator) / denominator_value
 
 
 def make_json_safe(value: object) -> object:

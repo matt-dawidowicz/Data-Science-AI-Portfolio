@@ -29,7 +29,10 @@ skill set:
 - A stronger lag-regression benchmark against transparent baselines
 - Stable station ID grouping and station-cluster forecast evaluation
 - Weather, holiday, and event features tested in rolling validation
+- Feature-family lift explainability based on out-of-sample model improvement
+- Scenario-based rebalancing decision simulator
 - Anomaly detection against a seasonal profile
+- Portfolio dashboard and case-study documentation
 - Business-facing reporting and documentation
 
 ## Headline Result
@@ -126,20 +129,27 @@ If you are reviewing this as a portfolio project, start here:
    to see the operational upgrade: station ID clusters, weather/event features,
    segment-level rolling validation, and the rebalancing/capacity-planning
    recommendation.
-2. Open [outputs/multi_month_proof.html](outputs/multi_month_proof.html)
+2. Open [outputs/portfolio_dashboard.html](outputs/portfolio_dashboard.html)
+   to see the reviewer-first dashboard: full-year KPIs, model lift,
+   feature-family explainability, and the scenario simulator.
+3. Open [outputs/multi_month_proof.html](outputs/multi_month_proof.html)
    to see the stronger proof layer: 12 monthly archives, full-year hourly
    coverage, rolling origins, model comparison, and final forecast trace.
-3. Open [outputs/time_series_showcase.html](outputs/time_series_showcase.html)
+4. Open [outputs/time_series_showcase.html](outputs/time_series_showcase.html)
    to see the time-series methods proof: regular index, autocorrelation, lag
    features, rolling validation, and residual diagnostics.
-4. Open [outputs/decision_report.html](outputs/decision_report.html) to see the
+5. Open [outputs/decision_report.html](outputs/decision_report.html) to see the
    business-facing interpretation and recommendation.
-5. Read [docs/STATION_CLUSTER_FORECASTING.md](docs/STATION_CLUSTER_FORECASTING.md),
+6. Read [docs/CASE_STUDY.md](docs/CASE_STUDY.md),
+   [docs/DASHBOARD_AND_SIMULATOR.md](docs/DASHBOARD_AND_SIMULATOR.md),
+   [docs/STATION_CLUSTER_FORECASTING.md](docs/STATION_CLUSTER_FORECASTING.md),
    [docs/MULTI_MONTH_PROOF.md](docs/MULTI_MONTH_PROOF.md), and
    [docs/TIME_SERIES_SHOWCASE.md](docs/TIME_SERIES_SHOWCASE.md) for the
    interview narrative: what the project proves, what it does not prove, and
    how it should be extended.
-6. Read [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md) to see the PEP8, PEP257,
+7. Read [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for the failure modes and
+   honest production-readiness boundaries.
+8. Read [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md) to see the PEP8, PEP257,
    Ruff, `pydocstyle`, pytest, and coverage checks used before publishing.
 
 ## Reports
@@ -156,6 +166,9 @@ If you are reviewing this as a portfolio project, start here:
 - [outputs/station_cluster_forecast.html](outputs/station_cluster_forecast.html):
   station-cluster forecasting report with weather/event features and a
   rebalancing/capacity-planning decision frame.
+- [outputs/portfolio_dashboard.html](outputs/portfolio_dashboard.html):
+  reviewer-first dashboard with scenario simulator and feature-family lift
+  explanation.
 - [outputs/decision_report_source_notes.md](outputs/decision_report_source_notes.md):
   source and validation notes for the decision report.
 
@@ -172,6 +185,7 @@ Citi Bike Time Series/
     citibike_time_series_showcase.py
     citibike_multi_month_proof.py
     citibike_station_cluster_forecast.py
+    citibike_portfolio_dashboard.py
   tests/
     test_profile_core.py
     test_decision_and_showcase_core.py
@@ -183,6 +197,7 @@ Citi Bike Time Series/
     time_series_showcase.html
     multi_month_proof.html
     station_cluster_forecast.html
+    portfolio_dashboard.html
     decision_report_source_notes.md
     profile_summary.json
     hourly_profile.csv
@@ -214,6 +229,8 @@ Citi Bike Time Series/
     station_cluster_model_metrics.csv
     station_cluster_model_lift.csv
     station_cluster_capacity_priorities.csv
+    portfolio_feature_family_lift.csv
+    portfolio_decision_simulator.csv
     station_cluster_origin_metrics.csv
     station_cluster_backtest_scored.csv
     anomaly_hours.csv
@@ -251,6 +268,9 @@ Citi Bike Time Series/
     METHODOLOGY.md
     MODEL_CARD.md
     STATION_CLUSTER_FORECASTING.md
+    DASHBOARD_AND_SIMULATOR.md
+    CASE_STUDY.md
+    LIMITATIONS.md
     PORTFOLIO_WRITEUP.md
     PROJECT_STRUCTURE.md
     PUBLISHING_CHECKLIST.md
@@ -304,6 +324,12 @@ Build the station-cluster forecasting layer:
 
 ```bash
 python src/citibike_station_cluster_forecast.py --start-month 2024-01 --end-month 2024-12 --skip-download
+```
+
+Build the reviewer dashboard and scenario simulator:
+
+```bash
+python src/citibike_portfolio_dashboard.py
 ```
 
 The profile and multi-month scripts download public Citi Bike archives and

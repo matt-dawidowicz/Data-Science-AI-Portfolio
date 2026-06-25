@@ -329,6 +329,37 @@ def test_station_metrics_lift_priorities_summary_and_formatters() -> None:
         lift.loc[lift["segment_id"] == "cluster_01", "best_model"].iloc[0]
         == "weather_event_ridge"
     )
+    zero_baseline_metrics = metrics.copy()
+    zero_baseline_metrics.loc[
+        (zero_baseline_metrics["segment_id"] == "cluster_01")
+        & (zero_baseline_metrics["model"] == "previous_week"),
+        "mae",
+    ] = 0.0
+    zero_lift = station.build_model_lift(zero_baseline_metrics)
+    assert (
+        zero_lift.loc[
+            zero_lift["segment_id"] == "cluster_01",
+            "mae_lift_pct_vs_previous_week",
+        ].iloc[0]
+        == 0.0
+    )
+    with pytest.raises(KeyError, match="missing required columns"):
+        station.build_model_lift(metrics.drop(columns=["wape"]))
+    with pytest.raises(ValueError, match="duplicate segment/model"):
+        station.build_model_lift(pd.concat([metrics, metrics.iloc[[0]]]))
+    with pytest.raises(ValueError, match="missing required model"):
+        station.build_model_lift(
+            metrics[
+                ~(
+                    (metrics["segment_id"] == "cluster_01")
+                    & (metrics["model"] == "previous_week")
+                )
+            ]
+        )
+    with pytest.raises(ValueError, match="invalid values"):
+        station.build_model_lift(metrics.assign(mae=np.inf))
+    with pytest.raises(ValueError, match="negative"):
+        station.build_model_lift(metrics.assign(mae=-1.0))
 
     cluster_summary = pd.DataFrame(
         {
@@ -411,6 +442,8 @@ def test_station_metrics_lift_priorities_summary_and_formatters() -> None:
     )
     assert summary["decision"] == "Rebalancing and station-capacity planning"
     assert summary["station_id_coverage"] == pytest.approx(80 / 85)
+    assert station.safe_divide(1, 0) == 0.0
+    assert station.safe_divide(3, 2) == 1.5
 
     converted = station.make_json_safe(
         {

@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Citi Bike Time Series Portfolio Dashboard</title>
+  <style>
+    :root {
+      --surface: #fbfcfd;
+      --panel: #ffffff;
+      --ink: #1f2430;
+      --muted: #667085;
+      --grid: #e6e8f0;
+      --blue: #5477c4;
+      --green: #71b436;
+      --orange: #f0986e;
+      --gold: #b8a037;
+    }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: Aptos, Inter, "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 36px 20px 72px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(32px, 5vw, 50px);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 34px 0 12px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+    p, li {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.58;
+    }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 24px 0 30px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      padding: 15px;
+    }
+    .kpi strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+    .kpi span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .summary {
+      border-left: 4px solid var(--blue);
+      background: #eaf1fe;
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+    .summary strong {
+      color: var(--ink);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 14px;
+    }
+    .controls button {
+      border: 1px solid var(--grid);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      padding: 8px 11px;
+      font: inherit;
+      font-size: 14px;
+    }
+    .controls button.active {
+      border-color: var(--blue);
+      background: #eaf1fe;
+      color: var(--blue);
+      font-weight: 600;
+    }
+    figure {
+      margin: 20px 0;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    figcaption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+      margin: 12px 0 24px;
+    }
+    .data-table th, .data-table td {
+      border-bottom: 1px solid var(--grid);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .data-table th {
+      background: #f4f5f7;
+      color: var(--ink);
+    }
+    .data-table tr:last-child td {
+      border-bottom: 0;
+    }
+    .tier-high {
+      color: #8a3a1f;
+      font-weight: 700;
+    }
+    .tier-medium {
+      color: #736422;
+      font-weight: 700;
+    }
+    .tier-monitor {
+      color: #386411;
+      font-weight: 700;
+    }
+    @media (max-width: 780px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+    @media (max-width: 520px) {
+      .kpis { grid-template-columns: 1fr; }
+      .data-table { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Citi Bike Time Series Portfolio Dashboard</h1>
+    <p>
+      A reviewer-first surface for the full-year forecasting proof, station
+      clusters, feature-family lift, and rebalancing decision simulator.
+    </p>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi"><strong>12</strong><span>months profiled</span></div>
+    <div class="kpi"><strong>8,784</strong><span>hourly observations</span></div>
+    <div class="kpi"><strong>6</strong><span>station clusters</span></div>
+    <div class="kpi"><strong>711</strong><span>system weather/event MAE</span></div>
+  </section>
+
+  <section>
+    <h2>Decision Context</h2>
+    <p class="summary">
+      <strong>Recommended decision:</strong> use the weather/event ridge as a
+      rebalancing and station-capacity planning watchlist, with previous-week
+      and calendar-lag ridge retained as controls. The system-level weather/event
+      model improved MAE by +22.7% versus the
+      previous-week baseline. The top current planning cluster is
+      <strong>Cluster 01 - W 21 St &amp; 6 Ave area</strong>.
+    </p>
+  </section>
+
+  <section>
+    <h2>Scenario Simulator</h2>
+    <p>
+      The simulator does not claim to dispatch trucks. It ranks station clusters
+      for operating review under a few plausible demand-pressure scenarios using
+      observed annual scale, model error, WAPE, and baseline lift.
+    </p>
+    <div class="controls"><button type="button" data-scenario-button="normal_weekday">Normal weekday</button><button type="button" data-scenario-button="rain_event">Rain or snow pressure</button><button type="button" data-scenario-button="major_event">Major event window</button></div>
+    <table class="data-table"><thead><tr><th>Cluster</th><th>Tier</th><th>Risk Score</th><th>Expected Hourly Starts</th><th>WAPE</th><th>Lift vs Previous Week</th><th>Action</th></tr></thead><tbody><tr data-scenario-row="normal_weekday"><td>Cluster 01 - W 21 St &amp; 6 Ave area</td><td class="tier-high">High</td><td>0.78</td><td>452.1</td><td>14.3%</td><td>+21.1%</td><td>Pre-review capacity and bike positioning before the normal weekday.</td></tr><tr data-scenario-row="normal_weekday"><td>Cluster 02 - 11 Ave &amp; W 41 St area</td><td class="tier-medium">Medium</td><td>0.55</td><td>277.4</td><td>15.0%</td><td>+17.9%</td><td>Monitor against the previous-week baseline and review during peak hours.</td></tr><tr data-scenario-row="normal_weekday"><td>Cluster 03 - West St &amp; Chambers St area</td><td class="tier-medium">Medium</td><td>0.51</td><td>269.7</td><td>15.3%</td><td>+25.0%</td><td>Monitor against the previous-week baseline and review during peak hours.</td></tr><tr data-scenario-row="normal_weekday"><td>Cluster 04 - Ave A &amp; E 14 St area</td><td class="tier-monitor">Monitor</td><td>0.32</td><td>125.8</td><td>15.6%</td><td>+19.8%</td><td>Keep on the watchlist; no immediate rebalancing review from demand alone.</td></tr><tr data-scenario-row="normal_weekday"><td>Cluster 06 - Hanson Pl &amp; Ashland Pl area</td><td class="tier-monitor">Monitor</td><td>0.28</td><td>8.9</td><td>33.4%</td><td>+20.6%</td><td>Keep on the watchlist; no immediate rebalancing review from demand alone.</td></tr><tr data-scenario-row="normal_weekday"><td>Cluster 05 - E 72 St &amp; York Ave area</td><td class="tier-monitor">Monitor</td><td>0.26</td><td>70.4</td><td>18.4%</td><td>+20.0%</td><td>Keep on the watchlist; no immediate rebalancing review from demand alone.</td></tr><tr data-scenario-row="rain_event"><td>Cluster 01 - W 21 St &amp; 6 Ave area</td><td class="tier-high">High</td><td>0.82</td><td>388.8</td><td>14.3%</td><td>+21.1%</td><td>Pre-review capacity and bike positioning before the rain or snow pressure.</td></tr><tr data-scenario-row="rain_event"><td>Cluster 02 - 11 Ave &amp; W 41 St area</td><td class="tier-high">High</td><td>0.57</td><td>238.6</td><td>15.0%</td><td>+17.9%</td><td>Pre-review capacity and bike positioning before the rain or snow pressure.</td></tr><tr data-scenario-row="rain_event"><td>Cluster 03 - West St &amp; Chambers St area</td><td class="tier-high">High</td><td>0.54</td><td>231.9</td><td>15.3%</td><td>+25.0%</td><td>Pre-review capacity and bike positioning before the rain or snow pressure.</td></tr><tr data-scenario-row="rain_event"><td>Cluster 04 - Ave A &amp; E 14 St area</td><td class="tier-medium">Medium</td><td>0.34</td><td>108.2</td><td>15.6%</td><td>+19.8%</td><td>Monitor against the previous-week baseline and review during peak hours.</td></tr><tr data-scenario-row="rain_event"><td>Cluster 06 - Hanson Pl &amp; Ashland Pl area</td><td class="tier-monitor">Monitor</td><td>0.29</td><td>7.7</td><td>33.4%</td><td>+20.6%</td><td>Keep on the watchlist; no immediate rebalancing review from demand alone.</td></tr><tr data-scenario-row="rain_event"><td>Cluster 05 - E 72 St &amp; York Ave area</td><td class="tier-monitor">Monitor</td><td>0.28</td><td>60.5</td><td>18.4%</td><td>+20.0%</td><td>Keep on the watchlist; no immediate rebalancing review from demand alone.</td></tr><tr data-scenario-row="major_event"><td>Cluster 01 - W 21 St &amp; 6 Ave area</td><td class="tier-high">High</td><td>1.00</td><td>506.3</td><td>14.3%</td><td>+21.1%</td><td>Pre-review capacity and bike positioning before the major event window.</td></tr><tr data-scenario-row="major_event"><td>Cluster 02 - 11 Ave &amp; W 41 St area</td><td class="tier-high">High</td><td>0.76</td><td>310.7</td><td>15.0%</td><td>+17.9%</td><td>Pre-review capacity and bike positioning before the major event window.</td></tr><tr data-scenario-row="major_event"><td>Cluster 03 - West St &amp; Chambers St area</td><td class="tier-high">High</td><td>0.71</td><td>302.0</td><td>15.3%</td><td>+25.0%</td><td>Pre-review capacity and bike positioning before the major event window.</td></tr><tr data-scenario-row="major_event"><td>Cluster 04 - Ave A &amp; E 14 St area</td><td class="tier-medium">Medium</td><td>0.45</td><td>140.9</td><td>15.6%</td><td>+19.8%</td><td>Monitor against the previous-week baseline and review during peak hours.</td></tr><tr data-scenario-row="major_event"><td>Cluster 06 - Hanson Pl &amp; Ashland Pl area</td><td class="tier-medium">Medium</td><td>0.38</td><td>10.0</td><td>33.4%</td><td>+20.6%</td><td>Monitor against the previous-week baseline and review during peak hours.</td></tr><tr data-scenario-row="major_event"><td>Cluster 05 - E 72 St &amp; York Ave area</td><td class="tier-medium">Medium</td><td>0.37</td><td>78.8</td><td>18.4%</td><td>+20.0%</td><td>Monitor against the previous-week baseline and review during peak hours.</td></tr></tbody></table>
+  </section>
+
+  <section>
+    <h2>Feature Explainability</h2>
+    <p>
+      Instead of using in-sample coefficients as proof, this table explains
+      feature families by out-of-sample lift. Each family must reduce rolling
+      validation error against the simpler model before it earns space in the
+      portfolio narrative.
+    </p>
+    <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Feature Family</th>
+      <th>Segments Improved</th>
+      <th>Segments Evaluated</th>
+      <th>Weighted Lift</th>
+      <th>Largest Gain</th>
+      <th>Interpretation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Calendar and lag features</td>
+      <td>7</td>
+      <td>7</td>
+      <td>+18.2%</td>
+      <td>System total</td>
+      <td>Calendar and lag features improved MAE for every evaluated segment.</td>
+    </tr>
+    <tr>
+      <td>Weather and event features</td>
+      <td>7</td>
+      <td>7</td>
+      <td>+5.1%</td>
+      <td>System total</td>
+      <td>Weather and event features improved MAE for every evaluated segment.</td>
+    </tr>
+  </tbody>
+</table>
+  </section>
+
+  <section>
+    <h2>Model Comparison</h2>
+    <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Segment</th>
+      <th>Model</th>
+      <th>MAE</th>
+      <th>RMSE</th>
+      <th>WAPE</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>System total</td>
+      <td>Weather/event ridge</td>
+      <td>711</td>
+      <td>1,037</td>
+      <td>12.6%</td>
+    </tr>
+    <tr>
+      <td>System total</td>
+      <td>Calendar + lag ridge</td>
+      <td>750</td>
+      <td>1,163</td>
+      <td>13.2%</td>
+    </tr>
+    <tr>
+      <td>System total</td>
+      <td>Previous week</td>
+      <td>919</td>
+      <td>1,538</td>
+      <td>16.2%</td>
+    </tr>
+    <tr>
+      <td>Cluster 01 - W 21 St &amp; 6 Ave area</td>
+      <td>Weather/event ridge</td>
+      <td>72</td>
+      <td>104</td>
+      <td>14.3%</td>
+    </tr>
+    <tr>
+      <td>Cluster 01 - W 21 St &amp; 6 Ave area</td>
+      <td>Calendar + lag ridge</td>
+      <td>75</td>
+      <td>115</td>
+      <td>14.9%</td>
+    </tr>
+    <tr>
+      <td>Cluster 01 - W 21 St &amp; 6 Ave area</td>
+      <td>Previous week</td>
+      <td>91</td>
+      <td>150</td>
+      <td>18.1%</td>
+    </tr>
+    <tr>
+      <td>Cluster 02 - 11 Ave &amp; W 41 St area</td>
+      <td>Weather/event ridge</td>
+      <td>46</td>
+      <td>65</td>
+      <td>15.0%</td>
+    </tr>
+    <tr>
+      <td>Cluster 02 - 11 Ave &amp; W 41 St area</td>
+      <td>Calendar + lag ridge</td>
+      <td>47</td>
+      <td>72</td>
+      <td>15.6%</td>
+    </tr>
+    <tr>
+      <td>Cluster 02 - 11 Ave &amp; W 41 St area</td>
+      <td>Previous week</td>
+      <td>56</td>
+      <td>90</td>
+      <td>18.2%</td>
+    </tr>
+    <tr>
+      <td>Cluster 03 - West St &amp; Chambers St area</td>
+      <td>Weather/event ridge</td>
+      <td>46</td>
+      <td>66</td>
+      <td>15.3%</td>
+    </tr>
+    <tr>
+      <td>Cluster 03 - West St &amp; Chambers St area</td>
+      <td>Calendar + lag ridge</td>
+      <td>49</td>
+      <td>74</td>
+      <td>16.3%</td>
+    </tr>
+    <tr>
+      <td>Cluster 03 - West St &amp; Chambers St area</td>
+      <td>Previous week</td>
+      <td>61</td>
+      <td>96</td>
+      <td>20.5%</td>
+    </tr>
+    <tr>
+      <td>Cluster 04 - Ave A &amp; E 14 St area</td>
+      <td>Weather/event ridge</td>
+      <td>22</td>
+      <td>31</td>
+      <td>15.6%</td>
+    </tr>
+    <tr>
+      <td>Cluster 04 - Ave A &amp; E 14 St area</td>
+      <td>Calendar + lag ridge</td>
+      <td>24</td>
+      <td>33</td>
+      <td>16.4%</td>
+    </tr>
+    <tr>
+      <td>Cluster 04 - Ave A &amp; E 14 St area</td>
+      <td>Previous week</td>
+      <td>28</td>
+      <td>42</td>
+      <td>19.5%</td>
+    </tr>
+    <tr>
+      <td>Cluster 05 - E 72 St &amp; York Ave area</td>
+      <td>Weather/event ridge</td>
+      <td>15</td>
+      <td>20</td>
+      <td>18.4%</td>
+    </tr>
+    <tr>
+      <td>Cluster 05 - E 72 St &amp; York Ave area</td>
+      <td>Calendar + lag ridge</td>
+      <td>15</td>
+      <td>21</td>
+      <td>19.2%</td>
+    </tr>
+    <tr>
+      <td>Cluster 05 - E 72 St &amp; York Ave area</td>
+      <td>Previous week</td>
+      <td>18</td>
+      <td>27</td>
+      <td>23.0%</td>
+    </tr>
+    <tr>
+      <td>Cluster 06 - Hanson Pl &amp; Ashland Pl area</td>
+      <td>Weather/event ridge</td>
+      <td>3</td>
+      <td>5</td>
+      <td>33.4%</td>
+    </tr>
+    <tr>
+      <td>Cluster 06 - Hanson Pl &amp; Ashland Pl area</td>
+      <td>Calendar + lag ridge</td>
+      <td>3</td>
+      <td>5</td>
+      <td>33.7%</td>
+    </tr>
+    <tr>
+      <td>Cluster 06 - Hanson Pl &amp; Ashland Pl area</td>
+      <td>Previous week</td>
+      <td>4</td>
+      <td>6</td>
+      <td>42.0%</td>
+    </tr>
+  </tbody>
+</table>
+  </section>
+
+  <section>
+    <h2>Core Visuals</h2>
+    <figure>
+      <img src="charts/station_cluster_model_lift.png" alt="Model lift by station cluster">
+      <figcaption>Weather/event ridge lift versus the previous-week baseline across the system and station clusters.</figcaption>
+    </figure>
+    <figure>
+      <img src="charts/station_cluster_forecast_example.png" alt="Forecast example for top station cluster">
+      <figcaption>Final scored 24-hour forecast trace for the top planning-priority station cluster.</figcaption>
+    </figure>
+    <figure>
+      <img src="charts/multi_month_daily_demand.png" alt="Full-year daily demand">
+      <figcaption>Full-year demand pattern that proves the model beyond the original January snapshot.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Source And Limits</h2>
+    <ul>
+      <li>Source artifacts are generated from public Citi Bike 2024 monthly archives and Open-Meteo historical weather.</li>
+      <li>The dashboard target is hourly trip starts, not live bike inventory, dock availability, or actual truck moves.</li>
+      <li>Scenario scores are planning indices. They should be calibrated against station capacity and availability snapshots before operational use.</li>
+    </ul>
+  </section>
+</main>
+<script>
+  const buttons = document.querySelectorAll("[data-scenario-button]");
+  const rows = document.querySelectorAll("[data-scenario-row]");
+  function setScenario(name) {
+    buttons.forEach((button) => button.classList.toggle("active", button.dataset.scenarioButton === name));
+    rows.forEach((row) => {
+      row.style.display = row.dataset.scenarioRow === name ? "" : "none";
+    });
+  }
+  if (buttons.length > 0) {
+    setScenario(buttons[0].dataset.scenarioButton);
+    buttons.forEach((button) => button.addEventListener("click", () => setScenario(button.dataset.scenarioButton)));
+  }
+</script>
+</body>
+</html>
